@@ -1,0 +1,42 @@
+name: "prsnoop report"
+description: "Generate a Markdown contribution report for a GitHub user with prsnoop."
+branding:
+  icon: "activity"
+  color: "gray-dark"
+inputs:
+  user:
+    description: "GitHub username to report on"
+    required: true
+  days:
+    description: "Look-back window in days"
+    required: false
+    default: "30"
+  output:
+    description: "Report file path"
+    required: false
+    default: "prsnoop-report.md"
+  token:
+    description: "GitHub token (pass secrets.GITHUB_TOKEN or a PAT)"
+    required: false
+    default: ""
+runs:
+  using: "composite"
+  steps:
+    - name: Install prsnoop
+      shell: bash
+      run: pip install "${{ github.action_path }}/../../.."
+    - name: Generate report
+      shell: bash
+      env:
+        PRSNOOP_TOKEN: ${{ inputs.token }}
+      run: |
+        prsnoop "${{ inputs.user }}" --days "${{ inputs.days }}" \
+          -f markdown -o "${{ inputs.output }}" --no-reviews
+    - name: Show summary
+      shell: bash
+      run: |
+        {
+          echo "### Contribution report: ${{ inputs.user }}"
+          echo
+          head -30 "${{ inputs.output }}"
+        } >> "$GITHUB_STEP_SUMMARY"

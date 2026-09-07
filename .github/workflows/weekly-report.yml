@@ -1,0 +1,27 @@
+# Weekly self-report: runs prsnoop on the repo owner and files the
+# Markdown report as a workflow artifact. Copy this file, replace the
+# username, and add a PAT with public repo read as PRSNOOP_PAT.
+name: Weekly contribution report
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"  # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/prsnoop-report
+        with:
+          user: MohammedAnasNathani
+          days: "7"
+          token: ${{ secrets.PRSNOOP_PAT || secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weekly-prsnoop-report
+          path: prsnoop-report.md

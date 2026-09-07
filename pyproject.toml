@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prsnoop"
+version = "1.2.0"
+description = "Snoop GitHub pull requests, issues, and reviews into clean reports"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [{name = "Mohammed Anas Nathani", email = "mohammedanasnathani0123@gmail.com"}]
+keywords = ["github", "pull-requests", "contributions", "open-source", "cli", "reports"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/MohammedAnasNathani/prsnoop"
+Issues = "https://github.com/MohammedAnasNathani/prsnoop/issues"
+Changelog = "https://github.com/MohammedAnasNathani/prsnoop/blob/main/CHANGELOG.md"
+
+[project.scripts]
+prsnoop = "prsnoop.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4", "mypy>=1.8"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["prsnoop*"]
+
+[tool.ruff]
+line-length = 92
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["SIM108"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["prsnoop"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
