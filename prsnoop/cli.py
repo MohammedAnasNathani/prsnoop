@@ -9,6 +9,8 @@
     prsnoop org psf --days 30                  # organization pulse report
     prsnoop compare antfu simonw               # head-to-head, same window
     prsnoop team alice bob carol               # team leaderboard
+    prsnoop wrapped simonw                     # year in review superlatives
+    prsnoop readme simonw                      # profile README generator
     prsnoop serve simonw                       # live dashboard on 127.0.0.1
     prsnoop export simonw                      # full report pack to a folder
     prsnoop auth                               # check token / rate limit
@@ -299,7 +301,10 @@ def build_serve_parser() -> argparse.ArgumentParser:
             " auto-refreshing, JSON at /api/report."
         ),
     )
-    s.add_argument("user", help="GitHub username to serve")
+    s.add_argument(
+        "targets", nargs="+",
+        help="one or more of: username, org:login, repo:owner/name",
+    )
     s.add_argument("--days", type=int, default=30)
     s.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
     s.add_argument("--port", type=int, default=8642)
@@ -359,6 +364,58 @@ def build_export_parser() -> argparse.ArgumentParser:
     )
     ex.add_argument("--verbose", "-v", action="store_true", help="debug logging")
     return ex
+
+
+def build_wrapped_parser() -> argparse.ArgumentParser:
+    """Parser for the wrapped subcommand."""
+    w = argparse.ArgumentParser(
+        prog="prsnoop wrapped",
+        description=(
+            "Year in review: the superlatives behind one contributor's"
+            " pull requests. Biggest patch, busiest month, longest streak."
+        ),
+    )
+    w.add_argument("user", help="GitHub username")
+    w.add_argument("--days", type=int, default=365)
+    w.add_argument("--since", type=str, default=None)
+    w.add_argument("--until", type=str, default=None)
+    w.add_argument(
+        "--format", "-f", choices=["table", "markdown", "json"], default="table"
+    )
+    w.add_argument("--output", "-o", type=Path, default=None, help="write to a file")
+    w.add_argument("--no-reviews", action="store_true")
+    w.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    w.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return w
+
+
+def build_readme_parser() -> argparse.ArgumentParser:
+    """Parser for the readme subcommand."""
+    r = argparse.ArgumentParser(
+        prog="prsnoop readme",
+        description=(
+            "Generate a paste-ready GitHub profile README section:"
+            " badges, stats table, top repositories."
+        ),
+    )
+    r.add_argument("user", help="GitHub username")
+    r.add_argument("--days", type=int, default=30)
+    r.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    r.add_argument("--since", type=str, default=None)
+    r.add_argument("--until", type=str, default=None)
+    r.add_argument("--org", type=str, default=None, help="restrict to one org")
+    r.add_argument("--trend", action="store_true")
+    r.add_argument("--no-reviews", action="store_true")
+    r.add_argument("--output", "-o", type=Path, default=None, help="write to a file")
+    r.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    r.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return r
 
 
 def cmd_auth(args: argparse.Namespace) -> int:
@@ -548,12 +605,12 @@ def cmd_serve(args: argparse.Namespace) -> int:
         print("prsnoop: --days must be >= 1", file=sys.stderr)
         return 2
     print(
-        f"prsnoop: serving {args.user} (last {days} days) at"
+        f"prsnoop: serving {', '.join(args.targets)} (last {days} days) at"
         f" http://127.0.0.1:{args.port}/  (ctrl-c to stop)",
         file=sys.stderr,
     )
     serve(
-        args.user,
+        args.targets,
         days=days,
         port=args.port,
         cache_dir=args.cache_dir,
@@ -735,6 +792,102 @@ def cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
+def _fetch_activity(args: argparse.Namespace, days: int) -> Activity:
+    """Shared fetch for wrapped and readme (raises GitHubError upward)."""
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        raise SystemExit(2)
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    prs, reviews, issues, _ = fetch_user_activity(
+        client, args.user, days=days, include_reviews=not args.no_reviews,
+        org=getattr(args, "org", None), since=since, until=until,
+    )
+    activity = build_activity(
+        args.user, prs, reviews, issues,
+        window_days=days, since=since or "", until=until or "",
+    )
+    if getattr(args, "trend", False):
+        prev_since, prev_until = _previous_window(since, until, days)
+        try:
+            p_prs, p_rev, p_iss, _ = fetch_user_activity(
+                client, args.user, days=days,
+                include_reviews=not args.no_reviews,
+                org=getattr(args, "org", None),
+                since=prev_since, until=prev_until,
+            )
+            prev_activity = build_activity(
+                args.user, p_prs, p_rev, p_iss,
+                window_days=days, since=prev_since, until=prev_until,
+            )
+            activity.trend = build_trend(activity.stats, prev_activity.stats)
+        except (GitHubError, RateLimitExceeded) as exc:
+            print(f"prsnoop: trend window skipped: {exc}", file=sys.stderr)
+    return activity
+
+
+def _emit(rendered: str, output: Path | None) -> None:
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered, encoding="utf-8")
+        print(f"prsnoop: wrote {output}", file=sys.stderr)
+    else:
+        for stream in (sys.stdout, sys.stderr):
+            reconfigure = getattr(stream, "reconfigure", None)
+            if reconfigure is not None:
+                with contextlib.suppress(ValueError, OSError):
+                    reconfigure(encoding="utf-8")
+        print(rendered)
+
+
+def cmd_wrapped(args: argparse.Namespace) -> int:
+    from prsnoop.wrapped import build_wrapped, render_wrapped_markdown, render_wrapped_table
+
+    days = args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    wrapped = build_wrapped(activity)
+    if args.format == "json":
+        rendered = json.dumps(wrapped.to_dict(), indent=2)
+    elif args.format == "markdown":
+        rendered = render_wrapped_markdown(wrapped)
+    else:
+        rendered = render_wrapped_table(wrapped)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_readme(args: argparse.Namespace) -> int:
+    from prsnoop.render import render_profile_readme
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    _emit(render_profile_readme(activity), args.output)
+    return 0
+
+
 def run(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "auth":
@@ -779,6 +932,20 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_org(org_args)
+    if raw and raw[0] == "wrapped":
+        w_args = build_wrapped_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if w_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_wrapped(w_args)
+    if raw and raw[0] == "readme":
+        r_args = build_readme_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if r_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_readme(r_args)
     if raw and raw[0] == "serve":
         serve_args = build_serve_parser().parse_args(raw[1:])
         logging.basicConfig(

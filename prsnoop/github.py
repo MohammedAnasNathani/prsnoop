@@ -26,6 +26,9 @@ JsonList = list[Any]
 
 API_ROOT = "https://api.github.com"
 PER_PAGE = 100
+RETRY_STATUSES = {500, 502, 503, 504}
+MAX_ATTEMPTS = 3
+MAX_RETRY_SLEEP = 8.0  # cap backoff; Retry-After is capped separately
 
 
 class GitHubError(RuntimeError):
@@ -118,34 +121,72 @@ class GitHubClient:
     def _request(
         self, url: str, etag: str | None = None
     ) -> tuple[JsonDict | JsonList, str | None]:
-        """GET one URL. Returns (parsed_body, etag)."""
+        """GET one URL with transient-failure retries. Returns (body, etag).
+
+        Server errors (500/502/503/504), network hiccups, and GitHub's
+        secondary rate limits (the abuse-detection 429s that carry a
+        Retry-After header) are retried with backoff. A hard rate-limit
+        exhaustion raises immediately: no amount of retrying helps.
+        """
         headers = dict(self.headers)
         if etag:
             headers["If-None-Match"] = etag
-        req = urllib.request.Request(url, headers=headers, method="GET")
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                raw = resp.read()
-                if resp.headers.get("Content-Encoding") == "gzip":
-                    raw = gzip.decompress(raw)
-                remaining = resp.headers.get("X-RateLimit-Remaining")
-                if remaining is not None:
-                    self._ratelimit_remaining = int(remaining)
-                body: JsonDict | JsonList = json.loads(raw or b"{}")
-                return body, resp.headers.get("ETag")
-        except urllib.error.HTTPError as exc:
-            if exc.code == 304:
-                raise _NotModified from exc
-            detail = exc.read().decode("utf-8", "replace")
+        last_exc: GitHubError | None = None
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            req = urllib.request.Request(url, headers=headers, method="GET")
             try:
-                message = json.loads(detail).get("message", detail)
-            except json.JSONDecodeError:
-                message = detail
-            if exc.code in (403, 429) and "rate limit" in str(message).lower():
-                raise RateLimitExceeded(exc.code, str(message)) from exc
-            raise GitHubError(exc.code, str(message)) from exc
-        except urllib.error.URLError as exc:
-            raise GitHubError(0, f"network error: {exc.reason}") from exc
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    raw = resp.read()
+                    if resp.headers.get("Content-Encoding") == "gzip":
+                        raw = gzip.decompress(raw)
+                    remaining = resp.headers.get("X-RateLimit-Remaining")
+                    if remaining is not None:
+                        self._ratelimit_remaining = int(remaining)
+                    body: JsonDict | JsonList = json.loads(raw or b"{}")
+                    return body, resp.headers.get("ETag")
+            except urllib.error.HTTPError as exc:
+                if exc.code == 304:
+                    raise _NotModified from exc
+                detail = exc.read().decode("utf-8", "replace")
+                try:
+                    message = json.loads(detail).get("message", detail)
+                except json.JSONDecodeError:
+                    message = detail
+                if exc.code in (403, 429) and "rate limit" in str(message).lower():
+                    retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                    if retry_after is not None and attempt < MAX_ATTEMPTS:
+                        delay = min(float(retry_after), MAX_RETRY_SLEEP)
+                        log.warning(
+                            "secondary rate limit, attempt %d/%d, retrying in %.0fs",
+                            attempt, MAX_ATTEMPTS, delay,
+                        )
+                        time.sleep(delay)
+                        last_exc = RateLimitExceeded(exc.code, str(message))
+                        continue
+                    raise RateLimitExceeded(exc.code, str(message)) from exc
+                if exc.code in RETRY_STATUSES and attempt < MAX_ATTEMPTS:
+                    delay = min(2 ** (attempt - 1), MAX_RETRY_SLEEP)
+                    log.warning(
+                        "HTTP %d, attempt %d/%d, retrying in %.0fs",
+                        exc.code, attempt, MAX_ATTEMPTS, delay,
+                    )
+                    time.sleep(delay)
+                    last_exc = GitHubError(exc.code, str(message))
+                    continue
+                raise GitHubError(exc.code, str(message)) from exc
+            except urllib.error.URLError as exc:
+                if attempt < MAX_ATTEMPTS:
+                    delay = min(2 ** (attempt - 1), MAX_RETRY_SLEEP)
+                    log.warning(
+                        "network error (%s), attempt %d/%d, retrying in %.0fs",
+                        exc.reason, attempt, MAX_ATTEMPTS, delay,
+                    )
+                    time.sleep(delay)
+                    last_exc = GitHubError(0, f"network error: {exc.reason}")
+                    continue
+                raise GitHubError(0, f"network error: {exc.reason}") from exc
+        assert last_exc is not None
+        raise last_exc
 
     # ----------------------------------------------------------------- public
 

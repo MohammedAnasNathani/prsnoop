@@ -6,10 +6,9 @@ for the person running it, never for the network. Responses come from
 the same renderers as every other format, and the ETag cache keeps
 auto-refreshes nearly free.
 
-Endpoints:
-    /           full HTML report, auto-refreshes every 5 minutes
-    /api/report full JSON snapshot
-    /health     liveness for scripts
+Targets: a bare username, ``org:login``, or ``repo:owner/name``. With
+several targets the root path becomes a tab index and each target gets
+its own page and JSON route.
 """
 from __future__ import annotations
 
@@ -29,13 +28,14 @@ log = logging.getLogger("prsnoop")
 
 AUTO_REFRESH_SECONDS = 300
 
+Route = dict[str, Callable[[], tuple[str, str]]]
+"""Map of exact request path to a callable returning (content_type, body)."""
+
 
 def build_dashboard_page(activity: Activity) -> str:
     """Wrap the standard HTML report with auto-refresh and a banner."""
     page = render_html(activity)
-    refresh = (
-        f'<meta http-equiv="refresh" content="{AUTO_REFRESH_SECONDS}">'
-    )
+    refresh = f'<meta http-equiv="refresh" content="{AUTO_REFRESH_SECONDS}">'
     banner = (
         "<div class='servebar'>live dashboard | auto-refresh every "
         f"{AUTO_REFRESH_SECONDS // 60} minutes | served locally by "
@@ -52,54 +52,46 @@ def build_dashboard_page(activity: Activity) -> str:
     )
 
 
-def make_handler(
-    fetch_report: Callable[[], Activity],
-) -> type[BaseHTTPRequestHandler]:
-    """Build a request handler around a report factory."""
+def make_handler(routes: Route) -> type[BaseHTTPRequestHandler]:
+    """Build a request handler around a route table.
+
+    Every route callable returns (content_type, body_text); an exception
+    becomes a 500 page for HTML routes or a JSON error object. /health is
+    always available, unknown paths 404.
+    """
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:  # noqa: N802  stdlib naming
-            if self.path == "/health":
-                body = json.dumps({"status": "ok"}).encode("utf-8")
-                ctype = "application/json"
-            elif self.path in ("/", "/index.html"):
-                try:
-                    activity = fetch_report()
-                except Exception as exc:  # noqa: BLE001
-                    body = (
-                        f"<h1>prsnoop</h1><p>report failed: {exc}</p>"
-                        "<p><a href='/'>retry</a></p>"
-                    ).encode()
-                    self.send_response(500)
-                    self.send_header("Content-Type", "text/html; charset=utf-8")
-                    self.send_header("Content-Length", str(len(body)))
-                    self.end_headers()
-                    self.wfile.write(body)
-                    return
-                body = build_dashboard_page(activity).encode("utf-8")
-                ctype = "text/html; charset=utf-8"
-            elif self.path == "/api/report":
-                try:
-                    activity = fetch_report()
-                except Exception as exc:  # noqa: BLE001
-                    body = json.dumps({"error": str(exc)}).encode("utf-8")
-                    self.send_response(500)
-                    self.send_header("Content-Type", "application/json")
-                    self.send_header("Content-Length", str(len(body)))
-                    self.end_headers()
-                    self.wfile.write(body)
-                    return
-                body = render_json(activity).encode("utf-8")
-                ctype = "application/json"
-            else:
-                body = b"not found"
-                self.send_response(404)
-                self.send_header("Content-Type", "text/plain")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                self.wfile.write(body)
+            path = self.path.split("?")[0]
+            if path == "/health":
+                self._reply(
+                    200, "application/json", json.dumps({"status": "ok"})
+                )
                 return
-            self.send_response(200)
+            fn = routes.get(path)
+            if fn is None:
+                self._reply(404, "text/plain", "not found")
+                return
+            try:
+                ctype, text = fn()
+            except Exception as exc:  # noqa: BLE001
+                if "json" in path:
+                    self._reply(
+                        500, "application/json",
+                        json.dumps({"error": str(exc)}),
+                    )
+                else:
+                    self._reply(
+                        500, "text/html; charset=utf-8",
+                        f"<h1>prsnoop</h1><p>report failed: {exc}</p>"
+                        "<p><a href='/'>retry</a></p>",
+                    )
+                return
+            self._reply(200, ctype, text)
+
+        def _reply(self, code: int, ctype: str, text: str) -> None:
+            body = text.encode()
+            self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -111,8 +103,53 @@ def make_handler(
     return Handler
 
 
+def _parse_target(raw: str) -> tuple[str, str]:
+    """'simonw' -> (user, simonw); 'org:X' -> (org, X); 'repo:a/b'."""
+    if raw.startswith("org:"):
+        return "org", raw[4:]
+    if raw.startswith("repo:"):
+        return "repo", raw[5:]
+    return "user", raw
+
+
+def _routes_for(
+    kind: str,
+    name: str,
+    days: int,
+    client: GitHubClient,
+    fetch_user: Callable[[str], Activity],
+) -> tuple[Callable[[], tuple[str, str]], Callable[[], tuple[str, str]]]:
+    """Build the (html, json) route pair for one dashboard target."""
+    if kind == "user":
+
+        def user_html() -> tuple[str, str]:
+            return "text/html; charset=utf-8", build_dashboard_page(
+                fetch_user(name)
+            )
+
+        def user_json() -> tuple[str, str]:
+            return "application/json", render_json(fetch_user(name))
+
+        return user_html, user_json
+
+    from prsnoop.org import fetch_org_pulse, fetch_repo_pulse
+    from prsnoop.render import render_org_html
+
+    fetcher = fetch_repo_pulse if kind == "repo" else fetch_org_pulse
+
+    def pulse_html() -> tuple[str, str]:
+        prs, pulse = fetcher(client, name, days=days)
+        return "text/html; charset=utf-8", render_org_html(prs, pulse)
+
+    def pulse_json() -> tuple[str, str]:
+        _prs, pulse = fetcher(client, name, days=days)
+        return "application/json", json.dumps(pulse.to_dict(), indent=2)
+
+    return pulse_html, pulse_json
+
+
 def serve(
-    user: str,
+    targets: list[str],
     days: int = 30,
     port: int = 8642,
     cache_dir: object = None,
@@ -123,14 +160,41 @@ def serve(
         cache_dir=cache_dir,  # type: ignore[arg-type]
         user_agent=f"prsnoop/{__version__}",
     )
+    parsed = [_parse_target(raw) for raw in targets]
 
-    def fetch_report() -> Activity:
+    def fetch_user(login: str) -> Activity:
         prs, reviews, issues, _ = fetch_user_activity(
-            client, user, days=days, include_reviews=True
+            client, login, days=days, include_reviews=True
         )
-        return build_activity(user, prs, reviews, issues, window_days=days)
+        return build_activity(login, prs, reviews, issues, window_days=days)
 
-    handler = make_handler(fetch_report)
+    routes: Route = {}
+    for i, (kind, name) in enumerate(parsed):
+        page_path = "/" if len(parsed) == 1 else f"/t/{i}"
+        api_path = "/api/report" if len(parsed) == 1 else f"/api/{i}"
+        html_fn, json_fn = _routes_for(kind, name, days, client, fetch_user)
+        routes[page_path] = html_fn
+        routes[api_path] = json_fn
+
+    if len(parsed) > 1:
+        links = "".join(
+            f'<p><a class="tab" href="/t/{i}">{kind}: {name}</a></p>'
+            for i, (kind, name) in enumerate(parsed)
+        )
+        index_body = (
+            "<!doctype html><html><head><meta charset='utf-8'>"
+            "<title>prsnoop dashboard</title><style>"
+            "body { font-family: -apple-system, sans-serif; background:"
+            " #0d1117; color: #e6edf3; padding: 3rem; }"
+            "h1 { font-size: 1.4rem; }"
+            ".tab { color: #3fb950; font-size: 1.05rem;"
+            " text-decoration: none; }"
+            "</style></head><body><h1>prsnoop live dashboard</h1>"
+            f"{links}</body></html>"
+        )
+        routes["/"] = lambda: ("text/html; charset=utf-8", index_body)
+
+    handler = make_handler(routes)
     server = ThreadingHTTPServer(("127.0.0.1", port), handler)
     if open_browser:
         import webbrowser
