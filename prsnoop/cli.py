@@ -2,9 +2,12 @@
 
     prsnoop simonw                             # terminal table, last 30 days
     prsnoop simonw --days 90                   # wider window
+    prsnoop simonw --trend                     # delta vs previous window
     prsnoop simonw --since 2026-06-01          # absolute start date
     prsnoop simonw --org aio-libs              # one organization only
     prsnoop simonw -f markdown -o report.md    # write a report
+    prsnoop org psf --days 30                  # organization pulse report
+    prsnoop compare antfu simonw               # head-to-head, same window
     prsnoop auth                               # check token / rate limit
     prsnoop snap simonw -o snap.json           # frozen snapshot for tests
     prsnoop snap simonw --compare snap.json    # diff two windows
@@ -13,10 +16,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import csv
+import io
 import json
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from prsnoop import __version__
@@ -24,7 +29,7 @@ from prsnoop.fetch import fetch_user_activity
 from prsnoop.github import GitHubClient, GitHubError, RateLimitExceeded
 from prsnoop.models import Activity
 from prsnoop.render import RENDERERS
-from prsnoop.stats import build_activity
+from prsnoop.stats import build_activity, build_trend
 
 log = logging.getLogger("prsnoop")
 
@@ -38,6 +43,34 @@ def _validate_date(value: str, option: str) -> str:
         )
         raise SystemExit(2) from None
     return value
+
+
+def _previous_window(
+    since: str | None, until: str | None, days: int
+) -> tuple[str, str]:
+    """Date bounds of the window immediately before the current one.
+
+    Relative windows (--days N) shift N days back; absolute windows
+    (--since/--until) shift by their own length so both windows are the
+    same size and the deltas are honest.
+    """
+    if since and until:
+        start = datetime.strptime(since, "%Y-%m-%d").date()
+        end = datetime.strptime(until, "%Y-%m-%d").date()
+        length = (end - start).days + 1
+        prev_until = start - timedelta(days=1)
+        prev_since = prev_until - timedelta(days=length - 1)
+        return prev_since.isoformat(), prev_until.isoformat()
+    if since:
+        start = datetime.strptime(since, "%Y-%m-%d").date()
+        prev_until = start - timedelta(days=1)
+        prev_since = prev_until - timedelta(days=days - 1)
+        return prev_since.isoformat(), prev_until.isoformat()
+    today = datetime.now(timezone.utc).date()
+    cur_since = today - timedelta(days=days)
+    prev_until = cur_since - timedelta(days=1)
+    prev_since = cur_since - timedelta(days=days)
+    return prev_since.isoformat(), prev_until.isoformat()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -73,6 +106,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--no-reviews", action="store_true",
         help="skip scanning for reviews given (fewer API calls)",
+    )
+    parser.add_argument(
+        "--trend", action="store_true",
+        help="compare this window against the one before it (doubles API calls)",
     )
     parser.add_argument(
         "--no-cache", action="store_true",
@@ -122,13 +159,92 @@ def build_compare_parser() -> argparse.ArgumentParser:
     cmp_p.add_argument("--since", type=str, default=None)
     cmp_p.add_argument("--until", type=str, default=None)
     cmp_p.add_argument("--org", type=str, default=None, help="restrict both to one org")
-    cmp_p.add_argument("--format", "-f", choices=["table", "markdown"], default="table")
+    cmp_p.add_argument(
+        "--format", "-f",
+        choices=["table", "markdown", "csv", "json"],
+        default="table",
+    )
     cmp_p.add_argument(
         "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     cmp_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
     return cmp_p
+
+
+def build_org_parser() -> argparse.ArgumentParser:
+    """Parser for the org subcommand."""
+    org_p = argparse.ArgumentParser(
+        prog="prsnoop org",
+        description="Pulse report for a GitHub organization: who ships, what is hot.",
+    )
+    org_p.add_argument("org", help="GitHub organization or owner login")
+    org_p.add_argument("--days", type=int, default=30)
+    org_p.add_argument("--since", type=str, default=None)
+    org_p.add_argument("--until", type=str, default=None)
+    org_p.add_argument(
+        "--format", "-f", choices=["table", "markdown", "json"], default="table"
+    )
+    org_p.add_argument(
+        "--output", "-o", type=Path, default=None, help="write to a file"
+    )
+    org_p.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    org_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return org_p
+
+
+def cmd_org(args: argparse.Namespace) -> int:
+    from prsnoop.org import fetch_org_pulse
+    from prsnoop.render import render_org_markdown, render_org_table
+
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    if args.days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        return 2
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    try:
+        prs, pulse = fetch_org_pulse(
+            client, args.org, days=args.days, since=since, until=until
+        )
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        print(
+            "prsnoop: set PRSNOOP_TOKEN or GITHUB_TOKEN to raise the limit",
+            file=sys.stderr,
+        )
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+
+    if args.format == "json":
+        rendered = json.dumps(pulse.to_dict(), indent=2)
+    elif args.format == "markdown":
+        rendered = render_org_markdown(prs, pulse)
+    else:
+        rendered = render_org_table(prs, pulse)
+
+    if args.output:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(rendered, encoding="utf-8")
+        print(f"prsnoop: wrote {args.output}", file=sys.stderr)
+    else:
+        for stream in (sys.stdout, sys.stderr):
+            reconfigure = getattr(stream, "reconfigure", None)
+            if reconfigure is not None:
+                with contextlib.suppress(ValueError, OSError):
+                    reconfigure(encoding="utf-8")
+        print(rendered)
+    return 0
 
 
 def cmd_auth(args: argparse.Namespace) -> int:
@@ -258,6 +374,28 @@ def cmd_compare(args: argparse.Namespace) -> int:
     def esc(v: object) -> str:
         return str(v).replace("|", "\\|")
 
+    if args.format == "json":
+        payload = {
+            "users": [args.user_a, args.user_b],
+            "metrics": [
+                {
+                    "metric": label,
+                    args.user_a: av if isinstance(av, int) else str(av),
+                    args.user_b: bv if isinstance(bv, int) else str(bv),
+                }
+                for label, av, bv, _better in rows
+            ],
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+    if args.format == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["metric", args.user_a, args.user_b])
+        for label, av, bv, _better in rows:
+            writer.writerow([label, av, bv])
+        print(buf.getvalue(), end="")
+        return 0
     if args.format == "markdown":
         lines = [
             f"# {args.user_a} vs {args.user_b}",
@@ -323,6 +461,13 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_compare(cmp_args)
+    if raw and raw[0] == "org":
+        org_args = build_org_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if org_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_org(org_args)
 
     args = build_parser().parse_args(raw)
     logging.basicConfig(
@@ -359,6 +504,24 @@ def run(argv: list[str] | None = None) -> int:
             args.user, prs, reviews, issues,
             window_days=args.days, since=since or "", until=until or "",
         )
+        if args.trend:
+            prev_since, prev_until = _previous_window(since, until, args.days)
+            try:
+                p_prs, p_reviews, p_issues, _ = fetch_user_activity(
+                    client, args.user, days=args.days,
+                    include_reviews=not args.no_reviews, org=args.org,
+                    since=prev_since, until=prev_until,
+                )
+                prev_activity = build_activity(
+                    args.user, p_prs, p_reviews, p_issues,
+                    window_days=args.days, since=prev_since, until=prev_until,
+                )
+                trend = build_trend(activity.stats, prev_activity.stats)
+                activity.trend = trend
+            except (GitHubError, RateLimitExceeded) as exc:
+                print(
+                    f"prsnoop: trend window skipped: {exc}", file=sys.stderr
+                )
     except RateLimitExceeded as exc:
         print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
         print(

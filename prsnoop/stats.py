@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import statistics
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from prsnoop.models import (
@@ -17,6 +18,7 @@ from prsnoop.models import (
     Activity,
     DayActivity,
     IssueRecord,
+    JsonDict,
     PRRecord,
     ReviewRecord,
     Stats,
@@ -25,6 +27,60 @@ from prsnoop.models import (
 
 def _date_str(dt: datetime) -> str:
     return dt.strftime("%Y-%m-%d")
+
+
+@dataclass(slots=True)
+class TrendDelta:
+    """Change of one metric against a previous window.
+
+    ``current`` and ``previous`` are raw values; ``direction`` is +1, 0, or
+    -1 so renderers never have to recompute signs. Percent changes are
+    None when the previous value was zero (a 0 -> 5 jump has no honest
+    percentage).
+    """
+
+    key: str
+    label: str
+    current: float
+    previous: float
+    lower_is_better: bool = False
+
+    @property
+    def delta(self) -> float:
+        return self.current - self.previous
+
+    @property
+    def pct(self) -> float | None:
+        if self.previous == 0:
+            return None
+        return round((self.current - self.previous) / self.previous * 100, 1)
+
+    @property
+    def direction(self) -> int:
+        if self.current > self.previous:
+            return 1
+        if self.current < self.previous:
+            return -1
+        return 0
+
+    @property
+    def improved(self) -> bool:
+        """True when the change is good news for the contributor."""
+        if self.lower_is_better:
+            return self.direction < 0
+        return self.direction > 0
+
+    def to_dict(self) -> JsonDict:
+        return {
+            "key": self.key,
+            "label": self.label,
+            "current": self.current,
+            "previous": self.previous,
+            "delta": self.delta,
+            "pct": self.pct,
+            "direction": self.direction,
+            "improved": self.improved,
+        }
 
 
 def _streaks(dates: set[str], today: str) -> tuple[int, int]:
@@ -181,3 +237,38 @@ def build_activity(
         today=_date_str(stamp),
     )
     return activity
+
+
+_TREND_METRICS = (
+    ("prs_authored", "pull requests", False),
+    ("prs_merged", "merged", False),
+    ("reviews_given", "reviews given", False),
+    ("issues_opened", "issues opened", False),
+    ("lines_added", "lines added", False),
+    ("median_days_to_merge", "median merge time", True),
+)
+
+
+def build_trend(current: Stats, previous: Stats) -> list[TrendDelta]:
+    """Compare one window's stats against the window before it.
+
+    ``median_days_to_merge`` is lower-is-better; everything else is
+    more-is-better. The previous window must cover a comparable span or
+    the deltas are noise, so callers pass windows of the same length.
+    """
+    out: list[TrendDelta] = []
+    for key, label, lower_is_better in _TREND_METRICS:
+        cur = getattr(current, key)
+        prev = getattr(previous, key)
+        if cur is None or prev is None:
+            continue
+        out.append(
+            TrendDelta(
+                key=key,
+                label=label,
+                current=float(cur),
+                previous=float(prev),
+                lower_is_better=lower_is_better,
+            )
+        )
+    return out

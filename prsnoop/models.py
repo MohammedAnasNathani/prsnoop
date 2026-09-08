@@ -227,9 +227,10 @@ class Activity:
     reviews: list[ReviewRecord]
     issues: list[IssueRecord]
     stats: Stats
+    trend: list[Any] = field(default_factory=list)  # TrendDelta objects, set by cli
 
     def to_dict(self) -> JsonDict:
-        return {
+        d = {
             "user": self.user,
             "generated_at": _dt(self.generated_at),
             "prs": [p.to_dict() for p in self.prs],
@@ -237,3 +238,6 @@ class Activity:
             "issues": [i.to_dict() for i in self.issues],
             "stats": self.stats.to_dict(),
         }
+        if self.trend:
+            d["trend"] = [t.to_dict() if hasattr(t, "to_dict") else t for t in self.trend]
+        return d
