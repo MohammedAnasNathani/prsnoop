@@ -4,6 +4,30 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-09-09
+
+### Added
+- `prsnoop repo owner/name`: maintainer mode. The pulse report aimed at a
+  single repository, so a maintainer sees who is contributing, what the
+  merge backlog looks like, and how fast the project lands work.
+- `prsnoop me`: resolves your own login from the token and reports on
+  you. No username typing.
+- Where your work lands: per-repository merge rate and median time to
+  merge for every repo with two or more PRs in the window, in table,
+  Markdown, and HTML. The answer to "which projects actually value my
+  patches".
+- PR size profile: typical PR size as a letter grade plus the XS through
+  XL distribution over changed lines.
+- `--last week|month|quarter|year`: window presets instead of counting
+  days.
+
+### Fixed
+- Reviews on long-lived PRs no longer leak outside the report window.
+  Previously a review submitted months ago on a recently-updated PR
+  inflated review counts and dragged the daily chart back in time.
+
+[1.4.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.4.0
+
 ## [1.3.0] - 2026-09-08
 
 ### Added
@@ -81,6 +105,7 @@ First stable release.
 - Distinct exit codes: 0 ok, 2 usage, 3 API error, 4 rate limit.
 - 47 offline unit tests, ruff + mypy (strict) clean, CI on push and PR.
 
+[1.4.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.4.0
 [1.3.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.3.0
 [1.2.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.2.0
 [1.1.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.1.0

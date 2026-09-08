@@ -77,7 +77,8 @@ Point it at any public GitHub user:
 
 ```bash
 prsnoop simonw                          # last 30 days, terminal table
-prsnoop simonw --days 90                # wider window
+prsnoop me                              # yourself, from your token
+prsnoop simonw --last quarter           # week / month / quarter / year
 prsnoop simonw --trend                  # plus delta vs the window before
 prsnoop simonw --since 2026-08-01 --until 2026-08-31
 prsnoop simonw --org vueuse             # one organization only
@@ -129,6 +130,26 @@ $ prsnoop compare antfu simonw --days 30
   median merge                    -            0.0d
   longest streak                 3d              6d
   repos                          8              13
+```
+
+Maintainer mode: the same pulse for one repository. Who is contributing
+to your project, how big the open backlog is, how fast merges land:
+
+```text
+$ prsnoop repo psf/requests --days 30
+
+prsnoop repo | psf/requests
+window: 2026-08-09 to 2026-09-08
+
+  PRs opened        6
+    merged         5
+    open           1
+  Authors           2
+  Median merge      0.0d
+
+  Top authors
+    dependabot[bot]      5
+    nateprewitt          1
 ```
 
 Freeze a snapshot now, diff against it later. Handy for weekly reviews,
@@ -241,6 +262,8 @@ spending hours of API budget, and the report says so.
 | Streaks | longest and current runs of consecutive active days |
 | Languages | PR count by each repository's primary language |
 | Top repositories | PR count per repo, ranked |
+| Where work lands | per-repo merge rate and median merge time, 2+ PRs |
+| PR size profile | typical size as XS / S / M / L / XL, over changed lines |
 
 Exit codes: 0 success, 2 usage error, 3 API error, 4 rate limited
 (set a token).
@@ -273,7 +296,7 @@ git clone https://github.com/MohammedAnasNathani/prsnoop && cd prsnoop
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest          # 96 tests, all offline
+pytest          # 109 tests, all offline
 ruff check .    # lint
 mypy            # strict typing
 ```
