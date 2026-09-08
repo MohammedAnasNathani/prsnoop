@@ -147,16 +147,14 @@ def test_dashboard_page_has_refresh_and_banner():
 
 
 def test_handler_serves_endpoints():
-    seen = {"calls": 0}
+    def factory() -> tuple[str, str]:
+        act = build_activity("octocat", [_pr(1)], [], [], window_days=30)
+        return "application/json", json.dumps(act.to_dict())
 
-    def factory() -> object:
-        seen["calls"] += 1
-        return build_activity("octocat", [_pr(1)], [], [], window_days=30)
-
-    handler_cls = make_handler(factory)  # type: ignore[arg-type]
+    handler_cls = make_handler({"/api/report": factory})
     handler = handler_cls.__new__(handler_cls)
 
-    responses: list[tuple[int, str, bytes]] = []
+    responses: list[list] = []
 
     def send_response(code: int) -> None:
         responses.append([code, "", b""])
@@ -185,6 +183,14 @@ def test_handler_serves_endpoints():
         handler.do_GET()
         assert responses[0][0] == want_code, path
         assert marker in responses[0][2], path
+
+
+def test_parse_target_kinds():
+    from prsnoop.serve import _parse_target
+
+    assert _parse_target("simonw") == ("user", "simonw")
+    assert _parse_target("org:vueuse") == ("org", "vueuse")
+    assert _parse_target("repo:psf/requests") == ("repo", "psf/requests")
 
 
 # ------------------------------------------------------------------- team
