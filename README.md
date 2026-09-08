@@ -1,17 +1,14 @@
 # prsnoop
 
-[Website](https://mohammedanasnathani.github.io/prsnoop/) | [Install](#install) | [Compare with alternatives](#how-it-compares)
-
 [![CI](https://github.com/MohammedAnasNathani/prsnoop/actions/workflows/ci.yml/badge.svg)](https://github.com/MohammedAnasNathani/prsnoop/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/prsnoop/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://pypi.org/project/prsnoop/)
+[![Zero dependencies](https://img.shields.io/badge/dependencies-zero-2ea043)](https://github.com/MohammedAnasNathani/prsnoop)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230)](https://github.com/astral-sh/ruff)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230)](https://docs.astral.sh/ruff/)
 
-Pull request analytics from the command line. prsnoop reads a GitHub user's
-pull requests, reviews, and issues through the public API and produces
-reports in the terminal, Markdown, HTML, CSV, or JSON: merge rate, time to
-merge percentiles, daily activity, streaks, repository and language
-breakdowns.
+One command, one GitHub username, a full report of what their pull requests
+actually did. In the terminal, or as Markdown, HTML, CSV, JSON, or SVG
+badges. No account, no dashboard, no runtime dependencies.
 
 ```text
 $ prsnoop simonw --days 30
@@ -19,80 +16,43 @@ $ prsnoop simonw --days 30
 prsnoop | simonw
 window: last 30 days
 
-  Pull requests      39
-    merged           34
+  Pull requests      42
+    merged           37
     open             5
     closed           0
-  Reviews given      0
-  Issues opened      28 (closed: 21)
-  Lines changed      +16115 / -2137
-  Merge rate         87%
-  Merge time         median 0.0d, p90 0.2d
-  Active days        22 (avg 1.77 PRs/day)
-  Streaks            longest 7d, current 2d
+  Reviews given      7
+  Issues opened      32 (closed: 25)
+  Lines changed      +17593 / -2414
+  Merge rate         88%
+  Merge time         median 0.0d, p90 0.0d
+  Active days        22 (avg 1.91 PRs/day)
+  Streaks            longest 6d, current 3d
   Repos              13
-  Busiest day        2026-09-01 (14 items)
-  Languages          Python 21, HTML 18
+  Busiest day        2026-09-01 (18 items)
+  Languages          Python 23, HTML 19
 
   Recent pull requests
+  [merged] datasette/datasette-agent#40 Select a model when you start a conversation
+  [merged] simonw/llm#1674 httpx2-pytest>=2, refs #1673
+  [merged] simonw/tools#332 Video compressor: filename field, poster JPE
   [merged] simonw/tools#331 Add video compressor tool using ffmpeg.wasm
-  [  open] simonw/tools#330 Add WebP export to markdown-svg-renderer
-  [merged] simonw/sqlite-utils#852 Python 3.15 rc2
   ...
 ```
 
-The example above is real output for a public developer, generated with the
-command shown.
+Real output, real user, one command, a few seconds.
 
-## Why this tool exists
+## Contents
 
-The GitHub profile page answers "how many squares turn green." It does not
-answer the questions that come up in the real world:
-
-- What share of my pull requests actually merged?
-- How long do maintainers take to merge my work?
-- Which projects am I actually invested in, and in what languages?
-- What does the last month of work look like as a document I can send?
-
-Contribution dashboards exist, but they are web applications: accounts,
-onboarding tours, JavaScript, and pricing tiers. Most people who need these
-numbers need them in a terminal or a file, in seconds, without a signup
-flow.
-
-prsnoop is that: one command, no runtime dependencies, output you can
-paste anywhere.
-
-## How it compares
-
-| Need | prsnoop | gh CLI | OpenSauced | OSS Insight |
-|---|---|---|---|---|
-| Install size | one package, zero deps | large binary | web app | web app |
-| Time to first report | one command | write your own jq pipeline | sign up, connect | browse to site |
-| Time-to-merge percentiles | yes | manual | partial | repo focused |
-| Daily activity and streaks | yes | manual | streaks only | no |
-| Language mix | yes | manual | yes | yes |
-| Org-scoped filtering | yes | manual | workspaces | collections |
-| Compare two time windows | `snap --compare` | manual | no | no |
-| Compare two people | `prsnoop compare` | manual | no | no |
-| README badges | `--format badge` | shields.io service | no | no |
-| Works offline after first run | cached | no | no | no |
-| Output formats | table, md, html, csv, json | text | web views | web views, API |
-| Open source | MIT | MIT | open core | MIT |
-
-Notes on the field:
-
-- **gh CLI** can list PRs, but turning them into a report means writing
-  jq/GraphQL pipelines every time. prsnoop is the pipeline, packaged.
-- **OpenSauced** is a funded product with dashboards, workspaces, and
-  browser extensions. It shines at organization-level insights. It is not
-  something you can run in a terminal over SSH or embed in a build.
-- **OSS Insight** (by PingCAP) analyzes billions of GitHub events, mostly
-  for repository and ecosystem research. It is not a personal contribution
-  report generator.
-- **GitHub profile page** shows counts. No rates, no timing, no documents.
-
-The gap: instant, scriptable, personal PR analytics with zero setup.
-That is prsnoop.
+- [Install](#install)
+- [Usage](#usage)
+- [Output formats](#output-formats)
+- [Badges](#badges)
+- [GitHub Actions](#github-actions)
+- [Tokens and caching](#tokens-and-caching)
+- [What it measures](#what-it-measures)
+- [How it compares](#how-it-compares)
+- [Development](#development)
+- [License](#license)
 
 ## Install
 
@@ -100,45 +60,105 @@ That is prsnoop.
 pip install prsnoop
 ```
 
-From source:
+Or from source:
 
 ```bash
 git clone https://github.com/MohammedAnasNathani/prsnoop
 cd prsnoop && pip install .
 ```
 
+prsnoop runs on Python 3.10 through 3.14, on macOS, Linux, and Windows.
+It imports nothing outside the standard library, so it lands clean in any
+virtualenv, container, or CI runner.
+
 ## Usage
 
+Point it at any public GitHub user:
+
 ```bash
-prsnoop simonw                          # terminal table, last 30 days
+prsnoop simonw                          # last 30 days, terminal table
 prsnoop simonw --days 90                # wider window
 prsnoop simonw --since 2026-08-01 --until 2026-08-31
 prsnoop simonw --org vueuse             # one organization only
-prsnoop simonw -f markdown -o report.md
-prsnoop simonw -f html -o report.html   # standalone page, no assets
-prsnoop simonw -f csv -o report.csv     # one row per PR
-prsnoop simonw -f json -o report.json   # full snapshot with stats
-prsnoop simonw -f badge -o badges.md     # embeddable SVG badges
-prsnoop compare antfu simonw --days 30   # head-to-head, same window
 prsnoop simonw --no-reviews             # fewer API calls
-prsnoop auth                            # token and rate limit status
-prsnoop auth --clear-cache              # empty the local cache
-prsnoop snap simonw -o june.json        # frozen snapshot
-prsnoop snap simonw --compare june.json # delta since the snapshot
 ```
 
-Example reports generated by the tool itself live in
+Compare two people over the same window and clock:
+
+```text
+$ prsnoop compare antfu simonw --days 30
+
+  metric             antfu          simonw
+  ------------------ -------------- --------------
+  pull requests                 10              42
+  merged                         0              37
+  merge rate                    0%             88%
+  issues opened                  1              32
+  median merge                    -            0.0d
+  longest streak                 3d              6d
+  repos                          8              13
+```
+
+Freeze a snapshot now, diff against it later. Handy for weekly reviews,
+standup prep, or proving a productive month:
+
+```bash
+prsnoop snap simonw -o august.json
+prsnoop snap simonw --compare august.json
+```
+
+Check your token and rate budget, or empty the cache:
+
+```bash
+prsnoop auth
+prsnoop auth --clear-cache
+```
+
+## Output formats
+
+| Format | Flag | Use it for |
+|---|---|---|
+| Table | default | the terminal |
+| Markdown | `-f markdown` | wikis, PR descriptions, weekly reports |
+| HTML | `-f html` | a standalone page, no assets, no JS |
+| CSV | `-f csv` | spreadsheets, one row per PR |
+| JSON | `-f json` | scripting, everything included |
+| Badge | `-f badge` | README badges, see below |
+
+```bash
+prsnoop simonw -f markdown -o report.md
+prsnoop simonw -f html -o report.html
+prsnoop simonw -f csv -o report.csv
+prsnoop simonw -f json -o report.json
+```
+
+Example reports generated by prsnoop itself live in
 [examples/](examples/): [Markdown](examples/simonw_30d.md),
 [HTML](examples/simonw_30d.html), [CSV](examples/simonw_30d.csv),
 [badges](examples/antfu_badges.md).
 
-### Badges
+## Badges
 
-`--format badge` writes four flat-square SVG badges (PRs, merged, merge
-rate, longest streak) as Markdown data URIs. No badge service, no network
-dependency once generated: the SVGs live in your README.
+`-f badge` writes four flat-square SVG badges, pull requests, merged,
+merge rate, and longest streak, as Markdown data URIs. These four are real
+prsnoop output, pasted unchanged:
 
-### GitHub Actions
+![prs](data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjAnIGhlaWdodD0nMjAnIHJvbGU9J2ltZycgYXJpYS1sYWJlbD0ncHJzbm9vcGVkIFBSczogNDInPjx0aXRsZT5wcnNub29wZWQgUFJzOiA0MjwvdGl0bGU+PHJlY3Qgd2lkdGg9Jzk1JyBoZWlnaHQ9JzIwJyBmaWxsPScjMjQyOTJlJy8+PHJlY3QgeD0nOTUnIHdpZHRoPScyNScgaGVpZ2h0PScyMCcgZmlsbD0nIzY1NmQ3NicvPjxnIGZpbGw9JyNmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnIGZvbnQtZmFtaWx5PSdWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmJyBmb250LXNpemU9JzExJz48dGV4dCB4PSc0NycgeT0nMTUnPnByc25vb3BlZCBQUnM8L3RleHQ+PHRleHQgeD0nMTA3JyB5PScxNSc+NDI8L3RleHQ+PC9nPjwvc3ZnPg==)
+![merged](data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDEnIGhlaWdodD0nMjAnIHJvbGU9J2ltZycgYXJpYS1sYWJlbD0nbWVyZ2VkIFBSczogMzcnPjx0aXRsZT5tZXJnZWQgUFJzOiAzNzwvdGl0bGU+PHJlY3Qgd2lkdGg9Jzc2JyBoZWlnaHQ9JzIwJyBmaWxsPScjMjQyOTJlJy8+PHJlY3QgeD0nNzYnIHdpZHRoPScyNScgaGVpZ2h0PScyMCcgZmlsbD0nIzJlYTA0MycvPjxnIGZpbGw9JyNmZmYnIHRleHQtYW5jaG9yPSdtaWRkbGUnIGZvbnQtZmFtaWx5PSdWZXJkYW5hLEdlbmV2YSxEZWphVnUgU2FucyxzYW5zLXNlcmlmJyBmb250LXNpemU9JzExJz48dGV4dCB4PSczOCcgeT0nMTUnPm1lcmdlZCBQUnM8L3RleHQ+PHRleHQgeD0nODgnIHk9JzE1Jz4zNzwvdGV4dD48L2c+PC9zdmc+)
+![rate](data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMDgnIGhlaWdodD0nMjAnIHJvbGU9J2ltZycgYXJpYS1sYWJlbD0nbWVyZ2UgcmF0ZTogODglJz48dGl0bGU+bWVyZ2UgcmF0ZTogODglPC90aXRsZT48cmVjdCB3aWR0aD0nNzYnIGhlaWdodD0nMjAnIGZpbGw9JyMyNDI5MmUnLz48cmVjdCB4PSc3Nicgd2lkdGg9JzMyJyBoZWlnaHQ9JzIwJyBmaWxsPScjZDI5OTIyJy8+PGcgZmlsbD0nI2ZmZicgdGV4dC1hbmNob3I9J21pZGRsZScgZm9udC1mYW1pbHk9J1ZlcmRhbmEsR2VuZXZhLERlamFWdSBTYW5zLHNhbnMtc2VyaWYnIGZvbnQtc2l6ZT0nMTEnPjx0ZXh0IHg9JzM4JyB5PScxNSc+bWVyZ2UgcmF0ZTwvdGV4dD48dGV4dCB4PSc5MicgeT0nMTUnPjg4JTwvdGV4dD48L2c+PC9zdmc+)
+![streak](data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPScxMjYnIGhlaWdodD0nMjAnIHJvbGU9J2ltZycgYXJpYS1sYWJlbD0nbG9uZ2VzdCBzdHJlYWs6IDZkJz48dGl0bGU+bG9uZ2VzdCBzdHJlYWs6IDZkPC90aXRsZT48cmVjdCB3aWR0aD0nMTAxJyBoZWlnaHQ9JzIwJyBmaWxsPScjMjQyOTJlJy8+PHJlY3QgeD0nMTAxJyB3aWR0aD0nMjUnIGhlaWdodD0nMjAnIGZpbGw9JyNkMjk5MjInLz48ZyBmaWxsPScjZmZmJyB0ZXh0LWFuY2hvcj0nbWlkZGxlJyBmb250LWZhbWlseT0nVmVyZGFuYSxHZW5ldmEsRGVqYVZ1IFNhbnMsc2Fucy1zZXJpZicgZm9udC1zaXplPScxMSc+PHRleHQgeD0nNTAnIHk9JzE1Jz5sb25nZXN0IHN0cmVhazwvdGV4dD48dGV4dCB4PScxMTMnIHk9JzE1Jz42ZDwvdGV4dD48L2c+PC9zdmc+)
+
+Generated locally, embedded directly in the Markdown. No badge service to
+depend on, no rate limit to hit, no network call when someone loads your
+README. Paste once, they render forever.
+
+Regenerate yours with:
+
+```bash
+prsnoop your-username --days 30 -f badge -o badges.md
+```
+
+## GitHub Actions
 
 A reusable composite action ships in this repo. One step in any workflow:
 
@@ -150,34 +170,38 @@ A reusable composite action ships in this repo. One step in any workflow:
     token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-It renders the report into the run summary and drops the file as an
-artifact. See `.github/workflows/weekly-report.yml` for a scheduled
-example.
+It writes the report to the run summary and drops the file as an artifact.
+A scheduled example ships in [`.github/workflows/weekly-report.yml`](.github/workflows/weekly-report.yml).
 
-### Token
+## Tokens and caching
 
-Without a token you get 60 core requests per hour and search results are
-hidden entirely. With a token: 5000 per hour and full search.
+prsnoop reads `PRSNOOP_TOKEN` or `GITHUB_TOKEN` from the environment.
+Nothing else, nothing phoned home.
+
+| | Without token | With token |
+|---|---|---|
+| Core requests | 60 per hour | 5000 per hour |
+| Data | public repos | public repos |
 
 ```bash
-export PRSNOOP_TOKEN=ghp_xxx     # or GITHUB_TOKEN
+export PRSNOOP_TOKEN=ghp_xxx          # macOS, Linux
+$env:PRSNOOP_TOKEN = "ghp_xxx"        # PowerShell
 ```
 
-PowerShell: `$env:PRSNOOP_TOKEN = "ghp_xxx"`. Never hardcode tokens in
-scripts; keep them in the environment.
-
-prsnoop sends the token only to api.github.com over HTTPS. API responses
-are cached under `~/.cache/prsnoop` and revalidated with ETags, so repeat
-runs cost almost nothing against your rate limit.
+Create a token at github.com/settings/tokens, no scopes needed for public
+data. Every response is cached under `~/.cache/prsnoop` and revalidated
+with ETags, so a second run of the same report costs nothing. Very active
+accounts (300+ PRs in a window) skip per-PR enrichment instead of
+spending hours of API budget, and the report says so.
 
 ## What it measures
 
 | Metric | Definition |
 |---|---|
 | Pull requests | PRs authored in the window, split merged / open / closed |
-| Merge rate | merged / authored |
-| Merge time | created to merged; median and p90 across merged PRs |
-| Reviews given | formal reviews and substantive comments on other authors' PRs |
+| Merge rate | merged divided by authored |
+| Merge time | created to merged, median and p90 |
+| Reviews given | reviews and substantive comments on other authors' PRs |
 | Issues | issues authored, with closed count |
 | Lines changed | additions and deletions across your PRs |
 | Active days | UTC days with any PR, issue, or review |
@@ -185,13 +209,29 @@ runs cost almost nothing against your rate limit.
 | Languages | PR count by each repository's primary language |
 | Top repositories | PR count per repo, ranked |
 
-Large accounts note: beyond 300 PRs in one window the tool stops per-PR
-enrichment and marks lines-changed totals as partial, so a report on a very
-active account never runs for hours.
+Exit codes: 0 success, 2 usage error, 3 API error, 4 rate limited
+(set a token).
 
-## Exit codes
+## How it compares
 
-0 success, 2 usage error, 3 API error, 4 rate limited (set a token).
+| Need | prsnoop | gh CLI | OpenSauced | OSS Insight |
+|---|---|---|---|---|
+| Time to first report | one command | write a jq pipeline | sign up, connect | browse to site |
+| Merge timing percentiles | yes | manual | partial | repo focused |
+| Daily activity, streaks | yes | manual | streaks only | no |
+| Compare two people | yes | manual | no | no |
+| Compare two time windows | yes | manual | no | no |
+| README badges | built in | third party service | no | no |
+| Output formats | 6 | text | web views | web views, API |
+| Runs over SSH, in CI, offline | yes | yes | no | no |
+
+- **gh CLI** lists PRs fine. Turning them into a report means writing the
+  same jq pipeline every time. prsnoop is the pipeline, packaged.
+- **OpenSauced** is a good funded product for organization dashboards.
+  It is not something you run in a terminal over SSH.
+- **OSS Insight** (PingCAP) analyzes billions of events for ecosystem
+  research. It is not a personal report generator.
+- **Your GitHub profile** shows counts. No rates, no timing, no document.
 
 ## Development
 
@@ -201,25 +241,22 @@ python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
 pytest          # 74 tests, all offline
-ruff check .     # lint
-mypy             # strict type checking
+ruff check .    # lint
+mypy            # strict typing
 ```
 
 CI runs the same three steps on Windows, macOS, and Ubuntu across Python
 3.10 to 3.14 on every push and pull request.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the ground rules: zero runtime
+Ground rules in [CONTRIBUTING.md](CONTRIBUTING.md): zero runtime
 dependencies, no network in tests, small public API, deterministic
-renderers.
+renderers. The 23 open [issues](https://github.com/MohammedAnasNathani/prsnoop/issues)
+are a good place to start.
 
-### Releasing
-
-Tagging a version (`git tag v1.2.0 && git push origin v1.2.0`) makes CI run
-the full checks, build the package, and attach it to a GitHub release.
-Distributions also go to PyPI automatically once the repository has a
-`PYPI_API_TOKEN` secret (PyPI account, API token scoped to the prsnoop
-project, added under Settings, Secrets and variables, Actions).
+Tagging a version (`git tag v1.2.0 && git push origin v1.2.0`) runs the
+checks, builds the package, and attaches it to a GitHub release. With a
+`PYPI_API_TOKEN` secret set, distributions publish to PyPI too.
 
 ## License
 
-MIT
+[MIT](LICENSE)
