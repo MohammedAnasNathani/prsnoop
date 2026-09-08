@@ -479,62 +479,54 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
       <article class="card w2 sf">
         <div class="cidx">01 // the report</div>
         <h3>one user, the whole truth</h3>
-        <p>What you opened, what actually landed, how fast, and whether
-        you're speeding up. Median, p90, streaks, momentum.</p>
+        <p>What you opened, what landed, how fast.</p>
         <div class="mini">
           <div class="mrow"><span>merged</span><span class="track"><i class="fill" style="--w:88%"></i></span><b>37</b></div>
           <div class="mrow"><span>open</span><span class="track"><i class="fill n" style="--w:13%"></i></span><b>5</b></div>
           <div class="mrow"><span>closed</span><span class="track"><i class="fill n" style="--w:2%"></i></span><b>0</b></div>
         </div>
-        <div class="mt" data-cmd="prsnoop simonw" data-out="42 prs · 88% rate · median 0.0d"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw</span><span class="mt-o">42 prs · 88% rate · median 0.0d</span></div>
-        <div class="mt" data-cmd="prsnoop simonw --trend" data-out="6 metrics vs last month · faster merges marked up"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw --trend</span><span class="mt-o">6 metrics vs last month · faster merges marked up</span></div>
+        <div class="mt" data-cmd="prsnoop simonw" data-out="42 prs · 88% · median 0.0d"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw</span><span class="mt-o">42 prs · 88% · median 0.0d</span></div>
       </article>
 
       <article class="card sf">
         <div class="cidx">02 // wrapped</div>
         <h3>your year, in superlatives</h3>
-        <p>Biggest patch, busiest month, longest streak, favorite weekday.
-        Fastest and slowest merge too.</p>
-        <div class="mt" data-cmd="prsnoop wrapped simonw" data-out="922 prs · +1.45M lines · 43d streak"><span class="mt-p">$</span> <span class="mt-c">prsnoop wrapped simonw</span><span class="mt-o">922 prs · +1.45M lines · 43d streak</span></div>
+        <p>Biggest patch, busiest month, longest streak.</p>
+        <div class="mt" data-cmd="prsnoop wrapped simonw" data-out="922 prs · 43d streak"><span class="mt-p">$</span> <span class="mt-c">prsnoop wrapped simonw</span><span class="mt-o">922 prs · 43d streak</span></div>
       </article>
 
       <article class="card sf">
         <div class="cidx">03 // maintainer</div>
-        <h3>radar and release notes</h3>
-        <p>Triage the open queue by waiting age. Turn merged PRs into
-        changelog entries, straight from a tag.</p>
-        <div class="mt" data-cmd="prsnoop radar owner/repo" data-out="23 open · median age 6d · quiet: 4"><span class="mt-p">$</span> <span class="mt-c">prsnoop radar owner/repo</span><span class="mt-o">23 open · median age 6d · quiet: 4</span></div>
-        <div class="mt" data-cmd="prsnoop changelog repo --tag v1.2" data-out="18 merged prs · 5 contributors · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop changelog repo --tag v1.2</span><span class="mt-o">18 merged prs · 5 contributors · paste ready</span></div>
+        <h3>the open queue, ranked</h3>
+        <p>By waiting age. Merged PRs become release notes.</p>
+        <div class="mt" data-cmd="prsnoop radar owner/repo" data-out="23 open · median 6d"><span class="mt-p">$</span> <span class="mt-c">prsnoop radar owner/repo</span><span class="mt-o">23 open · median 6d</span></div>
+        <div class="mt" data-cmd="prsnoop changelog repo --tag v1.2" data-out="18 prs · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop changelog repo --tag v1.2</span><span class="mt-o">18 prs · paste ready</span></div>
       </article>
 
       <article class="card sf">
         <div class="cidx">04 // teams + gates</div>
-        <h3>rank the squad, gate the ci</h3>
-        <p>One honest leaderboard for any number of contributors.
-        Thresholds that fail the build when a program stalls.</p>
-        <div class="mt" data-cmd="prsnoop team antfu simonw" data-out="1 simonw · 2 antfu · ranked by merged"><span class="mt-p">$</span> <span class="mt-c">prsnoop team antfu simonw</span><span class="mt-o">1 simonw · 2 antfu · ranked by merged</span></div>
-        <div class="mt" data-cmd="prsnoop ci simonw --min-prs 5" data-out="all gates passed · step summary written"><span class="mt-p">$</span> <span class="mt-c">prsnoop ci simonw --min-prs 5</span><span class="mt-o">all gates passed · step summary written</span></div>
+        <h3>rank the squad</h3>
+        <p>One leaderboard. Gates that fail loudly.</p>
+        <div class="mt" data-cmd="prsnoop team antfu simonw" data-out="1 simonw · 2 antfu"><span class="mt-p">$</span> <span class="mt-c">prsnoop team antfu simonw</span><span class="mt-o">1 simonw · 2 antfu</span></div>
+        <div class="mt" data-cmd="prsnoop ci simonw --min-prs 5" data-out="all gates passed"><span class="mt-p">$</span> <span class="mt-c">prsnoop ci simonw --min-prs 5</span><span class="mt-o">all gates passed</span></div>
       </article>
 
       <article class="card sf">
         <div class="cidx">05 // show it off</div>
         <h3>badges, cards, readme</h3>
-        <p>A stat card for your profile, badges with no badge service, a
-        readme section generated for you.</p>
-        <div class="mt" data-cmd="prsnoop card simonw -o card.svg" data-out="640x340 svg · dark or light · sparkline in"><span class="mt-p">$</span> <span class="mt-c">prsnoop card simonw -o card.svg</span><span class="mt-o">640x340 svg · dark or light · sparkline in</span></div>
-        <div class="mt" data-cmd="prsnoop readme simonw" data-out="badges + stats + top repos · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop readme simonw</span><span class="mt-o">badges + stats + top repos · paste ready</span></div>
+        <p>Hand-built svg. No badge service.</p>
+        <div class="mt" data-cmd="prsnoop card simonw -o card.svg" data-out="640x340 · sparkline in"><span class="mt-p">$</span> <span class="mt-c">prsnoop card simonw -o card.svg</span><span class="mt-o">640x340 · sparkline in</span></div>
+        <div class="mt" data-cmd="prsnoop readme simonw" data-out="paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop readme simonw</span><span class="mt-o">paste ready</span></div>
       </article>
 
       <article class="card w3 sf">
         <div class="cidx">06 // alive on your machine</div>
         <h3>nothing leaves the machine</h3>
-        <p>A local web dashboard, a live terminal, an offline replay, a full
-        export pack. 127.0.0.1 and flat files, that's the whole story.</p>
         <div class="mtrow">
-          <div class="mt" data-cmd="prsnoop serve simonw" data-out="127.0.0.1:8642 · auto refresh"><span class="mt-p">$</span> <span class="mt-c">prsnoop serve simonw</span><span class="mt-o">127.0.0.1:8642 · auto refresh</span></div>
-          <div class="mt" data-cmd="prsnoop watch simonw" data-out="tick 4 · 1 new pr · bell"><span class="mt-p">$</span> <span class="mt-c">prsnoop watch simonw</span><span class="mt-o">tick 4 · 1 new pr · bell</span></div>
-          <div class="mt" data-cmd="prsnoop replay snap.json" data-out="rendered offline · zero network"><span class="mt-p">$</span> <span class="mt-c">prsnoop replay snap.json</span><span class="mt-o">rendered offline · zero network</span></div>
-          <div class="mt" data-cmd="prsnoop export simonw" data-out="6 files · one dated folder"><span class="mt-p">$</span> <span class="mt-c">prsnoop export simonw</span><span class="mt-o">6 files · one dated folder</span></div>
+          <div class="mt" data-cmd="prsnoop serve simonw" data-out="127.0.0.1:8642"><span class="mt-p">$</span> <span class="mt-c">prsnoop serve simonw</span><span class="mt-o">127.0.0.1:8642</span></div>
+          <div class="mt" data-cmd="prsnoop watch simonw" data-out="1 new pr · bell"><span class="mt-p">$</span> <span class="mt-c">prsnoop watch simonw</span><span class="mt-o">1 new pr · bell</span></div>
+          <div class="mt" data-cmd="prsnoop replay snap.json" data-out="zero network"><span class="mt-p">$</span> <span class="mt-c">prsnoop replay snap.json</span><span class="mt-o">zero network</span></div>
+          <div class="mt" data-cmd="prsnoop export simonw" data-out="6 files · 1 folder"><span class="mt-p">$</span> <span class="mt-c">prsnoop export simonw</span><span class="mt-o">6 files · 1 folder</span></div>
         </div>
       </article>
     </div>
