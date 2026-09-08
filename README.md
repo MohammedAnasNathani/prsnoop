@@ -133,10 +133,12 @@ $ prsnoop compare antfu simonw --days 30
 ```
 
 Run a live local dashboard. Fresh report on every request, auto-refresh,
-JSON at `/api/report`, 127.0.0.1 only, nothing leaves the machine:
+JSON at `/api/report`, 127.0.0.1 only, nothing leaves the machine. Mix
+targets, one tab each:
 
 ```bash
-prsnoop serve simonw            # http://127.0.0.1:8642
+prsnoop serve simonw                          # http://127.0.0.1:8642
+prsnoop serve antfu org:vueuse repo:psf/requests
 ```
 
 Rank a whole team over one window, any number of contributors:
@@ -182,6 +184,34 @@ window: 2026-08-09 to 2026-09-08
     dependabot[bot]      5
     nateprewitt          1
 ```
+
+Ask for the year in review. The superlatives a profile page never shows:
+
+```text
+$ prsnoop wrapped simonw
+
+  THE YEAR IN PULL REQUESTS
+
+  Pull requests      922 (merged 802, 73 still open)
+  Lines changed      +1,451,203 / -112,516
+  Longest streak     43 days
+  Cadence            one PR every 0.4 days
+  Busiest month      2025-12 (361 items)
+  Busiest repo       simonw/tools (246 PRs)
+  Top language       Python (595 PRs)
+  Biggest patch      569,672 lines, "Add screenshot generation"
+  Favorite day       Wednesday
+```
+
+Generate a paste-ready GitHub profile README section, badges, stats
+table, momentum, top repositories:
+
+```bash
+prsnoop readme your-username -o profile-section.md
+```
+
+HTML reports for wide windows include a GitHub-style contribution
+calendar, one cell per day, greener means more shipped.
 
 Freeze a snapshot now, diff against it later. Handy for weekly reviews,
 standup prep, or proving a productive month:
@@ -327,7 +357,7 @@ git clone https://github.com/MohammedAnasNathani/prsnoop && cd prsnoop
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest          # 125 tests, all offline
+pytest          # 139 tests, all offline
 ruff check .    # lint
 mypy            # strict typing
 ```

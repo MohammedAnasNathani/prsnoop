@@ -7,6 +7,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 ## [1.5.0] - 2026-09-09
 
 ### Added
+- `prsnoop wrapped [user]`: the year in review. Biggest patch, busiest
+  month, longest streak, one-PR cadence, top repo and language, favorite
+  weekday. Table, Markdown, or JSON.
+- `prsnoop readme [user]`: paste-ready GitHub profile README section.
+  Badges, stats table, momentum, top repositories, generated locally.
+- Contribution calendar: a GitHub-style heatmap in every HTML report for
+  windows over 45 days, one cell per day, greener means more shipped.
+- `prsnoop serve` takes multiple targets: `prsnoop serve simonw
+  org:vueuse repo:psf/requests` serves one dashboard with a tab per
+  target, each with its own page and JSON route.
 - `prsnoop serve [user]`: live local dashboard. A stdlib HTTP server on
   127.0.0.1 renders a fresh report on every request, auto-refreshes every
   five minutes, and exposes the full snapshot at /api/report plus
@@ -19,6 +29,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   steady, or slowing, with the second-half versus first-half delta.
 - Org and repo pulses speak every format: html, csv, and four pulse
   badges (opened, merged, rate, authors) join table, markdown, and json.
+
+### Fixed
+- Transient failures no longer kill a report: server errors, network
+  hiccups, and GitHub secondary rate limits (the abuse-detection 429s
+  that carry Retry-After) are retried with backoff. A hard rate-limit
+  exhaustion still fails fast.
 
 [1.5.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.5.0
 
