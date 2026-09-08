@@ -268,6 +268,34 @@ header {
 
 /* --------------------------------------------------------- bento */
 .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+
+/* v1.6 strip: six new commands, dense chips, no card sprawl */
+.v16 {
+  margin-top: 14px;
+  padding: 16px 18px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(10, 10, 12, 0.55);
+}
+.v16-h {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim);
+  margin-bottom: 12px;
+}
+.v16-h span { color: var(--green); }
+.v16-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 22px;
+}
+.chip { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.chip b {
+  font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+  color: var(--green);
+}
+.chip span { font-size: 12px; color: var(--dim); }
+.chip code {
+  font-family: var(--mono); font-size: 11px; color: var(--faint);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 .card {
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
   padding: 22px 24px 20px; text-align: left; position: relative;
@@ -373,6 +401,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 /* ------------------------------------------------- responsive */
 @media (max-width: 960px) {
   .bento { grid-template-columns: 1fr 1fr; }
+  .v16-grid { grid-template-columns: 1fr 1fr; }
   .ft { grid-template-columns: 1fr 1fr; gap: 40px; }
   .rail { grid-template-columns: 1fr 1fr; }
   .rail .cell:nth-child(2n) { border-left: 0; }
@@ -385,6 +414,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   .installbar .copybtn { padding: 0 16px; }
   .bento { grid-template-columns: 1fr; }
   .card.w2, .card.w3 { grid-column: span 1; }
+  .v16-grid { grid-template-columns: 1fr; }
   .rail { grid-template-columns: 1fr; }
   .rail .cell { border-left: 0; }
   .rail .cell + .cell { border-top: 1px solid var(--line); }
@@ -464,7 +494,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <section class="wrap sec" id="features">
     <div class="shead sf">
       <div class="lab">01 · specification</div>
-      <h2>seventeen instruments</h2>
+      <h2>eleven instruments</h2>
     </div>
     <div class="bento">
       <article class="card w2 sf">
@@ -549,48 +579,18 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
         <p>Side by side, same clock on both sides. No favorable timeframes.</p>
         <div class="mt" data-cmd="prsnoop compare antfu simonw --days 30" data-out="42 vs 10 prs · same window · same clock"><span class="mt-p">$</span> <span class="mt-c">prsnoop compare antfu simonw --days 30</span><span class="mt-o">42 vs 10 prs · same window · same clock</span></div>
       </article>
+    </div>
 
-      <article class="card w2 sf">
-        <div class="cidx">12 // stat card</div>
-        <h3>one svg, your scoreboard</h3>
-        <p>A shareable stat card for your README. Hand-built svg, no image service.</p>
-        <div class="mt" data-cmd="prsnoop card simonw -o card.svg" data-out="640x340 · dark theme · sparkline built in"><span class="mt-p">$</span> <span class="mt-c">prsnoop card simonw -o card.svg</span><span class="mt-o">640x340 · dark theme · sparkline built in</span></div>
-      </article>
-
-      <article class="card w3 sf">
-        <div class="cidx">13 // radar</div>
-        <h3>the maintainer's monday list</h3>
-        <p>Every open pull request ranked by waiting age. Fresh, aging, stale, ancient.</p>
-        <div class="mt" data-cmd="prsnoop radar owner/repo" data-out="23 open · median age 6d · quiet: 4"><span class="mt-p">$</span> <span class="mt-c">prsnoop radar owner/repo</span><span class="mt-o">23 open · median age 6d · quiet: 4</span></div>
-      </article>
-
-      <article class="card w2 sf">
-        <div class="cidx">14 // changelog</div>
-        <h3>release notes, generated</h3>
-        <p>Merged PRs grouped into Added, Fixed, Breaking. Paste-ready from a tag.</p>
-        <div class="mt" data-cmd="prsnoop changelog owner/repo --tag v1.2.0" data-out="18 merged prs · 5 contributors · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop changelog owner/repo --tag v1.2.0</span><span class="mt-o">18 merged prs · 5 contributors · paste ready</span></div>
-      </article>
-
-      <article class="card w3 sf">
-        <div class="cidx">15 // ci gates</div>
-        <h3>quality gates in ci</h3>
-        <p>Minimum PRs, merge rate, merge latency. Writes the step summary, exits 1 on fail.</p>
-        <div class="mt" data-cmd="prsnoop ci simonw --min-prs 5 --max-merge-days 7" data-out="all gates passed · summary written"><span class="mt-p">$</span> <span class="mt-c">prsnoop ci simonw --min-prs 5 --max-merge-days 7</span><span class="mt-o">all gates passed · summary written</span></div>
-      </article>
-
-      <article class="card w2 sf">
-        <div class="cidx">16 // watch</div>
-        <h3>the terminal, alive</h3>
-        <p>An ansi dashboard that refetches and rings the bell when a PR lands.</p>
-        <div class="mt" data-cmd="prsnoop watch simonw --every 60" data-out="tick 4 · 1 new pull request · ctrl-c to stop"><span class="mt-p">$</span> <span class="mt-c">prsnoop watch simonw --every 60</span><span class="mt-o">tick 4 · 1 new pull request · ctrl-c to stop</span></div>
-      </article>
-
-      <article class="card w3 sf">
-        <div class="cidx">17 // replay</div>
-        <h3>reports without the network</h3>
-        <p>Freeze a snapshot once, re-render every format offline, forever reproducible.</p>
-        <div class="mt" data-cmd="prsnoop replay snap.json -f markdown" data-out="rendered offline · byte for byte"><span class="mt-p">$</span> <span class="mt-c">prsnoop replay snap.json -f markdown</span><span class="mt-o">rendered offline · byte for byte</span></div>
-      </article>
+    <div class="v16 sf">
+      <div class="v16-h">new in 1.6<span>+</span></div>
+      <div class="v16-grid">
+        <div class="chip"><b>card</b><span>shareable svg stat card</span><code>prsnoop card user</code></div>
+        <div class="chip"><b>radar</b><span>open pr triage by age</span><code>prsnoop radar owner/repo</code></div>
+        <div class="chip"><b>changelog</b><span>release notes from prs</span><code>prsnoop changelog repo --tag v1.2</code></div>
+        <div class="chip"><b>ci</b><span>quality gates + summary</span><code>prsnoop ci user --min-prs 5</code></div>
+        <div class="chip"><b>watch</b><span>live ansi dashboard</span><code>prsnoop watch user --every 60</code></div>
+        <div class="chip"><b>replay</b><span>reports, zero network</span><code>prsnoop replay snap.json</code></div>
+      </div>
     </div>
   </section>
 
