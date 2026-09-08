@@ -8,6 +8,9 @@
     prsnoop simonw -f markdown -o report.md    # write a report
     prsnoop org psf --days 30                  # organization pulse report
     prsnoop compare antfu simonw               # head-to-head, same window
+    prsnoop team alice bob carol               # team leaderboard
+    prsnoop serve simonw                       # live dashboard on 127.0.0.1
+    prsnoop export simonw                      # full report pack to a folder
     prsnoop auth                               # check token / rate limit
     prsnoop snap simonw -o snap.json           # frozen snapshot for tests
     prsnoop snap simonw --compare snap.json    # diff two windows
@@ -27,7 +30,7 @@ from pathlib import Path
 from prsnoop import __version__
 from prsnoop.fetch import fetch_user_activity
 from prsnoop.github import GitHubClient, GitHubError, RateLimitExceeded
-from prsnoop.models import Activity
+from prsnoop.models import Activity, Stats
 from prsnoop.render import RENDERERS
 from prsnoop.stats import build_activity, build_trend
 
@@ -201,7 +204,9 @@ def build_org_parser(kind: str = "org") -> argparse.ArgumentParser:
     org_p.add_argument("--since", type=str, default=None)
     org_p.add_argument("--until", type=str, default=None)
     org_p.add_argument(
-        "--format", "-f", choices=["table", "markdown", "json"], default="table"
+        "--format", "-f",
+        choices=["table", "markdown", "html", "csv", "json", "badge"],
+        default="table",
     )
     org_p.add_argument(
         "--output", "-o", type=Path, default=None, help="write to a file"
@@ -218,8 +223,14 @@ _LAST_TO_DAYS = {"week": 7, "month": 30, "quarter": 91, "year": 365}
 
 
 def cmd_org(args: argparse.Namespace) -> int:
+    from prsnoop.badge import render_pulse_badge
     from prsnoop.org import fetch_org_pulse, fetch_repo_pulse
-    from prsnoop.render import render_org_markdown, render_org_table
+    from prsnoop.render import (
+        render_org_csv,
+        render_org_html,
+        render_org_markdown,
+        render_org_table,
+    )
 
     kind: str = getattr(args, "kind", "org")
     subject = str(getattr(args, "org", None) or getattr(args, "repo", None) or "")
@@ -256,6 +267,12 @@ def cmd_org(args: argparse.Namespace) -> int:
         rendered = json.dumps(pulse.to_dict(), indent=2)
     elif args.format == "markdown":
         rendered = render_org_markdown(prs, pulse)
+    elif args.format == "html":
+        rendered = render_org_html(prs, pulse)
+    elif args.format == "csv":
+        rendered = render_org_csv(prs, pulse)
+    elif args.format == "badge":
+        rendered = render_pulse_badge(pulse)
     else:
         rendered = render_org_table(prs, pulse)
 
@@ -271,6 +288,77 @@ def cmd_org(args: argparse.Namespace) -> int:
                     reconfigure(encoding="utf-8")
         print(rendered)
     return 0
+
+
+def build_serve_parser() -> argparse.ArgumentParser:
+    """Parser for the serve subcommand."""
+    s = argparse.ArgumentParser(
+        prog="prsnoop serve",
+        description=(
+            "Live local dashboard: fresh HTML report on 127.0.0.1,"
+            " auto-refreshing, JSON at /api/report."
+        ),
+    )
+    s.add_argument("user", help="GitHub username to serve")
+    s.add_argument("--days", type=int, default=30)
+    s.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    s.add_argument("--port", type=int, default=8642)
+    s.add_argument("--open", action="store_true", help="open the browser")
+    s.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    s.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return s
+
+
+def build_team_parser() -> argparse.ArgumentParser:
+    """Parser for the team subcommand."""
+    tm = argparse.ArgumentParser(
+        prog="prsnoop team",
+        description="Leaderboard across two or more contributors, one window.",
+    )
+    tm.add_argument("users", nargs="+", help="two or more GitHub usernames")
+    tm.add_argument("--days", type=int, default=30)
+    tm.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    tm.add_argument("--since", type=str, default=None)
+    tm.add_argument("--until", type=str, default=None)
+    tm.add_argument(
+        "--format", "-f", choices=["table", "markdown", "csv", "json"], default="table"
+    )
+    tm.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    tm.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return tm
+
+
+def build_export_parser() -> argparse.ArgumentParser:
+    """Parser for the export subcommand."""
+    ex = argparse.ArgumentParser(
+        prog="prsnoop export",
+        description=(
+            "Write the full report pack (txt, md, html, csv, json, badges)"
+            " into a folder with one command."
+        ),
+    )
+    ex.add_argument("user", help="GitHub username")
+    ex.add_argument("-o", "--output", type=Path, default=None,
+                    help="output folder (default: prsnoop-USER-DATE)")
+    ex.add_argument("--days", type=int, default=30)
+    ex.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    ex.add_argument("--since", type=str, default=None)
+    ex.add_argument("--until", type=str, default=None)
+    ex.add_argument("--org", type=str, default=None, help="restrict to one org")
+    ex.add_argument("--trend", action="store_true")
+    ex.add_argument("--no-reviews", action="store_true")
+    ex.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    ex.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return ex
 
 
 def cmd_auth(args: argparse.Namespace) -> int:
@@ -452,6 +540,201 @@ def _fmt_days_str(value: float | None) -> str:
     return "-" if value is None else f"{value:.1f}d"
 
 
+def cmd_serve(args: argparse.Namespace) -> int:
+    from prsnoop.serve import serve
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    print(
+        f"prsnoop: serving {args.user} (last {days} days) at"
+        f" http://127.0.0.1:{args.port}/  (ctrl-c to stop)",
+        file=sys.stderr,
+    )
+    serve(
+        args.user,
+        days=days,
+        port=args.port,
+        cache_dir=args.cache_dir,
+        open_browser=args.open,
+    )
+    print("prsnoop: dashboard stopped", file=sys.stderr)
+    return 0
+
+
+# Team mode skips review scans for speed, so no reviews column here.
+_TEAM_COLUMNS = (
+    ("prs", lambda s: s.prs_authored),
+    ("merged", lambda s: s.prs_merged),
+    ("rate", lambda s: f"{s.merge_rate * 100:.0f}%"),
+    ("issues", lambda s: s.issues_opened),
+    ("median", lambda s: _fmt_days_str(s.median_days_to_merge)),
+    ("streak", lambda s: f"{s.longest_streak_days}d"),
+    ("repos", lambda s: s.distinct_repos),
+)
+
+
+def cmd_team(args: argparse.Namespace) -> int:
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if len(args.users) < 2:
+        print("prsnoop: team needs two or more usernames", file=sys.stderr)
+        return 2
+    if len(set(args.users)) != len(args.users):
+        print("prsnoop: team has duplicate usernames", file=sys.stderr)
+        return 2
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    stats: list[Stats] = []
+    for user in args.users:
+        try:
+            prs, reviews, issues, _ = fetch_user_activity(
+                client, user, days=days, include_reviews=False,
+                since=since, until=until,
+            )
+        except RateLimitExceeded as exc:
+            print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+            return 4
+        except GitHubError as exc:
+            print(f"prsnoop: {exc}", file=sys.stderr)
+            return 3
+        stats.append(
+            build_activity(
+                user, prs, reviews, issues,
+                window_days=days, since=since or "", until=until or "",
+            ).stats
+        )
+    stats.sort(key=lambda s: (-s.prs_merged, -s.prs_authored))
+
+    if args.format == "json":
+        payload = {
+            "window_days": days,
+            "since": since or "",
+            "until": until or "",
+            "ranking": [
+                {"rank": i + 1, "user": s.user,
+                 **{name: fn(s) for name, fn in _TEAM_COLUMNS}}
+                for i, s in enumerate(stats)
+            ],
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+    if args.format == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["rank", "user", *[name for name, _ in _TEAM_COLUMNS]])
+        for i, s in enumerate(stats):
+            writer.writerow([i + 1, s.user, *[fn(s) for _, fn in _TEAM_COLUMNS]])
+        print(buf.getvalue(), end="")
+        return 0
+
+    def esc(v: object) -> str:
+        return str(v).replace("|", "\\|")
+
+    headers = [name for name, _ in _TEAM_COLUMNS]
+    if args.format == "markdown":
+        lines = [
+            "# Team leaderboard",
+            "",
+            f"_Window: last {days} days, ranked by merged PRs."
+            " Generated by [prsnoop](https://github.com/MohammedAnasNathani/prsnoop)_",
+            "",
+            "| # | User | " + " | ".join(headers) + " |",
+            "|---|---|" + "|".join("---:" for _ in headers) + "|",
+        ]
+        for i, s in enumerate(stats):
+            row = " | ".join(esc(fn(s)) for _, fn in _TEAM_COLUMNS)
+            lines.append(f"| {i + 1} | **{esc(s.user)}** | {row} |")
+        print("\n".join(lines))
+        return 0
+
+    name_w = max(14, max(len(s.user) for s in stats))
+    print("prsnoop team | ranked by merged")
+    print(f"window: last {days} days")
+    print()
+    print(f"  {'#':>2}  {'user':<{name_w}}  " + "  ".join(f"{h:>8}" for h in headers))
+    print(f"  {'--':>2}  {'-' * name_w}  " + "  ".join("-" * 8 for _ in headers))
+    for i, s in enumerate(stats):
+        row = "  ".join(f"{str(fn(s)):>8}" for _, fn in _TEAM_COLUMNS)
+        lead = " *" if i == 0 and stats[0].prs_merged > 0 else ""
+        print(f"  {i + 1:>2}  {s.user:<{name_w}}  {row}{lead}")
+    return 0
+
+
+def cmd_export(args: argparse.Namespace) -> int:
+    from prsnoop.badge import render_badge
+
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        return 2
+    out_dir = args.output or Path(
+        f"prsnoop-{args.user}-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
+    )
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    try:
+        prs, reviews, issues, fully = fetch_user_activity(
+            client, args.user, days=days, include_reviews=not args.no_reviews,
+            org=args.org, since=since, until=until,
+        )
+        activity = build_activity(
+            args.user, prs, reviews, issues,
+            window_days=days, since=since or "", until=until or "",
+        )
+        if args.trend:
+            prev_since, prev_until = _previous_window(since, until, days)
+            try:
+                p_prs, p_rev, p_iss, _ = fetch_user_activity(
+                    client, args.user, days=days,
+                    include_reviews=not args.no_reviews, org=args.org,
+                    since=prev_since, until=prev_until,
+                )
+                prev_activity = build_activity(
+                    args.user, p_prs, p_rev, p_iss,
+                    window_days=days, since=prev_since, until=prev_until,
+                )
+                activity.trend = build_trend(activity.stats, prev_activity.stats)
+            except (GitHubError, RateLimitExceeded) as exc:
+                print(f"prsnoop: trend window skipped: {exc}", file=sys.stderr)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pack = {
+        "report.txt": RENDERERS["table"](activity),
+        "report.md": RENDERERS["markdown"](activity),
+        "report.html": RENDERERS["html"](activity),
+        "report.csv": RENDERERS["csv"](activity),
+        "report.json": RENDERERS["json"](activity),
+        "badges.md": render_badge(activity),
+    }
+    for name, content in pack.items():
+        path = out_dir / name
+        path.write_text(content, encoding="utf-8")
+        print(f"prsnoop: wrote {path}", file=sys.stderr)
+    if not fully:
+        print(
+            "prsnoop: note: large result set, lines-changed totals are partial",
+            file=sys.stderr,
+        )
+    print(f"prsnoop: export complete in {out_dir}", file=sys.stderr)
+    return 0
+
+
 def run(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "auth":
@@ -496,6 +779,27 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_org(org_args)
+    if raw and raw[0] == "serve":
+        serve_args = build_serve_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if serve_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_serve(serve_args)
+    if raw and raw[0] == "team":
+        team_args = build_team_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if team_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_team(team_args)
+    if raw and raw[0] == "export":
+        export_args = build_export_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if export_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_export(export_args)
     if raw and raw[0] == "me":
         me_args = build_parser().parse_args(raw[1:])
         logging.basicConfig(

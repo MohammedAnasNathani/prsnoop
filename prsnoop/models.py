@@ -230,6 +230,8 @@ class Stats:
     size_median_lines: int | None = None
     size_buckets: dict[str, int] = field(default_factory=dict)
     repo_performance: list[RepoPerformance] = field(default_factory=list)
+    momentum: str | None = None  # accelerating | steady | slowing
+    momentum_pct: float | None = None  # second half vs first half
 
     def to_dict(self) -> JsonDict:
         d = asdict(self)

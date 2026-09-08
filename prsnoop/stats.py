@@ -226,6 +226,39 @@ def build_stats(
     repo_performance.sort(key=lambda r: (-r.prs, r.repo))
     repo_performance = repo_performance[:10]
 
+    # ---- momentum: second half of the window vs first half ----
+    span_start = (
+        datetime.strptime(since, "%Y-%m-%d").date()
+        if since
+        else datetime.strptime(today, "%Y-%m-%d").date()
+        - timedelta(days=window_days)
+    )
+    span_end = datetime.strptime(today, "%Y-%m-%d").date()
+    midpoint = span_start + (span_end - span_start) / 2
+    per_date: dict[str, int] = {da.date: da.total for da in day_activity}
+    first_half = sum(
+        n for d, n in per_date.items()
+        if span_start <= datetime.strptime(d, "%Y-%m-%d").date() < midpoint
+    )
+    second_half = sum(
+        n for d, n in per_date.items()
+        if midpoint <= datetime.strptime(d, "%Y-%m-%d").date() <= span_end
+    )
+    momentum: str | None = None
+    momentum_pct: float | None = None
+    if first_half == 0 and second_half == 0:
+        pass
+    elif first_half == 0:
+        momentum, momentum_pct = "accelerating", None
+    else:
+        momentum_pct = round((second_half - first_half) / first_half * 100, 1)
+        if momentum_pct >= 15:
+            momentum = "accelerating"
+        elif momentum_pct <= -15:
+            momentum = "slowing"
+        else:
+            momentum = "steady"
+
     return Stats(
         user=activity.user,
         generated_at=activity.generated_at,
@@ -266,6 +299,8 @@ def build_stats(
         size_median_lines=size_median,
         size_buckets=size_buckets,
         repo_performance=repo_performance,
+        momentum=momentum,
+        momentum_pct=momentum_pct,
     )
 
 
