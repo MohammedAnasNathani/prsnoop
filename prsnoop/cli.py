@@ -21,13 +21,14 @@ import io
 import json
 import logging
 import sys
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from prsnoop import __version__
 from prsnoop.fetch import fetch_user_activity
 from prsnoop.github import GitHubClient, GitHubError, RateLimitExceeded
-from prsnoop.models import Activity
+from prsnoop.models import CLOSED, MERGED, OPEN, Activity
 from prsnoop.render import RENDERERS
 from prsnoop.stats import build_activity, build_trend
 
@@ -98,6 +99,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--format", "-f", choices=sorted(RENDERERS), default="table",
         help="output format (default: table)",
+    )
+    parser.add_argument(
+        "--only", choices=[MERGED, OPEN, CLOSED], default=None,
+        help="list only pull requests with this state",
     )
     parser.add_argument(
         "--output", "-o", type=Path, default=None,
@@ -539,7 +544,12 @@ def run(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
 
-    rendered = RENDERERS[args.format](activity)
+    report_activity = activity
+    if args.only:
+        report_activity = replace(
+            activity, prs=[pr for pr in activity.prs if pr.state == args.only]
+        )
+    rendered = RENDERERS[args.format](report_activity)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
