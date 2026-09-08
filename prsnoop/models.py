@@ -77,6 +77,27 @@ class PRRecord:
             draft=bool(pr.get("draft", False)),
         )
 
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> PRRecord:
+        """Rebuild a PRRecord from to_dict output (offline replay)."""
+        merged_at = d.get("merged_at")
+        return cls(
+            repo=d["repo"],
+            number=d["number"],
+            title=d["title"],
+            url=d["url"],
+            state=d["state"],
+            created_at=_parse_iso(d["created_at"]),
+            merged_at=_parse_iso(merged_at) if merged_at else None,
+            additions=d.get("additions", 0) or 0,
+            deletions=d.get("deletions", 0) or 0,
+            changed_files=d.get("changed_files", 0) or 0,
+            labels=list(d.get("labels") or []),
+            comments=d.get("comments", 0) or 0,
+            draft=bool(d.get("draft", False)),
+            language=d.get("language", "Unknown"),
+        )
+
     def to_dict(self) -> JsonDict:
         d = asdict(self)
         d["created_at"] = _dt(self.created_at)
@@ -104,6 +125,17 @@ class ReviewRecord:
             pr_url=review["pr_url"],
             state=review["state"],
             submitted_at=_parse_iso(review["submitted_at"]),
+        )
+
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> ReviewRecord:
+        return cls(
+            repo=d["repo"],
+            pr_number=d["pr_number"],
+            pr_title=d["pr_title"],
+            pr_url=d["pr_url"],
+            state=d["state"],
+            submitted_at=_parse_iso(d["submitted_at"]),
         )
 
     def to_dict(self) -> JsonDict:
@@ -139,6 +171,20 @@ class IssueRecord:
             comments=issue.get("comments", 0) or 0,
         )
 
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> IssueRecord:
+        closed_at = d.get("closed_at")
+        return cls(
+            repo=d["repo"],
+            number=d["number"],
+            title=d["title"],
+            url=d["url"],
+            state=d["state"],
+            created_at=_parse_iso(d["created_at"]),
+            closed_at=_parse_iso(closed_at) if closed_at else None,
+            comments=d.get("comments", 0) or 0,
+        )
+
     def to_dict(self) -> JsonDict:
         d = asdict(self)
         d["created_at"] = _dt(self.created_at)
@@ -159,6 +205,16 @@ class DayActivity:
     @property
     def total(self) -> int:
         return self.prs + self.merged + self.issues + self.reviews
+
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> DayActivity:
+        return cls(
+            date=d["date"],
+            prs=d.get("prs", 0),
+            merged=d.get("merged", 0),
+            issues=d.get("issues", 0),
+            reviews=d.get("reviews", 0),
+        )
 
     def to_dict(self) -> JsonDict:
         return {
@@ -233,6 +289,26 @@ class Stats:
     momentum: str | None = None  # accelerating | steady | slowing
     momentum_pct: float | None = None  # second half vs first half
 
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> Stats:
+        """Rebuild Stats from to_dict output (offline replay)."""
+        d = dict(d)
+        day_activity = [DayActivity.from_dict(da) for da in d.pop("day_activity", [])]
+        top_repos = [(t["repo"], t["prs"]) for t in d.pop("top_repos", [])]
+        languages = [
+            (lang["language"], lang["prs"]) for lang in d.pop("languages", [])
+        ]
+        repo_performance = [RepoPerformance(**r) for r in d.pop("repo_performance", [])]
+        generated_at = _parse_iso(d.pop("generated_at"))
+        return cls(
+            generated_at=generated_at,
+            day_activity=day_activity,
+            top_repos=top_repos,
+            languages=languages,
+            repo_performance=repo_performance,
+            **d,
+        )
+
     def to_dict(self) -> JsonDict:
         d = asdict(self)
         d["generated_at"] = _dt(self.generated_at)
@@ -253,6 +329,25 @@ class Activity:
     issues: list[IssueRecord]
     stats: Stats
     trend: list[Any] = field(default_factory=list)  # TrendDelta objects, set by cli
+
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> Activity:
+        """Rebuild a full Activity from to_dict output (offline replay)."""
+        # Imported here so models stays importable without stats (which
+        # imports models at module load).
+        from prsnoop.stats import TrendDelta
+
+        trend_raw = d.get("trend") or []
+        trend = [TrendDelta.from_dict(t) for t in trend_raw]
+        return cls(
+            user=d["user"],
+            generated_at=_parse_iso(d["generated_at"]),
+            prs=[PRRecord.from_dict(p) for p in d.get("prs", [])],
+            reviews=[ReviewRecord.from_dict(r) for r in d.get("reviews", [])],
+            issues=[IssueRecord.from_dict(i) for i in d.get("issues", [])],
+            stats=Stats.from_dict(d["stats"]),
+            trend=trend,
+        )
 
     def to_dict(self) -> JsonDict:
         d = {

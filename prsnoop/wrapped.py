@@ -47,6 +47,15 @@ class Wrapped:
     longest_pr_chars: int = 0
     favorite_weekday: str | None = None
     open_standing: int = 0  # PRs still open at snapshot time
+    fastest_pr_title: str | None = None
+    fastest_pr_days: float | None = None
+    fastest_pr_url: str | None = None
+    slowest_pr_title: str | None = None
+    slowest_pr_days: float | None = None
+    slowest_pr_url: str | None = None
+    hottest_pr_title: str | None = None
+    hottest_pr_comments: int = 0
+    hottest_pr_url: str | None = None
 
     def to_dict(self) -> JsonDict:
         return {
@@ -78,6 +87,15 @@ class Wrapped:
             "longest_pr_chars": self.longest_pr_chars,
             "favorite_weekday": self.favorite_weekday,
             "open_standing": self.open_standing,
+            "fastest_pr_title": self.fastest_pr_title,
+            "fastest_pr_days": self.fastest_pr_days,
+            "fastest_pr_url": self.fastest_pr_url,
+            "slowest_pr_title": self.slowest_pr_title,
+            "slowest_pr_days": self.slowest_pr_days,
+            "slowest_pr_url": self.slowest_pr_url,
+            "hottest_pr_title": self.hottest_pr_title,
+            "hottest_pr_comments": self.hottest_pr_comments,
+            "hottest_pr_url": self.hottest_pr_url,
         }
 
 
@@ -117,6 +135,25 @@ def build_wrapped(activity: Activity) -> Wrapped:
             biggest = p
         if longest is None or len(p.title) > len(longest.title):
             longest = p
+
+    # Merge-speed and discussion records: only merged PRs have a merge
+    # time, only commented PRs count as discussed.
+    fastest: PRRecord | None = None
+    slowest: PRRecord | None = None
+    for p in merged:
+        d = p.days_to_merge
+        if d is None:
+            continue
+        if fastest is None or d < (fastest.days_to_merge or d):
+            fastest = p
+        if slowest is None or d > (slowest.days_to_merge or d):
+            slowest = p
+    hottest: PRRecord | None = None
+    for p in prs:
+        if p.comments <= 0:
+            continue
+        if hottest is None or p.comments > hottest.comments:
+            hottest = p
 
     cadence: float | None = None
     if len(prs) >= 2:
@@ -159,6 +196,23 @@ def build_wrapped(activity: Activity) -> Wrapped:
             weekday_counts.most_common(1)[0][0] if weekday_counts else None
         ),
         open_standing=s.prs_open,
+        fastest_pr_title=fastest.title if fastest else None,
+        fastest_pr_days=(
+            round(fastest.days_to_merge, 2)
+            if fastest and fastest.days_to_merge is not None
+            else None
+        ),
+        fastest_pr_url=fastest.url if fastest else None,
+        slowest_pr_title=slowest.title if slowest else None,
+        slowest_pr_days=(
+            round(slowest.days_to_merge, 2)
+            if slowest and slowest.days_to_merge is not None
+            else None
+        ),
+        slowest_pr_url=slowest.url if slowest else None,
+        hottest_pr_title=hottest.title if hottest else None,
+        hottest_pr_comments=hottest.comments if hottest else 0,
+        hottest_pr_url=hottest.url if hottest else None,
     )
 
 
@@ -201,6 +255,21 @@ def render_wrapped_table(w: Wrapped) -> str:
         )
     if w.favorite_weekday:
         lines.append(f"  Favorite day       {w.favorite_weekday}")
+    if w.fastest_pr_title and w.fastest_pr_days is not None:
+        lines.append(
+            f"  Fastest merge      {w.fastest_pr_days:.1f}d,"
+            f' "{w.fastest_pr_title[:40]}"'
+        )
+    if w.slowest_pr_title and w.slowest_pr_days is not None:
+        lines.append(
+            f"  Slowest merge      {w.slowest_pr_days:.1f}d,"
+            f' "{w.slowest_pr_title[:40]}"'
+        )
+    if w.hottest_pr_title:
+        lines.append(
+            f"  Most discussed     {w.hottest_pr_comments} comments,"
+            f' "{w.hottest_pr_title[:36]}"'
+        )
     lines += [
         "",
         f"  across {w.repos} repos and {w.languages} languages",
@@ -247,5 +316,17 @@ def render_wrapped_markdown(w: Wrapped) -> str:
         out.append(f"| Biggest patch | {w.biggest_pr_lines:,} lines, {link} |")
     if w.favorite_weekday:
         out.append(f"| Favorite day | {w.favorite_weekday} |")
+    if w.fastest_pr_title and w.fastest_pr_days is not None:
+        title = w.fastest_pr_title.replace("|", "\\|")
+        link = f"[{title}]({w.fastest_pr_url})" if w.fastest_pr_url else title
+        out.append(f"| Fastest merge | {w.fastest_pr_days:.1f} days, {link} |")
+    if w.slowest_pr_title and w.slowest_pr_days is not None:
+        title = w.slowest_pr_title.replace("|", "\\|")
+        link = f"[{title}]({w.slowest_pr_url})" if w.slowest_pr_url else title
+        out.append(f"| Slowest merge | {w.slowest_pr_days:.1f} days, {link} |")
+    if w.hottest_pr_title:
+        title = w.hottest_pr_title.replace("|", "\\|")
+        link = f"[{title}]({w.hottest_pr_url})" if w.hottest_pr_url else title
+        out.append(f"| Most discussed | {w.hottest_pr_comments} comments, {link} |")
     out += ["", f"Across **{w.repos} repos** and **{w.languages} languages**.", ""]
     return "\n".join(out)

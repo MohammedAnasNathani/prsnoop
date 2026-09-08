@@ -210,6 +210,72 @@ table, momentum, top repositories:
 prsnoop readme your-username -o profile-section.md
 ```
 
+Drop a shareable stat card into your README. One self-contained SVG,
+hand-built, no image service, no external request, dark or light:
+
+```bash
+prsnoop card your-username -o card.svg           # 640x340, sparkline built in
+prsnoop card your-username --theme light -o card.svg
+```
+
+Maintainer triage radar: every open pull request on a repository, ranked
+by waiting age, sorted into fresh, aging, stale, and ancient buckets. The
+Monday-morning list, plus a quiet count for PRs nobody has touched:
+
+```text
+$ prsnoop radar owner/repo
+
+prsnoop radar | owner/repo
+open PRs: 23 | median age 6.0d
+buckets: fresh 8 | aging 7 | stale 4 | ancient 4 | quiet (no comments, old): 4
+
+      #   age  bucket  author           title
+     142   94d  ##      simonw           fix flaky retry test
+      ...
+```
+
+Release notes from merged pull requests, grouped into Added, Fixed,
+Breaking changes and more by label and conventional-commit prefix. Point
+it at a tag and it works out the window for you. Output pastes straight
+into a release page or CHANGELOG:
+
+```text
+$ prsnoop changelog owner/repo --tag v1.2.0
+
+## What's changed
+
+### Added
+- transform: coerce empty strings to NULL ([#805](...)) @ikatyal2110
+
+### Fixed
+- Fix for 4.2 crashing bug ([#843](...)) @simonw
+```
+
+Contribution quality gates for CI. Fetch the window, apply thresholds,
+write a GitHub step summary, and exit 1 when a gate fails, so a scheduled
+workflow can fail loudly when a contributor program stalls:
+
+```bash
+prsnoop ci your-username --min-prs 5 --min-merge-rate 40 --max-merge-days 7
+```
+
+Watch the terminal come alive. An ANSI dashboard that refetches every N
+seconds, redraws, and rings the bell when a new pull request appears:
+
+```bash
+prsnoop watch your-username --every 60       # ctrl-c to stop
+prsnoop watch your-username --once           # one frame, for demos
+```
+
+Reports without the network. Freeze a snapshot once, then re-render any
+format, even the wrapped superlatives, offline and byte for byte:
+
+```bash
+prsnoop snap simonw -o august.json
+prsnoop replay august.json -f markdown       # no API calls at all
+prsnoop replay august.json --wrapped
+```
+
 HTML reports for wide windows include a GitHub-style contribution
 calendar, one cell per day, greener means more shipped.
 
@@ -288,6 +354,15 @@ A reusable composite action ships in this repo. One step in any workflow:
 It writes the report to the run summary and drops the file as an artifact.
 A scheduled example ships in [`.github/workflows/weekly-report.yml`](.github/workflows/weekly-report.yml).
 
+For hard gates instead of a report, `prsnoop ci` is one step: it writes
+the step summary itself and fails the job when a gate fails.
+
+```yaml
+- run: prsnoop ci your-username --min-prs 5 --max-merge-days 7
+  env:
+    PRSNOOP_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ## Tokens and caching
 
 prsnoop reads `PRSNOOP_TOKEN` or `GITHUB_TOKEN` from the environment.
@@ -326,8 +401,8 @@ spending hours of API budget, and the report says so.
 | Where work lands | per-repo merge rate and median merge time, 2+ PRs |
 | PR size profile | typical size as XS / S / M / L / XL, over changed lines |
 
-Exit codes: 0 success, 2 usage error, 3 API error, 4 rate limited
-(set a token).
+Exit codes: 0 success, 1 failed gate (`prsnoop ci` only), 2 usage error,
+3 API error, 4 rate limited (set a token).
 
 ## How it compares
 
@@ -339,6 +414,10 @@ Exit codes: 0 success, 2 usage error, 3 API error, 4 rate limited
 | Compare two people | yes | manual | no | no |
 | Compare two time windows | yes | manual | no | no |
 | README badges | built in | third party service | no | no |
+| SVG stat card | built in | no | no | no |
+| Open PR triage radar | yes | manual | no | no |
+| Release notes from merged PRs | yes | manual | no | repo focused |
+| CI quality gates | yes | no | no | no |
 | Output formats | 6 | text | web views | web views, API |
 | Runs over SSH, in CI, offline | yes | yes | no | no |
 
@@ -357,7 +436,7 @@ git clone https://github.com/MohammedAnasNathani/prsnoop && cd prsnoop
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest          # 139 tests, all offline
+pytest          # 171 tests, all offline
 ruff check .    # lint
 mypy            # strict typing
 ```

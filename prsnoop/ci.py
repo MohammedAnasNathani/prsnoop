@@ -1,0 +1,156 @@
+"""CI mode: contribution quality gates for GitHub Actions and friends.
+
+``prsnoop ci`` runs the normal snooping pipeline, then applies
+contributor-program gates: minimum PRs opened, minimum merge rate,
+a ceiling on median merge latency, and so on. It writes the report into
+``$GITHUB_STEP_SUMMARY`` when running inside Actions, prints it, and
+exits nonzero when a gate fails, so it can gate a scheduled workflow the
+same way a test suite gates a push.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+from xml.sax.saxutils import escape as xml_escape
+
+from prsnoop.models import Activity, JsonDict, Stats
+
+
+@dataclass(slots=True)
+class Gate:
+    """One quality gate and its verdict against this window."""
+
+    name: str
+    target: str
+    actual: str
+    passed: bool
+
+    def to_dict(self) -> JsonDict:
+        return {
+            "name": self.name,
+            "target": self.target,
+            "actual": self.actual,
+            "passed": self.passed,
+        }
+
+
+def check_gates(
+    stats: Stats,
+    *,
+    min_prs: int | None = None,
+    min_merged: int | None = None,
+    min_reviews: int | None = None,
+    min_merge_rate: float | None = None,
+    max_merge_days: float | None = None,
+) -> list[Gate]:
+    """Evaluate every supplied gate; absent gates are skipped."""
+    gates: list[Gate] = []
+    if min_prs is not None:
+        gates.append(
+            Gate(
+                name="prs opened",
+                target=f">= {min_prs}",
+                actual=str(stats.prs_authored),
+                passed=stats.prs_authored >= min_prs,
+            )
+        )
+    if min_merged is not None:
+        gates.append(
+            Gate(
+                name="prs merged",
+                target=f">= {min_merged}",
+                actual=str(stats.prs_merged),
+                passed=stats.prs_merged >= min_merged,
+            )
+        )
+    if min_reviews is not None:
+        gates.append(
+            Gate(
+                name="reviews given",
+                target=f">= {min_reviews}",
+                actual=str(stats.reviews_given),
+                passed=stats.reviews_given >= min_reviews,
+            )
+        )
+    if min_merge_rate is not None:
+        pct = stats.merge_rate * 100
+        gates.append(
+            Gate(
+                name="merge rate",
+                target=f">= {min_merge_rate:.0f}%",
+                actual=f"{pct:.0f}%",
+                passed=pct >= min_merge_rate,
+            )
+        )
+    if max_merge_days is not None:
+        if stats.median_days_to_merge is None:
+            gates.append(
+                Gate(
+                    name="median days to merge",
+                    target=f"<= {max_merge_days:g}d",
+                    actual="no merges",
+                    passed=False,
+                )
+            )
+        else:
+            gates.append(
+                Gate(
+                    name="median days to merge",
+                    target=f"<= {max_merge_days:g}d",
+                    actual=f"{stats.median_days_to_merge:.1f}d",
+                    passed=stats.median_days_to_merge <= max_merge_days,
+                )
+            )
+    return gates
+
+
+def render_summary(activity: Activity, gates: list[Gate]) -> str:
+    """GitHub step summary: headline stats, then the gate verdicts."""
+    s = activity.stats
+    window = (
+        f"{s.since} to {s.until}" if s.since else f"last {s.window_days} days"
+    )
+    failed = [g for g in gates if not g.passed]
+    verdict = (
+        "all gates passed"
+        if gates and not failed
+        else f"{len(failed)} of {len(gates)} gates failed"
+        if gates
+        else "report only, no gates configured"
+    )
+    icon = "white_check_mark" if gates and not failed else "warning"
+    lines = [
+        f"## prsnoop: {xml_escape(activity.user)}",
+        "",
+        f"Window: {window}. **{verdict}**",
+        "",
+        "| Metric | Value |",
+        "|---|---:|",
+        f"| Pull requests | {s.prs_authored} ({s.prs_merged} merged) |",
+        f"| Merge rate | {s.merge_rate * 100:.0f}% |",
+        f"| Reviews given | {s.reviews_given} |",
+        f"| Issues opened | {s.issues_opened} |",
+        f"| Median days to merge |"
+        f" {s.median_days_to_merge if s.median_days_to_merge is not None else '-'} |",
+        f"| Active days | {s.active_days} |",
+        f"| Longest streak | {s.longest_streak_days} days |",
+    ]
+    if gates:
+        lines += [
+            "",
+            "### Gates",
+            "",
+            "| Gate | Target | Actual | Status |",
+            "|---|---|---|---|",
+        ]
+        for g in gates:
+            mark = ":white_check_mark: pass" if g.passed else ":x: fail"
+            lines.append(
+                f"| {g.name} | {g.target} | {g.actual} | {mark} |"
+            )
+    lines += [
+        "",
+        f"<sub>:{icon}: generated by"
+        f" [prsnoop](https://github.com/MohammedAnasNathani/prsnoop)</sub>",
+        "",
+    ]
+    return "\n".join(lines)

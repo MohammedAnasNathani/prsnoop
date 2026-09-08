@@ -4,6 +4,34 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-09-08
+
+### Added
+- `prsnoop card [user]`: a shareable 640x340 SVG stat card for READMEs.
+  Header with avatar, five big numbers (PRs, merged, merge rate, reviews,
+  streak), a sparkline of the whole window, and top repositories. Dark
+  and light themes, hand-built SVG, no image service.
+- `prsnoop radar owner/repo`: maintainer triage radar. Every open pull
+  request ranked by waiting age, bucketed fresh, aging, stale, ancient,
+  with a quiet count for PRs nobody has touched. Table, Markdown, JSON,
+  CSV.
+- `prsnoop changelog owner/repo`: release notes from merged pull
+  requests, grouped into Breaking changes, Added, Fixed, Performance,
+  and more by label and conventional-commit prefix. `--tag v1.2.0`
+  resolves the tag date for you. Paste-ready Markdown or JSON.
+- `prsnoop ci [user]`: contribution quality gates. Minimum PRs, merged,
+  reviews, merge rate, and a merge-latency ceiling; writes a GitHub step
+  summary when `$GITHUB_STEP_SUMMARY` is set and exits 1 when a gate
+  fails.
+- `prsnoop watch [user]`: live ANSI terminal dashboard. Refetches every
+  N seconds, redraws, flags new pull requests, and rings the bell when
+  one lands. `--once` renders a single frame for demos.
+- `prsnoop replay SNAPSHOT`: re-render any report, or the wrapped
+  superlatives, from a saved snapshot with zero network. Every model now
+  round-trips through JSON, so snapshots are fully reproducible offline.
+- Wrapped superlatives extended: fastest merge, slowest merge, and most
+  discussed PR join the year in review.
+
 ## [1.5.0] - 2026-09-09
 
 ### Added

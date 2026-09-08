@@ -71,12 +71,23 @@ class TrendDelta:
             return self.direction < 0
         return self.direction > 0
 
+    @classmethod
+    def from_dict(cls, d: JsonDict) -> TrendDelta:
+        return cls(
+            key=d["key"],
+            label=d["label"],
+            current=d["current"],
+            previous=d["previous"],
+            lower_is_better=bool(d.get("lower_is_better", False)),
+        )
+
     def to_dict(self) -> JsonDict:
         return {
             "key": self.key,
             "label": self.label,
             "current": self.current,
             "previous": self.previous,
+            "lower_is_better": self.lower_is_better,
             "delta": self.delta,
             "pct": self.pct,
             "direction": self.direction,

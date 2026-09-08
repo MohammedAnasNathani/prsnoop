@@ -411,7 +411,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <div class="wrap hd">
     <div class="id">
       <a class="logo" href="#top">prsnoop<u>_</u></a>
-      <span class="ver">v1.5.0</span>
+      <span class="ver">v1.6.0</span>
     </div>
     <nav>
       <a class="lnk" href="#features">features</a>
@@ -424,7 +424,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 <main id="top">
   <!-- ==================== hero ==================== -->
   <section class="wrap hero">
-    <p class="kick rise"><span class="dot"></span>v1.5.0 · mit · stdlib only</p>
+    <p class="kick rise"><span class="dot"></span>v1.6.0 · mit · stdlib only</p>
     <h1 class="rise d1">what did your pull requests <em>actually</em> do?</h1>
     <p class="sub rise d2">
       prsnoop reads any GitHub user's pull requests and returns what the
@@ -439,7 +439,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
     <div class="checks rise d2">
       <span>zero dependencies</span>
       <span>python 3.10+</span>
-      <span>125 offline tests</span>
+      <span>171 offline tests</span>
       <span>no telemetry</span>
     </div>
 
@@ -454,7 +454,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
       <div class="rail">
         <div class="cell"><div class="k">commands to report</div><div class="v">1</div></div>
         <div class="cell"><div class="k">runtime dependencies</div><div class="v">0<span class="u">third-party</span></div></div>
-        <div class="cell"><div class="k">offline tests</div><div class="v">125<span class="u">passing</span></div></div>
+        <div class="cell"><div class="k">offline tests</div><div class="v">171<span class="u">passing</span></div></div>
         <div class="cell"><div class="k">merge rate above</div><div class="v g">88%</div></div>
       </div>
     </div>
@@ -464,7 +464,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <section class="wrap sec" id="features">
     <div class="shead sf">
       <div class="lab">01 · specification</div>
-      <h2>eleven instruments</h2>
+      <h2>seventeen instruments</h2>
     </div>
     <div class="bento">
       <article class="card w2 sf">
@@ -548,6 +548,48 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
         <h3>two developers, one identical window</h3>
         <p>Side by side, same clock on both sides. No favorable timeframes.</p>
         <div class="mt" data-cmd="prsnoop compare antfu simonw --days 30" data-out="42 vs 10 prs · same window · same clock"><span class="mt-p">$</span> <span class="mt-c">prsnoop compare antfu simonw --days 30</span><span class="mt-o">42 vs 10 prs · same window · same clock</span></div>
+      </article>
+
+      <article class="card w2 sf">
+        <div class="cidx">12 // stat card</div>
+        <h3>one svg, your scoreboard</h3>
+        <p>A shareable stat card for your README. Hand-built svg, no image service.</p>
+        <div class="mt" data-cmd="prsnoop card simonw -o card.svg" data-out="640x340 · dark theme · sparkline built in"><span class="mt-p">$</span> <span class="mt-c">prsnoop card simonw -o card.svg</span><span class="mt-o">640x340 · dark theme · sparkline built in</span></div>
+      </article>
+
+      <article class="card w3 sf">
+        <div class="cidx">13 // radar</div>
+        <h3>the maintainer's monday list</h3>
+        <p>Every open pull request ranked by waiting age. Fresh, aging, stale, ancient.</p>
+        <div class="mt" data-cmd="prsnoop radar owner/repo" data-out="23 open · median age 6d · quiet: 4"><span class="mt-p">$</span> <span class="mt-c">prsnoop radar owner/repo</span><span class="mt-o">23 open · median age 6d · quiet: 4</span></div>
+      </article>
+
+      <article class="card w2 sf">
+        <div class="cidx">14 // changelog</div>
+        <h3>release notes, generated</h3>
+        <p>Merged PRs grouped into Added, Fixed, Breaking. Paste-ready from a tag.</p>
+        <div class="mt" data-cmd="prsnoop changelog owner/repo --tag v1.2.0" data-out="18 merged prs · 5 contributors · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop changelog owner/repo --tag v1.2.0</span><span class="mt-o">18 merged prs · 5 contributors · paste ready</span></div>
+      </article>
+
+      <article class="card w3 sf">
+        <div class="cidx">15 // ci gates</div>
+        <h3>quality gates in ci</h3>
+        <p>Minimum PRs, merge rate, merge latency. Writes the step summary, exits 1 on fail.</p>
+        <div class="mt" data-cmd="prsnoop ci simonw --min-prs 5 --max-merge-days 7" data-out="all gates passed · summary written"><span class="mt-p">$</span> <span class="mt-c">prsnoop ci simonw --min-prs 5 --max-merge-days 7</span><span class="mt-o">all gates passed · summary written</span></div>
+      </article>
+
+      <article class="card w2 sf">
+        <div class="cidx">16 // watch</div>
+        <h3>the terminal, alive</h3>
+        <p>An ansi dashboard that refetches and rings the bell when a PR lands.</p>
+        <div class="mt" data-cmd="prsnoop watch simonw --every 60" data-out="tick 4 · 1 new pull request · ctrl-c to stop"><span class="mt-p">$</span> <span class="mt-c">prsnoop watch simonw --every 60</span><span class="mt-o">tick 4 · 1 new pull request · ctrl-c to stop</span></div>
+      </article>
+
+      <article class="card w3 sf">
+        <div class="cidx">17 // replay</div>
+        <h3>reports without the network</h3>
+        <p>Freeze a snapshot once, re-render every format offline, forever reproducible.</p>
+        <div class="mt" data-cmd="prsnoop replay snap.json -f markdown" data-out="rendered offline · byte for byte"><span class="mt-p">$</span> <span class="mt-c">prsnoop replay snap.json -f markdown</span><span class="mt-o">rendered offline · byte for byte</span></div>
       </article>
     </div>
   </section>
@@ -641,6 +683,41 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
           </tr>
           <tr>
             <td>profile readme generator</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>open pr triage radar</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>release notes generator</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>ci quality gates</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>svg stat card, no service</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>offline report replay</td>
             <td class="yes">[ YES ]</td>
             <td class="no">[ NO ]</td>
             <td class="no">[ NO ]</td>

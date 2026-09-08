@@ -11,6 +11,12 @@
     prsnoop team alice bob carol               # team leaderboard
     prsnoop wrapped simonw                     # year in review superlatives
     prsnoop readme simonw                      # profile README generator
+    prsnoop card simonw -o card.svg            # shareable SVG stat card
+    prsnoop radar owner/repo                   # open PR triage by staleness
+    prsnoop changelog owner/repo --tag v1.2.0  # release notes from merged PRs
+    prsnoop ci simonw --min-prs 5              # CI quality gates + step summary
+    prsnoop watch simonw --every 60            # live ANSI terminal dashboard
+    prsnoop replay snap.json                   # re-render reports offline
     prsnoop serve simonw                       # live dashboard on 127.0.0.1
     prsnoop export simonw                      # full report pack to a folder
     prsnoop auth                               # check token / rate limit
@@ -416,6 +422,199 @@ def build_readme_parser() -> argparse.ArgumentParser:
     )
     r.add_argument("--verbose", "-v", action="store_true", help="debug logging")
     return r
+
+
+def build_card_parser() -> argparse.ArgumentParser:
+    """Parser for the card subcommand."""
+    c = argparse.ArgumentParser(
+        prog="prsnoop card",
+        description=(
+            "Shareable SVG stat card: a contributor scoreboard to drop"
+            " into a profile README or pin, no hosting service needed."
+        ),
+    )
+    c.add_argument("user", help="GitHub username")
+    c.add_argument("--days", type=int, default=30)
+    c.add_argument(
+        "--last", choices=["week", "month", "quarter", "year"], default=None
+    )
+    c.add_argument("--since", type=str, default=None)
+    c.add_argument("--until", type=str, default=None)
+    c.add_argument("--org", type=str, default=None)
+    c.add_argument(
+        "--theme", choices=["dark", "light"], default="dark",
+        help="card palette (default: dark)",
+    )
+    c.add_argument("--no-reviews", action="store_true")
+    c.add_argument("--output", "-o", type=Path, default=None)
+    c.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    c.add_argument("--verbose", "-v", action="store_true")
+    return c
+
+
+def build_radar_parser() -> argparse.ArgumentParser:
+    """Parser for the radar subcommand."""
+    r = argparse.ArgumentParser(
+        prog="prsnoop radar",
+        description=(
+            "Maintainer triage radar: every open pull request on a"
+            " repository, ranked by waiting age with staleness buckets."
+        ),
+    )
+    r.add_argument("repo", help="repository as owner/name")
+    r.add_argument(
+        "--limit", type=int, default=300,
+        help="cap the scan at this many open PRs (default: 300)",
+    )
+    r.add_argument(
+        "--format", "-f",
+        choices=["table", "markdown", "json", "csv"], default="table",
+    )
+    r.add_argument("--output", "-o", type=Path, default=None)
+    r.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    r.add_argument("--verbose", "-v", action="store_true")
+    return r
+
+
+def build_changelog_parser() -> argparse.ArgumentParser:
+    """Parser for the changelog subcommand."""
+    g = argparse.ArgumentParser(
+        prog="prsnoop changelog",
+        description=(
+            "Release notes from merged pull requests: grouped by type,"
+            " paste-ready for a release page or CHANGELOG."
+        ),
+    )
+    g.add_argument("repo", help="repository as owner/name")
+    g.add_argument("--days", type=int, default=30)
+    g.add_argument("--since", type=str, default=None)
+    g.add_argument("--until", type=str, default=None)
+    g.add_argument(
+        "--tag", type=str, default=None,
+        help="collect PRs merged since this tag (e.g. v1.2.0)",
+    )
+    g.add_argument(
+        "--limit", type=int, default=200,
+        help="cap the entry list at this many PRs (default: 200)",
+    )
+    g.add_argument("--format", "-f", choices=["markdown", "json"], default="markdown")
+    g.add_argument("--output", "-o", type=Path, default=None)
+    g.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    g.add_argument("--verbose", "-v", action="store_true")
+    return g
+
+
+def build_ci_parser() -> argparse.ArgumentParser:
+    """Parser for the ci subcommand."""
+    c = argparse.ArgumentParser(
+        prog="prsnoop ci",
+        description=(
+            "Contribution quality gates for CI: fetch the window, apply"
+            " thresholds, write the GitHub step summary, and exit nonzero"
+            " when a gate fails."
+        ),
+    )
+    c.add_argument("user", help="GitHub username to gate")
+    c.add_argument("--days", type=int, default=30)
+    c.add_argument(
+        "--last", choices=["week", "month", "quarter", "year"], default=None
+    )
+    c.add_argument("--since", type=str, default=None)
+    c.add_argument("--until", type=str, default=None)
+    c.add_argument("--org", type=str, default=None)
+    c.add_argument("--no-reviews", action="store_true")
+    c.add_argument(
+        "--min-prs", type=int, default=None,
+        help="gate: at least this many PRs opened",
+    )
+    c.add_argument(
+        "--min-merged", type=int, default=None,
+        help="gate: at least this many PRs merged",
+    )
+    c.add_argument(
+        "--min-reviews", type=int, default=None,
+        help="gate: at least this many reviews given",
+    )
+    c.add_argument(
+        "--min-merge-rate", type=float, default=None,
+        help="gate: merge rate at or above this percent",
+    )
+    c.add_argument(
+        "--max-merge-days", type=float, default=None,
+        help="gate: median days to merge at or below this",
+    )
+    c.add_argument("--output", "-o", type=Path, default=None)
+    c.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    c.add_argument("--verbose", "-v", action="store_true")
+    return c
+
+
+def build_watch_parser() -> argparse.ArgumentParser:
+    """Parser for the watch subcommand."""
+    w = argparse.ArgumentParser(
+        prog="prsnoop watch",
+        description=(
+            "Live ANSI dashboard in the terminal: refetches every N"
+            " seconds, redraws, and flags new pull requests as they land."
+        ),
+    )
+    w.add_argument("user", help="GitHub username")
+    w.add_argument("--days", type=int, default=30)
+    w.add_argument("--since", type=str, default=None)
+    w.add_argument("--until", type=str, default=None)
+    w.add_argument("--org", type=str, default=None)
+    w.add_argument(
+        "--every", type=int, default=60,
+        help="seconds between refreshes (default: 60)",
+    )
+    w.add_argument(
+        "--once", action="store_true",
+        help="render one frame and exit (also handy for demos)",
+    )
+    w.add_argument(
+        "--color", choices=["auto", "always", "never"], default="auto"
+    )
+    w.add_argument("--no-reviews", action="store_true")
+    w.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    w.add_argument("--verbose", "-v", action="store_true")
+    return w
+
+
+def build_replay_parser() -> argparse.ArgumentParser:
+    """Parser for the replay subcommand."""
+    p = argparse.ArgumentParser(
+        prog="prsnoop replay",
+        description=(
+            "Re-render any report from a saved snapshot JSON with no"
+            " network: reproducible reports for tests and CI."
+        ),
+    )
+    p.add_argument("snapshot", type=Path, help="snapshot file from prsnoop snap")
+    p.add_argument(
+        "--format", "-f", choices=sorted(RENDERERS), default="table"
+    )
+    p.add_argument(
+        "--wrapped", action="store_true",
+        help="render the wrapped superlatives instead of the report",
+    )
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
 
 
 def cmd_auth(args: argparse.Namespace) -> int:
@@ -888,6 +1087,257 @@ def cmd_readme(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_card(args: argparse.Namespace) -> int:
+    from prsnoop.card import render_card
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    _emit(render_card(activity, theme=args.theme), args.output)
+    return 0
+
+
+def cmd_radar(args: argparse.Namespace) -> int:
+    from prsnoop.radar import (
+        fetch_radar,
+        render_radar_csv,
+        render_radar_markdown,
+        render_radar_table,
+    )
+
+    if "/" not in args.repo:
+        print("prsnoop: radar needs a repository as owner/name", file=sys.stderr)
+        return 2
+    if args.limit < 1:
+        print("prsnoop: --limit must be >= 1", file=sys.stderr)
+        return 2
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    try:
+        report = fetch_radar(client, args.repo, limit=args.limit)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    if args.format == "json":
+        rendered = json.dumps(report.to_dict(), indent=2)
+    elif args.format == "markdown":
+        rendered = render_radar_markdown(report)
+    elif args.format == "csv":
+        rendered = render_radar_csv(report)
+    else:
+        rendered = render_radar_table(report)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_changelog(args: argparse.Namespace) -> int:
+    from prsnoop.changelog import (
+        build_changelog,
+        render_changelog_json,
+        render_changelog_markdown,
+    )
+
+    if "/" not in args.repo:
+        print(
+            "prsnoop: changelog needs a repository as owner/name",
+            file=sys.stderr,
+        )
+        return 2
+    if args.days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        return 2
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    try:
+        ch = build_changelog(
+            client, args.repo, days=args.days, since=since,
+            until=until, tag=args.tag, limit=args.limit,
+        )
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    rendered = (
+        render_changelog_json(ch)
+        if args.format == "json"
+        else render_changelog_markdown(ch)
+    )
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_ci(args: argparse.Namespace) -> int:
+    import os
+
+    from prsnoop.ci import check_gates, render_summary
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    gates_spec = {
+        "min_prs": args.min_prs,
+        "min_merged": args.min_merged,
+        "min_reviews": args.min_reviews,
+        "min_merge_rate": args.min_merge_rate,
+        "max_merge_days": args.max_merge_days,
+    }
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    gates = check_gates(activity.stats, **gates_spec)
+    summary = render_summary(activity, gates)
+    step_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if step_path:
+        try:
+            with open(step_path, "a", encoding="utf-8") as fh:
+                fh.write(summary)
+            print("prsnoop: step summary written", file=sys.stderr)
+        except OSError as exc:
+            print(f"prsnoop: cannot write step summary: {exc}", file=sys.stderr)
+    _emit(summary, args.output)
+    failed = [g for g in gates if not g.passed]
+    if failed:
+        print(
+            f"prsnoop ci: {len(failed)} of {len(gates)} gates failed",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
+def cmd_watch(args: argparse.Namespace) -> int:
+    import time
+
+    from prsnoop.ansi import supports_color
+    from prsnoop.watch import BELL, diff_keys, pr_keys, render_frame
+
+    if args.days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.every < 1:
+        print("prsnoop: --every must be >= 1", file=sys.stderr)
+        return 2
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        return 2
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    if args.color == "always":
+        color = True
+    elif args.color == "never":
+        color = False
+    else:
+        color = supports_color(sys.stdout)
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    previous: set[str] | None = None
+    tick = 0
+    while True:
+        try:
+            prs, reviews, issues, _ = fetch_user_activity(
+                client, args.user, days=args.days,
+                include_reviews=not args.no_reviews, org=args.org,
+                since=since, until=until,
+            )
+            activity = build_activity(
+                args.user, prs, reviews, issues,
+                window_days=args.days, since=since or "", until=until or "",
+            )
+            current = pr_keys(activity)
+            new_keys, _gone = diff_keys(previous, current)
+            frame = render_frame(
+                activity, color=color, new_keys=new_keys, tick=tick + 1
+            )
+            for stream in (sys.stdout, sys.stderr):
+                reconfigure = getattr(stream, "reconfigure", None)
+                if reconfigure is not None:
+                    with contextlib.suppress(ValueError, OSError):
+                        reconfigure(encoding="utf-8")
+            print(frame)
+            if new_keys and previous is not None:
+                sys.stdout.write(BELL)
+            previous = current
+            tick += 1
+            if args.once:
+                return 0
+            time.sleep(args.every)
+        except KeyboardInterrupt:
+            print("\nprsnoop: watch stopped")
+            return 0
+        except (GitHubError, RateLimitExceeded) as exc:
+            print(
+                f"prsnoop watch: refresh failed: {exc}; retrying in"
+                f" {args.every}s",
+                file=sys.stderr,
+            )
+            if args.once:
+                return 3
+            try:
+                time.sleep(args.every)
+            except KeyboardInterrupt:
+                print("\nprsnoop: watch stopped")
+                return 0
+
+
+def cmd_replay(args: argparse.Namespace) -> int:
+    from prsnoop.models import Activity
+    from prsnoop.wrapped import (
+        build_wrapped,
+        render_wrapped_markdown,
+        render_wrapped_table,
+    )
+
+    try:
+        data = json.loads(args.snapshot.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        print(f"prsnoop: cannot read snapshot: {exc}", file=sys.stderr)
+        return 2
+    try:
+        activity = Activity.from_dict(data)
+    except (AttributeError, KeyError, TypeError, ValueError) as exc:
+        print(f"prsnoop: not a valid prsnoop snapshot: {exc}", file=sys.stderr)
+        return 2
+    if args.wrapped:
+        wrapped = build_wrapped(activity)
+        rendered = (
+            render_wrapped_markdown(wrapped)
+            if args.format == "markdown"
+            else render_wrapped_table(wrapped)
+        )
+    else:
+        rendered = RENDERERS[args.format](activity)
+    _emit(rendered, args.output)
+    return 0
+
+
 def run(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "auth":
@@ -967,6 +1417,48 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_export(export_args)
+    if raw and raw[0] == "card":
+        card_args = build_card_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if card_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_card(card_args)
+    if raw and raw[0] == "radar":
+        radar_args = build_radar_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if radar_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_radar(radar_args)
+    if raw and raw[0] == "changelog":
+        changelog_args = build_changelog_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if changelog_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_changelog(changelog_args)
+    if raw and raw[0] == "ci":
+        ci_args = build_ci_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if ci_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_ci(ci_args)
+    if raw and raw[0] == "watch":
+        watch_args = build_watch_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if watch_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_watch(watch_args)
+    if raw and raw[0] == "replay":
+        replay_args = build_replay_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if replay_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_replay(replay_args)
     if raw and raw[0] == "me":
         me_args = build_parser().parse_args(raw[1:])
         logging.basicConfig(
