@@ -4,6 +4,24 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-09-09
+
+### Added
+- `prsnoop serve [user]`: live local dashboard. A stdlib HTTP server on
+  127.0.0.1 renders a fresh report on every request, auto-refreshes every
+  five minutes, and exposes the full snapshot at /api/report plus
+  /health for scripts. Nothing leaves the machine.
+- `prsnoop team u1 u2 ...`: leaderboard across any number of contributors
+  over one window, ranked by merged PRs. Table, Markdown, CSV, JSON.
+- `prsnoop export [user]`: one command writes the whole report pack,
+  txt, md, html, csv, json, and badges, into a dated folder.
+- Momentum: every report now says whether the window is accelerating,
+  steady, or slowing, with the second-half versus first-half delta.
+- Org and repo pulses speak every format: html, csv, and four pulse
+  badges (opened, merged, rate, authors) join table, markdown, and json.
+
+[1.5.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.5.0
+
 ## [1.4.0] - 2026-09-09
 
 ### Added
@@ -26,6 +44,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   Previously a review submitted months ago on a recently-updated PR
   inflated review counts and dragged the daily chart back in time.
 
+[1.5.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.5.0
 [1.4.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.4.0
 
 ## [1.3.0] - 2026-09-08

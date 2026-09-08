@@ -132,6 +132,37 @@ $ prsnoop compare antfu simonw --days 30
   repos                          8              13
 ```
 
+Run a live local dashboard. Fresh report on every request, auto-refresh,
+JSON at `/api/report`, 127.0.0.1 only, nothing leaves the machine:
+
+```bash
+prsnoop serve simonw            # http://127.0.0.1:8642
+```
+
+Rank a whole team over one window, any number of contributors:
+
+```text
+$ prsnoop team antfu simonw gvanrossum --last month
+
+prsnoop team | ranked by merged
+window: last 30 days
+
+   #  user                 prs    merged      rate    issues    median    streak     repos
+  --  --------------  --------  --------  --------  --------  --------  --------  --------
+   1  simonw                42        37       88%        32      0.0d        6d        13 *
+   2  antfu                 10         8       80%         1      0.0d        3d         8
+   3  gvanrossum             4         1       25%         0      2.6d        1d         3
+```
+
+One command, the whole report pack, into a dated folder:
+
+```bash
+prsnoop export simonw --trend      # txt, md, html, csv, json, badges
+```
+
+Every report also carries a momentum line, accelerating, steady, or
+slowing, computed from the second half of the window against the first.
+
 Maintainer mode: the same pulse for one repository. Who is contributing
 to your project, how big the open backlog is, how fast merges land:
 
@@ -296,7 +327,7 @@ git clone https://github.com/MohammedAnasNathani/prsnoop && cd prsnoop
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest          # 109 tests, all offline
+pytest          # 125 tests, all offline
 ruff check .    # lint
 mypy            # strict typing
 ```

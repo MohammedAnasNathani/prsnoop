@@ -411,7 +411,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <div class="wrap hd">
     <div class="id">
       <a class="logo" href="#top">prsnoop<u>_</u></a>
-      <span class="ver">v1.4.0</span>
+      <span class="ver">v1.5.0</span>
     </div>
     <nav>
       <a class="lnk" href="#features">features</a>
@@ -424,7 +424,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 <main id="top">
   <!-- ==================== hero ==================== -->
   <section class="wrap hero">
-    <p class="kick rise"><span class="dot"></span>v1.4.0 · mit · stdlib only</p>
+    <p class="kick rise"><span class="dot"></span>v1.5.0 · mit · stdlib only</p>
     <h1 class="rise d1">what did your pull requests <em>actually</em> do?</h1>
     <p class="sub rise d2">
       prsnoop reads any GitHub user's pull requests and returns what the
@@ -439,7 +439,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
     <div class="checks rise d2">
       <span>zero dependencies</span>
       <span>python 3.10+</span>
-      <span>109 offline tests</span>
+      <span>125 offline tests</span>
       <span>no telemetry</span>
     </div>
 
@@ -454,7 +454,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
       <div class="rail">
         <div class="cell"><div class="k">commands to report</div><div class="v">1</div></div>
         <div class="cell"><div class="k">runtime dependencies</div><div class="v">0<span class="u">third-party</span></div></div>
-        <div class="cell"><div class="k">offline tests</div><div class="v">109<span class="u">passing</span></div></div>
+        <div class="cell"><div class="k">offline tests</div><div class="v">125<span class="u">passing</span></div></div>
         <div class="cell"><div class="k">merge rate above</div><div class="v g">88%</div></div>
       </div>
     </div>
@@ -464,7 +464,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <section class="wrap sec" id="features">
     <div class="shead sf">
       <div class="lab">01 · specification</div>
-      <h2>six instruments</h2>
+      <h2>nine instruments</h2>
     </div>
     <div class="bento">
       <article class="card w2 sf">
@@ -508,8 +508,29 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
         <div class="mt" data-cmd="prsnoop simonw --trend" data-out="6 metrics · faster merges marked up"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw --trend</span><span class="mt-o">6 metrics · faster merges marked up</span></div>
       </article>
 
+      <article class="card sf">
+        <div class="cidx">06 // live</div>
+        <h3>a dashboard, minus the server</h3>
+        <p>Local web dashboard on 127.0.0.1. Auto-refreshes. Nothing leaves the machine.</p>
+        <div class="mt" data-cmd="prsnoop serve simonw" data-out="serving 127.0.0.1:8642 · json at /api/report"><span class="mt-p">$</span> <span class="mt-c">prsnoop serve simonw</span><span class="mt-o">serving 127.0.0.1:8642 · json at /api/report</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">07 // team</div>
+        <h3>rank the whole squad</h3>
+        <p>Any number of contributors, one window, one honest leaderboard.</p>
+        <div class="mt" data-cmd="prsnoop team antfu simonw" data-out="1 simonw · 2 antfu · ranked by merged"><span class="mt-p">$</span> <span class="mt-c">prsnoop team antfu simonw</span><span class="mt-o">1 simonw · 2 antfu · ranked by merged</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">08 // export</div>
+        <h3>one command, whole pack</h3>
+        <p>txt, md, html, csv, json, badges. A dated folder, ready to send.</p>
+        <div class="mt" data-cmd="prsnoop export simonw --trend" data-out="6 files written · export complete"><span class="mt-p">$</span> <span class="mt-c">prsnoop export simonw --trend</span><span class="mt-o">6 files written · export complete</span></div>
+      </article>
+
       <article class="card w3 sf">
-        <div class="cidx">06 // head-to-head</div>
+        <div class="cidx">09 // head-to-head</div>
         <h3>two developers, one identical window</h3>
         <p>Side by side, same clock on both sides. No favorable timeframes.</p>
         <div class="mt" data-cmd="prsnoop compare antfu simonw --days 30" data-out="42 vs 10 prs · same window · same clock"><span class="mt-p">$</span> <span class="mt-c">prsnoop compare antfu simonw --days 30</span><span class="mt-o">42 vs 10 prs · same window · same clock</span></div>
@@ -581,6 +602,20 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
             <td class="yes">[ YES ]</td>
             <td class="no">[ NO ]</td>
             <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>team leaderboard</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>local live dashboard</td>
+            <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">hosted only</td>
             <td class="no">[ NO ]</td>
           </tr>
           <tr>
