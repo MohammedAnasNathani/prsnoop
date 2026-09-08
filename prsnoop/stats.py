@@ -123,6 +123,7 @@ def build_stats(
     since: str = "",
     until: str = "",
     today: str | None = None,
+    top: int = 10,
 ) -> Stats:
     """Derive timing, streak, and breakdown stats for one Activity."""
     prs = activity.prs
@@ -203,8 +204,8 @@ def build_stats(
         busiest_day_count=busiest.total if busiest else 0,
         distinct_repos=len(repo_counts),
         distinct_languages=len(lang_counts),
-        top_repos=repo_counts.most_common(10),
-        languages=lang_counts.most_common(10),
+        top_repos=repo_counts.most_common(top),
+        languages=lang_counts.most_common(top),
         day_activity=day_activity,
     )
 
@@ -218,6 +219,7 @@ def build_activity(
     window_days: int = 30,
     since: str = "",
     until: str = "",
+    top: int = 10,
 ) -> Activity:
     """Assemble an Activity and compute its Stats in one step."""
     stamp = now or datetime.now(timezone.utc)
@@ -235,6 +237,7 @@ def build_activity(
         since=since,
         until=until,
         today=_date_str(stamp),
+        top=top,
     )
     return activity
 

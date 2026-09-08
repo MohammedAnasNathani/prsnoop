@@ -6,6 +6,8 @@ import json
 import pytest
 
 from prsnoop import cli
+from prsnoop.models import PRRecord
+from prsnoop.stats import build_activity
 
 
 @pytest.fixture
@@ -27,6 +29,9 @@ def _run(capsys, *argv):
 
 
 class TestBasic:
+    def test_top_defaults_to_10(self):
+        assert cli.build_parser().parse_args(["octocat"]).top == 10
+
     def test_table_to_stdout(self, patched_fetch, capsys):
         code, out, _ = _run(capsys, "octocat")
         assert code == 0
@@ -37,6 +42,28 @@ class TestBasic:
         code, out, _ = _run(capsys, "octocat", "--format", "markdown")
         assert code == 0
         assert out.startswith("# Contribution report: octocat")
+
+    def test_top_limits_repositories_and_languages(self, monkeypatch, capsys, now):
+        prs = [
+            PRRecord(
+                repo=f"owner/repo-{index}", number=index, title="title", url="url",
+                state="open", created_at=now, merged_at=None, additions=0,
+                deletions=0, changed_files=0, language=f"Language-{index}",
+            )
+            for index in range(5)
+        ]
+        activity = build_activity("octocat", prs, [], [], now=now)
+        monkeypatch.setattr(
+            cli, "fetch_user_activity",
+            lambda *args, **kwargs: (activity.prs, [], [], True),
+        )
+
+        code, out, _ = _run(capsys, "octocat", "--top", "3", "--format", "markdown")
+
+        assert code == 0
+        assert len(activity.stats.top_repos) == 5
+        assert out.count("](https://github.com/owner/repo-") == 3
+        assert out.count("| Language-") == 3
 
     def test_output_file(self, patched_fetch, capsys, tmp_path):
         target = tmp_path / "report.md"
