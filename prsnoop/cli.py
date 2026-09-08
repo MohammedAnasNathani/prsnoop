@@ -125,6 +125,35 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _add_window_flags(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--days", type=int, default=30, help="look-back window in days"
+    )
+    parser.add_argument(
+        "--since",
+        type=str,
+        default=None,
+        help="absolute start date YYYY-MM-DD",
+    )
+    parser.add_argument(
+        "--until",
+        type=str,
+        default=None,
+        help="absolute end date YYYY-MM-DD",
+    )
+    parser.add_argument(
+        "--org",
+        type=str,
+        default=None,
+        help="restrict to one organization or owner",
+    )
+    parser.add_argument(
+        "--no-reviews",
+        action="store_true",
+        help="skip scanning for reviews given",
+    )
+
+
 def build_snap_parser() -> argparse.ArgumentParser:
     """Parser for the snap subcommand (its own argv after 'snap')."""
     snap_p = argparse.ArgumentParser(
@@ -194,6 +223,150 @@ def build_org_parser() -> argparse.ArgumentParser:
     )
     org_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
     return org_p
+
+
+def build_live_parser() -> argparse.ArgumentParser:
+    live_p = argparse.ArgumentParser(
+        prog="prsnoop live",
+        description="Interactive one-off PR browser for a single fetched report.",
+    )
+    live_p.add_argument("user", help="GitHub username")
+    _add_window_flags(live_p)
+    live_p.add_argument(
+        "--format", "-f",
+        choices=sorted(RENDERERS),
+        default=None,
+        help="interactive mode is table/json only; -f is not allowed",
+    )
+    live_p.add_argument(
+        "--output", "-o", type=Path, default=None,
+        help="interactive mode does not write output files",
+    )
+    live_p.add_argument(
+        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    live_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
+    return live_p
+
+
+def _report_github_error(exc: Exception) -> int:
+    if isinstance(exc, RateLimitExceeded):
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        print(
+            "prsnoop: set PRSNOOP_TOKEN or GITHUB_TOKEN to raise the limit",
+            file=sys.stderr,
+        )
+        return 4
+    if isinstance(exc, GitHubError):
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    raise exc
+
+
+def _fetch_activity_for_user(
+    *,
+    client: GitHubClient,
+    user: str,
+    days: int,
+    include_reviews: bool,
+    org: str | None,
+    since: str | None,
+    until: str | None,
+) -> tuple[Activity, bool]:
+    prs, reviews, issues, fully_enriched = fetch_user_activity(
+        client,
+        user,
+        days=days,
+        include_reviews=include_reviews,
+        org=org,
+        since=since,
+        until=until,
+    )
+    activity = build_activity(
+        user,
+        prs,
+        reviews,
+        issues,
+        window_days=days,
+        since=since or "",
+        until=until or "",
+    )
+    return activity, fully_enriched
+
+
+def _build_activity_for_user(args: argparse.Namespace, user: str) -> Activity:
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    if args.days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        raise SystemExit(2)
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        raise SystemExit(2)
+
+    client = GitHubClient(
+        cache_dir=args.cache_dir,
+        user_agent=f"prsnoop/{__version__}",
+    )
+    try:
+        activity, fully_enriched = _fetch_activity_for_user(
+            client=client,
+            user=user,
+            days=args.days,
+            include_reviews=not args.no_reviews,
+            org=args.org,
+            since=since,
+            until=until,
+        )
+    except (RateLimitExceeded, GitHubError) as exc:
+        raise SystemExit(_report_github_error(exc)) from None
+
+    if not fully_enriched:
+        print(
+            "prsnoop: note: large result set, lines-changed totals are partial",
+            file=sys.stderr,
+        )
+    return activity
+
+
+def cmd_live(args: argparse.Namespace) -> int:
+    if args.format is not None or args.output is not None:
+        print(
+            "prsnoop: live does not support -f/-o -- it's interactive only",
+            file=sys.stderr,
+        )
+        raise SystemExit(2) from None
+    if args.until and not args.since:
+        print("prsnoop: --until requires --since", file=sys.stderr)
+        raise SystemExit(2)
+
+    since = _validate_date(args.since, "--since") if args.since else None
+    until = _validate_date(args.until, "--until") if args.until else None
+    if args.days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        raise SystemExit(2)
+
+    client = GitHubClient(
+        cache_dir=args.cache_dir,
+        user_agent=f"prsnoop/{__version__}",
+    )
+    try:
+        activity, _ = _fetch_activity_for_user(
+            client=client,
+            user=args.user,
+            days=args.days,
+            include_reviews=not args.no_reviews,
+            org=args.org,
+            since=since,
+            until=until,
+        )
+    except (RateLimitExceeded, GitHubError) as exc:
+        raise SystemExit(_report_github_error(exc)) from None
+
+    from prsnoop.tui import run as tui_run
+
+    return tui_run(activity)
 
 
 def cmd_org(args: argparse.Namespace) -> int:
@@ -468,6 +641,13 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_org(org_args)
+    if raw and raw[0] == "live":
+        live_args = build_live_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if live_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        return cmd_live(live_args)
 
     args = build_parser().parse_args(raw)
     logging.basicConfig(
@@ -486,23 +666,19 @@ def run(argv: list[str] | None = None) -> int:
     since = _validate_date(args.since, "--since") if args.since else None
     until = _validate_date(args.until, "--until") if args.until else None
 
+    client = GitHubClient(
+        cache_dir=args.cache_dir,
+        user_agent=f"prsnoop/{__version__}",
+    )
     try:
-        client = GitHubClient(
-            cache_dir=args.cache_dir,
-            user_agent=f"prsnoop/{__version__}",
-        )
-        prs, reviews, issues, fully_enriched = fetch_user_activity(
-            client,
-            args.user,
+        activity, fully_enriched = _fetch_activity_for_user(
+            client=client,
+            user=args.user,
             days=args.days,
             include_reviews=not args.no_reviews,
             org=args.org,
             since=since,
             until=until,
-        )
-        activity = build_activity(
-            args.user, prs, reviews, issues,
-            window_days=args.days, since=since or "", until=until or "",
         )
         if args.trend:
             prev_since, prev_until = _previous_window(since, until, args.days)
@@ -522,16 +698,8 @@ def run(argv: list[str] | None = None) -> int:
                 print(
                     f"prsnoop: trend window skipped: {exc}", file=sys.stderr
                 )
-    except RateLimitExceeded as exc:
-        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
-        print(
-            "prsnoop: set PRSNOOP_TOKEN or GITHUB_TOKEN to raise the limit",
-            file=sys.stderr,
-        )
-        return 4
-    except GitHubError as exc:
-        print(f"prsnoop: {exc}", file=sys.stderr)
-        return 3
+    except (RateLimitExceeded, GitHubError) as exc:
+        return _report_github_error(exc)
 
     if not fully_enriched:
         print(

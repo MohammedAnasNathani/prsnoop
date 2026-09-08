@@ -73,6 +73,69 @@ class TestBasic:
         assert excinfo.value.code == 0
 
 
+class TestLive:
+    def test_live_rejects_format_and_output(self):
+        with pytest.raises(SystemExit) as exc:
+            cli.run(["live", "octocat", "-f", "json"])
+        assert exc.value.code == 2
+
+        with pytest.raises(SystemExit) as exc:
+            cli.run(["live", "octocat", "-o", "report.txt"])
+        assert exc.value.code == 2
+
+    def test_live_validates_window_flags(self):
+        with pytest.raises(SystemExit) as exc:
+            cli.run(["live", "octocat", "--until", "2026-07-01"])
+        assert exc.value.code == 2
+
+        with pytest.raises(SystemExit) as exc:
+            cli.run(["live", "octocat", "--days", "0"])
+        assert exc.value.code == 2
+
+    def test_live_fetches_once(self, monkeypatch, activity):
+        seen = []
+
+        def fake_fetch(
+            client,
+            user,
+            days,
+            include_reviews,
+            org=None,
+            since=None,
+            until=None,
+        ):
+            seen.append((user, days, include_reviews, org, since, until))
+            return activity.prs, activity.reviews, activity.issues, True
+
+        monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)
+        monkeypatch.setattr(cli, "build_activity", lambda *args, **kwargs: activity)
+
+        cli.run(["live", "octocat"])
+        assert len(seen) == 1
+        assert seen[0][0] == "octocat"
+
+    def test_trend_fetches_previous_window(self, monkeypatch, activity):
+        seen = []
+
+        def fake_fetch(
+            client,
+            user,
+            days,
+            include_reviews,
+            org=None,
+            since=None,
+            until=None,
+        ):
+            seen.append((user, since, until))
+            return activity.prs, activity.reviews, activity.issues, True
+
+        monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)
+        monkeypatch.setattr(cli, "build_activity", lambda *args, **kwargs: activity)
+
+        cli.run(["octocat", "--trend"])
+        assert len(seen) == 2
+
+
 class TestWindows:
     def test_org_flag_passes_through(self, patched_fetch, capsys, monkeypatch):
         seen = {}

@@ -4,6 +4,12 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `prsnoop live <user>`: interactive single-fetch PR browser for a TTY,
+  with paging, table/json toggling, and one-time fetch semantics.
+
 ## [1.3.0] - 2026-09-08
 
 ### Added

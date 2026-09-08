@@ -82,6 +82,15 @@ prsnoop simonw --trend                  # plus delta vs the window before
 prsnoop simonw --since 2026-08-01 --until 2026-08-31
 prsnoop simonw --org vueuse             # one organization only
 prsnoop simonw --no-reviews             # fewer API calls
+prsnoop live simonw                     # interactive single-fetch PR browser
+```
+
+## Live view
+
+`prsnoop live USER` opens a curses-backed interactive report for a single fetched window. It is a one-time fetch and does not auto-refresh; use `prsnoop serve` for polling and long-lived updates.
+
+```bash
+prsnoop live simonw
 ```
 
 Every table report now carries a one-line activity chart, `#` at the peak,
