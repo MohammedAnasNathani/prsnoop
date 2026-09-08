@@ -123,11 +123,15 @@ def build_stats(
     since: str = "",
     until: str = "",
     today: str | None = None,
+    include_drafts: bool = False,
 ) -> Stats:
     """Derive timing, streak, and breakdown stats for one Activity."""
     prs = activity.prs
+    draft_count = sum(1 for p in prs if p.draft)
+    eligible_prs = prs if include_drafts else [p for p in prs if not p.draft]
     merged = [p for p in prs if p.state == MERGED]
     open_prs = [p for p in prs if p.state == OPEN]
+    eligible_merged = [p for p in eligible_prs if p.state == MERGED]
     merge_days = sorted(d for d in (p.days_to_merge for p in merged) if d is not None)
 
     # ---- day-by-day activity (UTC calendar days) ----
@@ -179,12 +183,15 @@ def build_stats(
         prs_merged=len(merged),
         prs_open=len(open_prs),
         prs_closed_unmerged=len(prs) - len(merged) - len(open_prs),
+        drafts=draft_count,
         reviews_given=len(activity.reviews),
         issues_opened=len(activity.issues),
         issues_closed=sum(1 for i in activity.issues if i.closed_at is not None),
         lines_added=sum(p.additions for p in prs),
         lines_deleted=sum(p.deletions for p in prs),
-        merge_rate=round(len(merged) / len(prs), 4) if prs else 0.0,
+        merge_rate=(
+            round(len(eligible_merged) / len(eligible_prs), 4) if eligible_prs else 0.0
+        ),
         median_days_to_merge=(
             round(statistics.median(merge_days), 2) if merge_days else None
         ),
@@ -218,6 +225,7 @@ def build_activity(
     window_days: int = 30,
     since: str = "",
     until: str = "",
+    include_drafts: bool = False,
 ) -> Activity:
     """Assemble an Activity and compute its Stats in one step."""
     stamp = now or datetime.now(timezone.utc)
@@ -235,6 +243,7 @@ def build_activity(
         since=since,
         until=until,
         today=_date_str(stamp),
+        include_drafts=include_drafts,
     )
     return activity
 

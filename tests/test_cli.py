@@ -38,6 +38,12 @@ class TestBasic:
         assert code == 0
         assert out.startswith("# Contribution report: octocat")
 
+    def test_include_drafts_flag_default_and_toggle(self):
+        args = cli.build_parser().parse_args(["octocat"])
+        assert args.include_drafts is False
+        args = cli.build_parser().parse_args(["octocat", "--include-drafts"])
+        assert args.include_drafts is True
+
     def test_output_file(self, patched_fetch, capsys, tmp_path):
         target = tmp_path / "report.md"
         code, _, err = _run(

@@ -108,6 +108,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="skip scanning for reviews given (fewer API calls)",
     )
     parser.add_argument(
+        "--include-drafts", action="store_true",
+        default=False,
+        help="include draft PRs in merge-rate calculations",
+    )
+    parser.add_argument(
         "--trend", action="store_true",
         help="compare this window against the one before it (doubles API calls)",
     )
@@ -503,6 +508,7 @@ def run(argv: list[str] | None = None) -> int:
         activity = build_activity(
             args.user, prs, reviews, issues,
             window_days=args.days, since=since or "", until=until or "",
+            include_drafts=args.include_drafts,
         )
         if args.trend:
             prev_since, prev_until = _previous_window(since, until, args.days)
@@ -515,6 +521,7 @@ def run(argv: list[str] | None = None) -> int:
                 prev_activity = build_activity(
                     args.user, p_prs, p_reviews, p_issues,
                     window_days=args.days, since=prev_since, until=prev_until,
+                    include_drafts=args.include_drafts,
                 )
                 trend = build_trend(activity.stats, prev_activity.stats)
                 activity.trend = trend

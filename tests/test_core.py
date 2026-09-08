@@ -67,6 +67,72 @@ class TestBuildStats:
     def test_merge_rate(self, activity):
         assert activity.stats.merge_rate == pytest.approx(2 / 3, abs=1e-4)
 
+    def test_drafts_counted_and_excluded_from_merge_rate_by_default(self, now):
+        prs = [
+            PRRecord(
+                repo="a/b", number=1, title="merged", url="https://example.com/1",
+                state="merged", created_at=now.replace(day=1), merged_at=now.replace(day=2),
+                additions=10, deletions=1, changed_files=1, draft=False,
+            ),
+            PRRecord(
+                repo="a/b", number=2, title="closed", url="https://example.com/2",
+                state="closed", created_at=now.replace(day=5), merged_at=None,
+                additions=10, deletions=1, changed_files=1, draft=False,
+            ),
+            PRRecord(
+                repo="a/b", number=3, title="open", url="https://example.com/3",
+                state="open", created_at=now.replace(day=8), merged_at=None,
+                additions=10, deletions=1, changed_files=1, draft=False,
+            ),
+            PRRecord(
+                repo="a/b",
+                number=4,
+                title="draft merged",
+                url="https://example.com/4",
+                state="merged",
+                created_at=now.replace(day=10),
+                merged_at=now.replace(day=12),
+                additions=10,
+                deletions=1,
+                changed_files=1,
+                draft=True,
+            ),
+            PRRecord(
+                repo="a/b", number=5, title="draft closed", url="https://example.com/5",
+                state="closed", created_at=now.replace(day=14), merged_at=None,
+                additions=10, deletions=1, changed_files=1, draft=True,
+            ),
+        ]
+        activity = build_activity("tester", prs, [], [], now=now)
+        s = activity.stats
+        assert s.drafts == 2
+        assert s.prs_authored == 5
+        assert s.merge_rate == pytest.approx(1 / 3, abs=1e-4)
+
+    def test_merge_rate_includes_drafts_when_requested(self, now):
+        prs = [
+            PRRecord(
+                repo="a/b", number=1, title="merged", url="https://example.com/1",
+                state="merged", created_at=now.replace(day=1), merged_at=now.replace(day=2),
+                additions=10, deletions=1, changed_files=1, draft=False,
+            ),
+            PRRecord(
+                repo="a/b",
+                number=2,
+                title="draft merged",
+                url="https://example.com/2",
+                state="merged",
+                created_at=now.replace(day=10),
+                merged_at=now.replace(day=12),
+                additions=10,
+                deletions=1,
+                changed_files=1,
+                draft=True,
+            ),
+        ]
+        activity = build_activity("tester", prs, [], [], now=now, include_drafts=True)
+        assert activity.stats.merge_rate == pytest.approx(1.0, abs=1e-4)
+
     def test_median_days_to_merge(self, activity):
         # merge times are 2.0 and 20.0 days
         assert activity.stats.median_days_to_merge == pytest.approx(11.0)
@@ -85,9 +151,22 @@ class TestBuildStats:
         empty = build_activity("nobody", [], [], [], now=now)
         s = empty.stats
         assert s.prs_authored == 0
+        assert s.drafts == 0
         assert s.merge_rate == 0.0
         assert s.median_days_to_merge is None
         assert s.top_repos == []
+
+    def test_zero_drafts(self, now):
+        prs = [
+            PRRecord(
+                repo="a/b", number=1, title="merged", url="https://example.com/1",
+                state="merged", created_at=now.replace(day=1), merged_at=now.replace(day=2),
+                additions=10, deletions=1, changed_files=1, draft=False,
+            ),
+        ]
+        s = build_activity("tester", prs, [], [], now=now).stats
+        assert s.drafts == 0
+        assert s.merge_rate == 1.0
 
 
 # -------------------------------------------------------------------- fetch

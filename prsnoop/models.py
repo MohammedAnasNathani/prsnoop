@@ -184,6 +184,7 @@ class Stats:
     prs_merged: int = 0
     prs_open: int = 0
     prs_closed_unmerged: int = 0
+    drafts: int = 0
     reviews_given: int = 0
     issues_opened: int = 0
     issues_closed: int = 0

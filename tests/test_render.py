@@ -20,6 +20,7 @@ class TestTable:
         out = render_table(activity)
         assert "octocat" in out
         assert "Pull requests      3" in out
+        assert "Drafts             0" in out
         assert "Merge rate         67%" in out
         assert "aio-libs/yarl#1828" in out
 
@@ -48,6 +49,7 @@ class TestMarkdown:
         out = render_markdown(activity)
         assert out.startswith("# Contribution report: octocat")
         assert "| Pull requests | 3 |" in out
+        assert "| Drafts | 0 |" in out
         assert "| Merge rate | 67% |" in out
         assert "[aio-libs/yarl#1828](https://github.com/aio-libs/yarl/pull/1828)" in out
 
