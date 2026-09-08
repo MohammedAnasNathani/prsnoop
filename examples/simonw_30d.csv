@@ -1,4 +1,7 @@
 repo,number,title,state,created_at,merged_at,additions,deletions,changed_files,labels,comments,language,days_to_merge,url
+datasette/datasette-agent,40,Select a model when you start a conversation,merged,2026-09-08,2026-09-08,686,10,11,,0,Python,0.01,https://github.com/datasette/datasette-agent/pull/40
+simonw/llm,1674,"httpx2-pytest>=2, refs #1673",merged,2026-09-07,2026-09-07,227,225,11,,0,Python,0.00,https://github.com/simonw/llm/pull/1674
+simonw/tools,332,"Video compressor: filename field, poster JPEG and embed snippet",merged,2026-09-07,2026-09-07,565,42,2,,4,HTML,0.01,https://github.com/simonw/tools/pull/332
 simonw/tools,331,Add video compressor tool using ffmpeg.wasm,merged,2026-09-07,2026-09-07,1578,0,6,,3,HTML,0.01,https://github.com/simonw/tools/pull/331
 simonw/simonwillisonblog,708,Use previous tag names when searching tags,merged,2026-09-06,2026-09-06,244,12,8,enhancement,2,Python,0.00,https://github.com/simonw/simonwillisonblog/pull/708
 simonw/tools,330,Add WebP export to markdown-svg-renderer,open,2026-09-02,,101,9,3,,3,HTML,,https://github.com/simonw/tools/pull/330

@@ -4,6 +4,24 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-09-08
+
+### Added
+- `prsnoop org <org>`: organization pulse report. One search covers every
+  PR opened in the org: totals, unique authors and repositories, median
+  time to merge, top-author and hot-repo leaderboards, an activity chart,
+  and the recent PR feed. Table, Markdown, and JSON.
+- `--trend`: compares the current window against the one before it, same
+  size, same clock. Every report format shows the deltas with direction
+  and percent; median merge time knows that faster is better.
+- Activity sparkline: a one-line ASCII chart of day-by-day totals in
+  every table report, `#` at the peak, `.` on quiet days.
+- `compare` gains `-f csv` and `-f json` for scripts and spreadsheets.
+- HTML reports redesigned: stat cards, an inline SVG daily chart with
+  tooltips, trend arrows, and a dark theme that follows the system.
+
+[1.3.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.3.0
+
 ## [1.2.0] - 2026-09-08
 
 ### Added
@@ -20,7 +38,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - Review discovery no longer breaks with a 422 on prolific reviewers:
   the reviewed-by search is date-bounded to the report window.
 
-[1.2.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.2.0
 
 ## [1.1.0] - 2026-09-07
 
@@ -64,6 +81,7 @@ First stable release.
 - Distinct exit codes: 0 ok, 2 usage, 3 API error, 4 rate limit.
 - 47 offline unit tests, ruff + mypy (strict) clean, CI on push and PR.
 
+[1.3.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.3.0
 [1.2.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.2.0
 [1.1.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.1.0
 [1.0.0]: https://github.com/MohammedAnasNathani/prsnoop/releases/tag/v1.0.0
