@@ -125,6 +125,18 @@ def fetch_user_activity(
                 continue
             seen.add((repo, number))
             reviews.extend(_reviews_on(client, user, repo, number, item))
+        # The involved-PR search is updated:-bounded, but reviews on those
+        # PRs can be years old. Window-filter so counts, daily charts, and
+        # streaks only see reviews submitted inside the report window.
+        start = datetime.fromisoformat(since).replace(tzinfo=timezone.utc)
+        end = (
+            datetime.fromisoformat(until).replace(tzinfo=timezone.utc)
+            + timedelta(days=1)
+        ) if until else None
+        reviews = [
+            r for r in reviews
+            if r.submitted_at >= start and (end is None or r.submitted_at < end)
+        ]
     return prs, reviews, issues, fully_enriched
 
 

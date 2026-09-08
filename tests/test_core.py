@@ -95,7 +95,8 @@ class TestBuildStats:
 class TestFetchUserActivity:
     def test_fetch_assembles_everything(self, fake_client, now):
         prs, reviews, issues, enriched = fetch_user_activity(
-            fake_client, "octocat", days=30
+            fake_client, "octocat", days=30,
+            since="2026-07-01", until="2026-07-31",
         )
         assert enriched is True
         assert len(prs) == 2

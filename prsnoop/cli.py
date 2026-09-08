@@ -84,6 +84,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="look-back window in days (default: 30)",
     )
     parser.add_argument(
+        "--last",
+        choices=["week", "month", "quarter", "year"],
+        default=None,
+        help="window preset (overrides --days)",
+    )
+    parser.add_argument(
         "--since", type=str, default=None,
         help="absolute start date YYYY-MM-DD (overrides --days)",
     )
@@ -172,14 +178,26 @@ def build_compare_parser() -> argparse.ArgumentParser:
     return cmp_p
 
 
-def build_org_parser() -> argparse.ArgumentParser:
-    """Parser for the org subcommand."""
+def build_org_parser(kind: str = "org") -> argparse.ArgumentParser:
+    """Parser for the org and repo pulse subcommands."""
+    prog = f"prsnoop {kind}"
     org_p = argparse.ArgumentParser(
-        prog="prsnoop org",
-        description="Pulse report for a GitHub organization: who ships, what is hot.",
+        prog=prog,
+        description=(
+            f"Pulse report for a GitHub {kind}: who ships, what is hot,"
+            " how fast merges land."
+        ),
     )
-    org_p.add_argument("org", help="GitHub organization or owner login")
+    org_p.add_argument(
+        kind, help=f"GitHub {kind} login" if kind == "org" else "repository as owner/name"
+    )
     org_p.add_argument("--days", type=int, default=30)
+    org_p.add_argument(
+        "--last",
+        choices=["week", "month", "quarter", "year"],
+        default=None,
+        help="window preset (overrides --days)",
+    )
     org_p.add_argument("--since", type=str, default=None)
     org_p.add_argument("--until", type=str, default=None)
     org_p.add_argument(
@@ -196,25 +214,33 @@ def build_org_parser() -> argparse.ArgumentParser:
     return org_p
 
 
+_LAST_TO_DAYS = {"week": 7, "month": 30, "quarter": 91, "year": 365}
+
+
 def cmd_org(args: argparse.Namespace) -> int:
-    from prsnoop.org import fetch_org_pulse
+    from prsnoop.org import fetch_org_pulse, fetch_repo_pulse
     from prsnoop.render import render_org_markdown, render_org_table
 
+    kind: str = getattr(args, "kind", "org")
+    subject = str(getattr(args, "org", None) or getattr(args, "repo", None) or "")
     since = _validate_date(args.since, "--since") if args.since else None
     until = _validate_date(args.until, "--until") if args.until else None
-    if args.days < 1:
+    days = _LAST_TO_DAYS[args.last] if getattr(args, "last", None) else args.days
+    if days < 1:
         print("prsnoop: --days must be >= 1", file=sys.stderr)
         return 2
     if args.until and not args.since:
         print("prsnoop: --until requires --since", file=sys.stderr)
         return 2
+    if kind == "repo" and "/" not in subject:
+        print("prsnoop: repo must be owner/name", file=sys.stderr)
+        return 2
     client = GitHubClient(
         cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
     )
+    fetcher = fetch_repo_pulse if kind == "repo" else fetch_org_pulse
     try:
-        prs, pulse = fetch_org_pulse(
-            client, args.org, days=args.days, since=since, until=until
-        )
+        prs, pulse = fetcher(client, subject, days=days, since=since, until=until)
     except RateLimitExceeded as exc:
         print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
         print(
@@ -461,13 +487,38 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_compare(cmp_args)
-    if raw and raw[0] == "org":
-        org_args = build_org_parser().parse_args(raw[1:])
+    if raw and raw[0] in ("org", "repo"):
+        kind = raw[0]
+        org_args = build_org_parser(kind).parse_args(raw[1:])
+        org_args.kind = kind
         logging.basicConfig(
             level=logging.DEBUG if org_args.verbose else logging.WARNING,
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_org(org_args)
+    if raw and raw[0] == "me":
+        me_args = build_parser().parse_args(raw[1:])
+        logging.basicConfig(
+            level=logging.DEBUG if me_args.verbose else logging.WARNING,
+            format="%(levelname)s %(name)s: %(message)s",
+        )
+        client = GitHubClient(
+            cache_dir=me_args.cache_dir, user_agent=f"prsnoop/{__version__}"
+        )
+        try:
+            who = client.get("/user")
+        except (GitHubError, RateLimitExceeded) as exc:
+            print(f"prsnoop me: {exc}", file=sys.stderr)
+            print(
+                "prsnoop me: this subcommand reads your own login from the"
+                " API, so it needs PRSNOOP_TOKEN or GITHUB_TOKEN",
+                file=sys.stderr,
+            )
+            return 3
+        if not isinstance(who, dict) or "login" not in who:
+            print("prsnoop me: unexpected /user response", file=sys.stderr)
+            return 3
+        return run([who["login"], *raw[1:]])
 
     args = build_parser().parse_args(raw)
     logging.basicConfig(
@@ -485,6 +536,7 @@ def run(argv: list[str] | None = None) -> int:
         return 2
     since = _validate_date(args.since, "--since") if args.since else None
     until = _validate_date(args.until, "--until") if args.until else None
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
 
     try:
         client = GitHubClient(
@@ -494,7 +546,7 @@ def run(argv: list[str] | None = None) -> int:
         prs, reviews, issues, fully_enriched = fetch_user_activity(
             client,
             args.user,
-            days=args.days,
+            days=days,
             include_reviews=not args.no_reviews,
             org=args.org,
             since=since,
@@ -502,10 +554,10 @@ def run(argv: list[str] | None = None) -> int:
         )
         activity = build_activity(
             args.user, prs, reviews, issues,
-            window_days=args.days, since=since or "", until=until or "",
+            window_days=days, since=since or "", until=until or "",
         )
         if args.trend:
-            prev_since, prev_until = _previous_window(since, until, args.days)
+            prev_since, prev_until = _previous_window(since, until, days)
             try:
                 p_prs, p_reviews, p_issues, _ = fetch_user_activity(
                     client, args.user, days=args.days,

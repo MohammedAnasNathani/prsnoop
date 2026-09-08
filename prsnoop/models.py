@@ -172,6 +172,26 @@ class DayActivity:
 
 
 @dataclass(slots=True)
+class RepoPerformance:
+    """How one repository treats this contributor's work."""
+
+    repo: str
+    prs: int
+    merged: int
+    merge_rate: float
+    median_days_to_merge: float | None
+
+    def to_dict(self) -> JsonDict:
+        return {
+            "repo": self.repo,
+            "prs": self.prs,
+            "merged": self.merged,
+            "merge_rate": self.merge_rate,
+            "median_days_to_merge": self.median_days_to_merge,
+        }
+
+
+@dataclass(slots=True)
 class Stats:
     """Aggregated contribution statistics."""
 
@@ -207,6 +227,9 @@ class Stats:
     top_repos: list[tuple[str, int]] = field(default_factory=list)
     languages: list[tuple[str, int]] = field(default_factory=list)  # (lang, prs)
     day_activity: list[DayActivity] = field(default_factory=list)
+    size_median_lines: int | None = None
+    size_buckets: dict[str, int] = field(default_factory=dict)
+    repo_performance: list[RepoPerformance] = field(default_factory=list)
 
     def to_dict(self) -> JsonDict:
         d = asdict(self)

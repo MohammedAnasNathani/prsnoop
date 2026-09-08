@@ -20,6 +20,7 @@ from prsnoop.models import (
     IssueRecord,
     JsonDict,
     PRRecord,
+    RepoPerformance,
     ReviewRecord,
     Stats,
 )
@@ -117,6 +118,19 @@ def _streaks(dates: set[str], today: str) -> tuple[int, int]:
     return longest, current
 
 
+def _size_bucket(total_lines: int) -> str:
+    """XS < 10 <= S < 100 <= M < 1000 <= L < 5000 <= XL changed lines."""
+    if total_lines < 10:
+        return "XS"
+    if total_lines < 100:
+        return "S"
+    if total_lines < 1000:
+        return "M"
+    if total_lines < 5000:
+        return "L"
+    return "XL"
+
+
 def build_stats(
     activity: Activity,
     window_days: int = 30,
@@ -169,6 +183,49 @@ def build_stats(
         k = max(0, min(len(values) - 1, round(0.9 * (len(values) - 1))))
         return round(sorted(values)[k], 2)
 
+    # ---- PR size profile: buckets over changed lines ----
+    # PRs whose diff stats were never enriched (0/0) are excluded so a
+    # partial report does not skew the profile.
+    sized = [p for p in prs if p.additions or p.deletions]
+    size_order = ("XS", "S", "M", "L", "XL")
+    size_buckets: dict[str, int] = {k: 0 for k in size_order}
+    for p in sized:
+        size_buckets[_size_bucket(p.additions + p.deletions)] += 1
+    size_median: int | None = None
+    if sized:
+        size_median = round(
+            statistics.median(p.additions + p.deletions for p in sized)
+        )
+
+    # ---- repo performance: where this contributor's work lands ----
+    per_repo: dict[str, list[PRRecord]] = {}
+    for p in prs:
+        per_repo.setdefault(p.repo, []).append(p)
+    repo_performance: list[RepoPerformance] = []
+    for repo, group in per_repo.items():
+        if len(group) < 2:
+            continue
+        merged_n = sum(1 for p in group if p.state == MERGED)
+        merge_days_group = sorted(
+            d for d in (p.days_to_merge for p in group if p.state == MERGED)
+            if d is not None
+        )
+        repo_performance.append(
+            RepoPerformance(
+                repo=repo,
+                prs=len(group),
+                merged=merged_n,
+                merge_rate=round(merged_n / len(group), 4),
+                median_days_to_merge=(
+                    round(statistics.median(merge_days_group), 2)
+                    if merge_days_group
+                    else None
+                ),
+            )
+        )
+    repo_performance.sort(key=lambda r: (-r.prs, r.repo))
+    repo_performance = repo_performance[:10]
+
     return Stats(
         user=activity.user,
         generated_at=activity.generated_at,
@@ -206,6 +263,9 @@ def build_stats(
         top_repos=repo_counts.most_common(10),
         languages=lang_counts.most_common(10),
         day_activity=day_activity,
+        size_median_lines=size_median,
+        size_buckets=size_buckets,
+        repo_performance=repo_performance,
     )
 
 

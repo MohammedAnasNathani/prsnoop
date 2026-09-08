@@ -37,6 +37,19 @@ def _fmt_pct(value: float) -> str:
     return f"{value * 100:.0f}%"
 
 
+def _size_letter(median_lines: int) -> str:
+    """Letter grade for a typical PR size."""
+    if median_lines < 10:
+        return "XS"
+    if median_lines < 100:
+        return "S"
+    if median_lines < 1000:
+        return "M"
+    if median_lines < 5000:
+        return "L"
+    return "XL"
+
+
 def _trend_of(activity: Activity) -> list[TrendDelta]:
     """Trend deltas computed for this activity, if any."""
     return [d for d in activity.trend if isinstance(d, TrendDelta)]
@@ -124,6 +137,21 @@ def render_table(activity: Activity) -> str:
     if s.languages:
         mix = ", ".join(f"{lang} {n}" for lang, n in s.languages[:5])
         lines.append(f"  Languages          {mix}")
+    if s.size_median_lines is not None:
+        dist = " ".join(f"{k} {v}" for k, v in s.size_buckets.items() if v)
+        lines.append(
+            f"  Typical size       {_size_letter(s.size_median_lines)}"
+            f" (median {s.size_median_lines} lines)"
+        )
+        lines.append(f"  Size spread        {dist}")
+    if s.repo_performance:
+        lines += ["", "  Where work lands"]
+        for r in s.repo_performance[:5]:
+            med = _fmt_days(r.median_days_to_merge)
+            lines.append(
+                f"    {r.repo:<28} {r.prs:>3} prs"
+                f"  {r.merge_rate * 100:>3.0f}% merged  median {med}"
+            )
     if s.day_activity:
         spark = _sparkline(s.day_activity)
         first, last = s.day_activity[0].date, s.day_activity[-1].date
@@ -216,6 +244,32 @@ def render_markdown(activity: Activity) -> str:
                 f" | {_fmt_trend_value(d)} |"
             )
         out.append("")
+    if s.repo_performance:
+        out += [
+            "## Where your work lands",
+            "",
+            "Per-repository outcomes for every repo with two or more PRs"
+            " in the window.",
+            "",
+            "| Repository | PRs | Merged | Merge rate | Median days |",
+            "|---|---:|---:|---:|---:|",
+        ]
+        for r in s.repo_performance:
+            med = "-" if r.median_days_to_merge is None else f"{r.median_days_to_merge:.1f}"
+            out.append(
+                f"| [{r.repo}](https://github.com/{r.repo}) | {r.prs}"
+                f" | {r.merged} | {r.merge_rate * 100:.0f}% | {med} |"
+            )
+        out.append("")
+    if s.size_median_lines is not None:
+        dist = " / ".join(f"{k} {v}" for k, v in s.size_buckets.items() if v)
+        out += [
+            "## PR size profile",
+            "",
+            f"Typical PR: **{_size_letter(s.size_median_lines)}**"
+            f" (median {s.size_median_lines} changed lines). Distribution: {dist}.",
+            "",
+        ]
     if s.languages:
         out += ["## Languages", "", "| Language | PRs |", "|---|---:|"]
         out += [f"| {lang} | {n} |" for lang, n in s.languages]
@@ -446,6 +500,34 @@ def render_html(activity: Activity) -> str:
         f"{pr_rows}</table>"
         if activity.prs else ""
     )
+    repos_html = ""
+    if s.repo_performance:
+        rows = "".join(
+            "<tr>"
+            f'<td><a href="https://github.com/{esc(r.repo)}">{esc(r.repo)}</a></td>'
+            f"<td>{r.prs}</td><td>{r.merged}</td>"
+            f"<td>{r.merge_rate * 100:.0f}%</td>"
+            f"<td>{esc(_fmt_days(r.median_days_to_merge))}</td>"
+            "</tr>"
+            for r in s.repo_performance
+        )
+        repos_html = (
+            "<h2>Where your work lands</h2><table>"
+            "<tr><th>Repository</th><th>PRs</th><th>Merged</th>"
+            "<th>Merge rate</th><th>Median days</th></tr>"
+            f"{rows}</table>"
+        )
+    sizes_html = ""
+    if s.size_median_lines is not None:
+        size_cells = "".join(
+            f"<td>{esc(k)}: {v}</td>" for k, v in s.size_buckets.items() if v
+        )
+        sizes_html = (
+            f"<h2>PR size profile</h2><table><tr>"
+            f"<th>Typical</th><th>Median lines</th><th>Distribution</th></tr>"
+            f"<tr><td>{esc(_size_letter(s.size_median_lines))}</td>"
+            f"<td>{s.size_median_lines}</td><td>{size_cells}</td></tr></table>"
+        )
     reviews_html = (
         f"<h2>Reviews given</h2><table>"
         f"<tr><th>PR</th><th>Review</th><th>When</th></tr>{review_rows}</table>"
@@ -474,6 +556,8 @@ on {activity.generated_at.strftime('%Y-%m-%d %H:%M UTC')}</p>
 <div class="cards">{card_html}</div>
 <table>{timing_rows}</table>
 {trend_html}
+{repos_html}
+{sizes_html}
 {prs_html}
 {reviews_html}
 {issues_html}
@@ -558,7 +642,7 @@ def _org_spark(counts: list[tuple[str, int]], width: int = 30) -> str:
 def render_org_table(prs: list[OrgPR], pulse: OrgPulse) -> str:
     """Terminal rendering of an organization pulse."""
     lines = [
-        f"prsnoop org | {pulse.org}",
+        f"prsnoop {pulse.label} | {pulse.org}",
         f"window: {pulse.since} to {pulse.until}",
         "",
         f"  PRs opened        {pulse.prs_opened}",
@@ -592,7 +676,7 @@ def render_org_table(prs: list[OrgPR], pulse: OrgPulse) -> str:
 def render_org_markdown(prs: list[OrgPR], pulse: OrgPulse) -> str:
     """GitHub-flavored Markdown rendering of an organization pulse."""
     out = [
-        f"# Org pulse: {pulse.org}",
+        f"# {pulse.label.capitalize()} pulse: {pulse.org}",
         "",
         "_Generated by [prsnoop](https://github.com/MohammedAnasNathani/prsnoop)"
         f" | window: {pulse.since} to {pulse.until}_",

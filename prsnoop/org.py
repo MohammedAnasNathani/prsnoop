@@ -40,13 +40,18 @@ class OrgPR:
 
 @dataclass(slots=True)
 class OrgPulse:
-    """Derived org-wide statistics for one window."""
+    """Derived org-wide statistics for one window.
+
+    ``label`` is "org" or "repo" depending on which subcommand produced
+    the pulse; renderers and JSON carry it through.
+    """
 
     org: str
     generated_at: datetime
     window_days: int
     since: str
     until: str
+    label: str = "org"
     prs_opened: int = 0
     prs_merged: int = 0
     prs_open: int = 0
@@ -61,6 +66,7 @@ class OrgPulse:
     def to_dict(self) -> JsonDict:
         return {
             "org": self.org,
+            "label": self.label,
             "generated_at": self.generated_at.isoformat(),
             "window_days": self.window_days,
             "since": self.since,
@@ -92,6 +98,38 @@ def fetch_org_pulse(
     until: str | None = None,
 ) -> tuple[list[OrgPR], OrgPulse]:
     """Return (prs, pulse) for every PR opened in ``org`` within the window."""
+    return _fetch_pulse(
+        client, f"org:{org}", org, "org", days=days, since=since, until=until
+    )
+
+
+def fetch_repo_pulse(
+    client: GitHubClient,
+    repo: str,
+    days: int = 30,
+    since: str | None = None,
+    until: str | None = None,
+) -> tuple[list[OrgPR], OrgPulse]:
+    """Return (prs, pulse) for every PR opened in ``owner/name``.
+
+    Maintainer mode: the same pulse metrics as an org, scoped to one
+    repository, so a maintainer sees who is contributing to their project.
+    """
+    return _fetch_pulse(
+        client, f"repo:{repo}", repo, "repo", days=days, since=since, until=until
+    )
+
+
+def _fetch_pulse(
+    client: GitHubClient,
+    scope: str,
+    subject: str,
+    label: str,
+    days: int = 30,
+    since: str | None = None,
+    until: str | None = None,
+) -> tuple[list[OrgPR], OrgPulse]:
+    """Shared pulse fetch for org:X and repo:X search scopes."""
     now = datetime.now(timezone.utc)
     if since is None:
         since = (now - timedelta(days=days)).strftime("%Y-%m-%d")
@@ -101,7 +139,7 @@ def fetch_org_pulse(
 
     items = client.paginate(
         SEARCH_PATH,
-        params={"q": f"org:{org} is:pr{range_qualifier}"},
+        params={"q": f"{scope} is:pr{range_qualifier}"},
     )
 
     prs: list[OrgPR] = []
@@ -124,7 +162,8 @@ def fetch_org_pulse(
             )
         )
 
-    pulse = _derive(org, prs, now, days, since, until)
+    pulse = _derive(subject, prs, now, days, since, until)
+    pulse.label = label
     return prs, pulse
 
 

@@ -4,7 +4,7 @@ A zero-dependency CLI that answers "what did I (or my team) actually
 contribute?" with terminal tables, Markdown, HTML, CSV, and JSON output.
 """
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 from prsnoop.models import Activity, IssueRecord, PRRecord, ReviewRecord, Stats
 
