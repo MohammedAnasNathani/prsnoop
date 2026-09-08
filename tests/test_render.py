@@ -11,6 +11,7 @@ from prsnoop.render import (
     render_json,
     render_markdown,
     render_table,
+    render_yaml,
 )
 from prsnoop.stats import build_activity
 
@@ -130,3 +131,22 @@ class TestJSON:
     def test_dates_are_iso_z(self, activity):
         data = json.loads(render_json(activity))
         assert data["prs"][0]["created_at"].endswith("Z")
+
+
+class TestYAML:
+    def test_contains_snapshot_fields(self, activity):
+        out = render_yaml(activity)
+        assert 'user: "octocat"' in out
+        assert 'repo: "aio-libs/yarl"' in out
+        assert "prs_authored: 3" in out
+        assert out.endswith("\n")
+
+    def test_empty_activity(self, now):
+        out = render_yaml(build_activity("nobody", [], [], [], now=now))
+        assert 'user: "nobody"' in out
+        assert "prs: []" in out
+        assert "reviews: []" in out
+        assert "issues: []" in out
+
+    def test_pure_ascii(self, activity):
+        render_yaml(activity).encode("ascii")

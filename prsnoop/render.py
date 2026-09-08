@@ -351,11 +351,56 @@ def render_json(activity: Activity) -> str:
     return json.dumps(activity.to_dict(), indent=2, ensure_ascii=True)
 
 
+def render_yaml(activity: Activity) -> str:
+    """Complete snapshot as deterministic YAML without external dependencies."""
+    def scalar(value: object) -> str:
+        if value is None:
+            return "null"
+        if isinstance(value, bool):
+            return "true" if value else "false"
+        if isinstance(value, str):
+            return json.dumps(value, ensure_ascii=True)
+        return str(value)
+
+    def emit(value: object, indent: int = 0) -> list[str]:
+        prefix = " " * indent
+        if isinstance(value, dict):
+            lines: list[str] = []
+            for key, item in value.items():
+                if isinstance(item, list) and not item:
+                    lines.append(f"{prefix}{key}: []")
+                elif isinstance(item, dict) and not item:
+                    lines.append(f"{prefix}{key}: {{}}")
+                elif isinstance(item, (dict, list)):
+                    lines.append(f"{prefix}{key}:")
+                    lines.extend(emit(item, indent + 2))
+                else:
+                    lines.append(f"{prefix}{key}: {scalar(item)}")
+            return lines
+        if isinstance(value, list):
+            lines = []
+            for item in value:
+                if isinstance(item, dict):
+                    first, *rest = emit(item, indent + 2)
+                    lines.append(f"{prefix}- {first.lstrip()}")
+                    lines.extend(rest)
+                elif isinstance(item, list):
+                    lines.append(f"{prefix}-")
+                    lines.extend(emit(item, indent + 2))
+                else:
+                    lines.append(f"{prefix}- {scalar(item)}")
+            return lines
+        return [f"{prefix}{scalar(value)}"]
+
+    return "\n".join(emit(activity.to_dict())) + "\n"
+
+
 RENDERERS: dict[str, Renderer] = {
     "table": render_table,
     "markdown": render_markdown,
     "html": render_html,
     "csv": render_csv,
     "json": render_json,
+    "yaml": render_yaml,
     "badge": render_badge,
 }
