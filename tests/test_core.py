@@ -7,7 +7,7 @@ import pytest
 
 from prsnoop.fetch import _repo_of, fetch_user_activity
 from prsnoop.models import PRRecord
-from prsnoop.stats import build_activity
+from prsnoop.stats import build_activity, build_stats
 
 # ------------------------------------------------------------------- models
 
@@ -81,6 +81,23 @@ class TestBuildStats:
             "jd/tenacity": 1,
         }
 
+    def test_top_labels_counts_and_ignores_empty(self, activity):
+        activity.prs[0].labels = ["bug", "python", ""]
+        activity.prs[1].labels = ["bug"]
+        activity.stats = build_stats(activity)
+        assert activity.stats.top_labels == [("bug", 2), ("python", 1)]
+
+    def test_top_labels_maximum(self, now):
+        prs = [
+            PRRecord(
+                repo=f"org/repo-{index}", number=index, title="t", url="u", state="open",
+                created_at=now, merged_at=None, additions=0, deletions=0, changed_files=0,
+                labels=[f"label-{index}"],
+            )
+            for index in range(11)
+        ]
+        assert len(build_activity("octocat", prs, [], [], now=now).stats.top_labels) == 10
+
     def test_empty_activity(self, now):
         empty = build_activity("nobody", [], [], [], now=now)
         s = empty.stats
@@ -88,6 +105,7 @@ class TestBuildStats:
         assert s.merge_rate == 0.0
         assert s.median_days_to_merge is None
         assert s.top_repos == []
+        assert s.top_labels == []
 
 
 # -------------------------------------------------------------------- fetch

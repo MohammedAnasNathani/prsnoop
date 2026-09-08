@@ -12,7 +12,14 @@ from prsnoop.render import (
     render_markdown,
     render_table,
 )
-from prsnoop.stats import build_activity
+from prsnoop.stats import build_activity, build_stats
+
+
+def _add_labels(activity):
+    activity.prs[0].labels = ["bug", "python"]
+    activity.prs[1].labels = ["bug"]
+    activity.stats = build_stats(activity)
+    return activity
 
 
 class TestTable:
@@ -24,10 +31,13 @@ class TestTable:
         assert "aio-libs/yarl#1828" in out
 
     def test_shows_streaks_and_languages(self, activity):
+        activity = _add_labels(activity)
         out = render_table(activity)
         assert "Streaks" in out
         assert "longest" in out and "current" in out
         assert "Languages" in out
+        assert "Top labels" in out
+        assert "bug 2" in out
 
     def test_daily_activity_bars(self, activity):
         out = render_table(activity)
@@ -52,9 +62,12 @@ class TestMarkdown:
         assert "[aio-libs/yarl#1828](https://github.com/aio-libs/yarl/pull/1828)" in out
 
     def test_has_all_sections(self, activity):
+        activity = _add_labels(activity)
         out = render_markdown(activity)
         assert "## Top repositories" in out
         assert "## Languages" in out
+        assert "## Top labels" in out
+        assert "| bug | 2 |" in out
         assert "## Daily activity" in out
         assert "## Pull requests" in out
         assert "## Reviews given" in out
@@ -118,6 +131,7 @@ class TestJSON:
         assert len(data["prs"]) == 3
 
     def test_new_stats_fields(self, activity):
+        activity = _add_labels(activity)
         data = json.loads(render_json(activity))
         s = data["stats"]
         assert s["active_days"] >= 1
@@ -125,7 +139,15 @@ class TestJSON:
         assert isinstance(s["day_activity"], list)
         assert s["day_activity"][0]["date"] == "2026-07-05"
         assert s["languages"][0]["language"] in {"Python", "Unknown"}
+        assert s["top_labels"] == [
+            {"label": "bug", "prs": 2},
+            {"label": "python", "prs": 1},
+        ]
         assert "p90_days_to_merge" in s
+
+    def test_empty_activity_has_empty_top_labels(self, now):
+        data = json.loads(render_json(build_activity("nobody", [], [], [], now=now)))
+        assert data["stats"]["top_labels"] == []
 
     def test_dates_are_iso_z(self, activity):
         data = json.loads(render_json(activity))
