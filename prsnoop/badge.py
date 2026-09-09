@@ -5,6 +5,7 @@ README without a hosting service. The look follows the shields.io flat
 square convention on purpose: developers already trust that shape, and
 the colors are GitHub's own merged-green / review-amber / neutral-gray.
 """
+
 from __future__ import annotations
 
 import base64
@@ -17,9 +18,7 @@ AMBER = "d29922"  # GitHub review "changes" amber
 GREEN = "2ea043"  # GitHub merged green
 GRAY = "656d76"  # GitHub neutral gray
 
-FONT_ATTRS = (
-    "font-family='Verdana,Geneva,DejaVu Sans,sans-serif' font-size='11'"
-)
+FONT_ATTRS = "font-family='Verdana,Geneva,DejaVu Sans,sans-serif' font-size='11'"
 
 
 def _badge(label: str, value: str, color: str) -> str:
@@ -87,6 +86,7 @@ def render_badge(activity: Activity) -> str:
         lines.append(f"![{name}]({data_uri})")
     return "\n".join(lines) + "\n"
 
+
 def render_pulse_badge(pulse: OrgPulse) -> str:
     """Badge format for org and repo pulses: ready-to-paste Markdown."""
     lines = [
@@ -94,11 +94,7 @@ def render_pulse_badge(pulse: OrgPulse) -> str:
         f"Regenerate with: prsnoop {pulse.label} {pulse.org}"
         f" --format badge -o badges.md -->"
     ]
-    rate = (
-        f"{pulse.prs_merged / pulse.prs_opened * 100:.0f}%"
-        if pulse.prs_opened
-        else "0%"
-    )
+    rate = f"{pulse.prs_merged / pulse.prs_opened * 100:.0f}%" if pulse.prs_opened else "0%"
     entries = [
         ("prs opened", str(pulse.prs_opened), GRAY),
         ("merged", str(pulse.prs_merged), GREEN),

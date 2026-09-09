@@ -1,4 +1,5 @@
 """CLI behavior tests using the fake client via monkeypatched fetch."""
+
 from __future__ import annotations
 
 import json
@@ -6,16 +7,20 @@ import json
 import pytest
 
 from prsnoop import cli
+from prsnoop.stats import sort_prs
 
 
 @pytest.fixture
 def patched_fetch(monkeypatch, activity):
     """Make fetch_user_activity return the fixture activity regardless of input."""
     monkeypatch.setattr(
-        cli, "fetch_user_activity",
-        lambda client, user, days, include_reviews, org=None,
-        since=None, until=None: (
-            activity.prs, activity.reviews, activity.issues, True
+        cli,
+        "fetch_user_activity",
+        lambda client, user, days, include_reviews, org=None, since=None, until=None: (
+            activity.prs,
+            activity.reviews,
+            activity.issues,
+            True,
         ),
     )
 
@@ -24,6 +29,30 @@ def _run(capsys, *argv):
     code = cli.run(list(argv))
     captured = capsys.readouterr()
     return code, captured.out, captured.err
+
+
+def test_sort_prs_keys(sample_prs):
+    # Test 'recent' vs 'oldest'
+    sorted_recent = sort_prs(sample_prs, "recent")
+    sorted_oldest = sort_prs(sample_prs, "oldest")
+    assert sorted_recent[0].created_at >= sorted_recent[-1].created_at
+    assert sorted_oldest[0].created_at <= sorted_oldest[-1].created_at
+
+    # Test 'size'
+    sorted_size = sort_prs(sample_prs, "size")
+    max_size = sorted_size[0].additions + sorted_size[0].deletions
+    min_size = sorted_size[-1].additions + sorted_size[-1].deletions
+    assert max_size >= min_size
+
+    # Test 'repo'
+    sorted_repo = sort_prs(sample_prs, "repo")
+    assert sorted_repo[0].repo.lower() <= sorted_repo[-1].repo.lower()
+
+    # Test 'merge-time'
+    sorted_merge = sort_prs(sample_prs, "merge-time")
+    # Verified merged items appear before unmerged ones
+    if any(pr.days_to_merge is None for pr in sample_prs):
+        assert sorted_merge[-1].days_to_merge is None
 
 
 class TestBasic:
@@ -40,9 +69,7 @@ class TestBasic:
 
     def test_output_file(self, patched_fetch, capsys, tmp_path):
         target = tmp_path / "report.md"
-        code, _, err = _run(
-            capsys, "octocat", "--format", "markdown", "-o", str(target)
-        )
+        code, _, err = _run(capsys, "octocat", "--format", "markdown", "-o", str(target))
         assert code == 0
         assert "wrote" in err
         assert target.read_text().startswith("# Contribution report")
@@ -78,8 +105,13 @@ class TestWindows:
         seen = {}
 
         def fake_fetch(
-            client, user, days, include_reviews,
-            org=None, since=None, until=None,
+            client,
+            user,
+            days,
+            include_reviews,
+            org=None,
+            since=None,
+            until=None,
         ):
             seen["org"] = org
             return [], [], [], True
@@ -93,8 +125,13 @@ class TestWindows:
         seen = {}
 
         def fake_fetch(
-            client, user, days, include_reviews,
-            org=None, since=None, until=None,
+            client,
+            user,
+            days,
+            include_reviews,
+            org=None,
+            since=None,
+            until=None,
         ):
             seen.update(since=since, until=until)
             return [], [], [], True
@@ -108,7 +145,8 @@ class TestWindows:
 
     def test_partial_enrichment_note(self, monkeypatch, capsys):
         monkeypatch.setattr(
-            cli, "fetch_user_activity",
+            cli,
+            "fetch_user_activity",
             lambda *a, **k: ([], [], [], False),
         )
         code, _, err = _run(capsys, "octocat")
@@ -163,17 +201,21 @@ class TestSnap:
 
     def test_snap_compare_deltas(self, patched_fetch, capsys, tmp_path):
         old = tmp_path / "old.json"
-        old.write_text(json.dumps({
-            "stats": {
-                "generated_at": "2026-07-01T00:00:00Z",
-                "prs_authored": 2,
-                "prs_merged": 1,
-                "reviews_given": 0,
-                "issues_opened": 0,
-                "lines_added": 100,
-                "lines_deleted": 10,
-            }
-        }))
+        old.write_text(
+            json.dumps(
+                {
+                    "stats": {
+                        "generated_at": "2026-07-01T00:00:00Z",
+                        "prs_authored": 2,
+                        "prs_merged": 1,
+                        "reviews_given": 0,
+                        "issues_opened": 0,
+                        "lines_added": 100,
+                        "lines_deleted": 10,
+                    }
+                }
+            )
+        )
         code, out, _ = _run(capsys, "snap", "octocat", "--compare", str(old))
         assert code == 0
         assert "pull requests" in out

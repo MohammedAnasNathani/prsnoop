@@ -1,4 +1,5 @@
 """Compare subcommand tests via monkeypatched fetch."""
+
 from __future__ import annotations
 
 import pytest

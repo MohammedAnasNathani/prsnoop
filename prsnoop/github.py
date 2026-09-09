@@ -4,6 +4,7 @@ Uses only urllib from the standard library so prsnoop installs with nothing
 else. Cached responses are revalidated with ETag conditional requests: an
 unchanged resource returns the stored body without consuming rate limit.
 """
+
 from __future__ import annotations
 
 import gzip
@@ -158,7 +159,9 @@ class GitHubClient:
                         delay = min(float(retry_after), MAX_RETRY_SLEEP)
                         log.warning(
                             "secondary rate limit, attempt %d/%d, retrying in %.0fs",
-                            attempt, MAX_ATTEMPTS, delay,
+                            attempt,
+                            MAX_ATTEMPTS,
+                            delay,
                         )
                         time.sleep(delay)
                         last_exc = RateLimitExceeded(exc.code, str(message))
@@ -168,7 +171,10 @@ class GitHubClient:
                     delay = min(2 ** (attempt - 1), MAX_RETRY_SLEEP)
                     log.warning(
                         "HTTP %d, attempt %d/%d, retrying in %.0fs",
-                        exc.code, attempt, MAX_ATTEMPTS, delay,
+                        exc.code,
+                        attempt,
+                        MAX_ATTEMPTS,
+                        delay,
                     )
                     time.sleep(delay)
                     last_exc = GitHubError(exc.code, str(message))
@@ -179,7 +185,10 @@ class GitHubClient:
                     delay = min(2 ** (attempt - 1), MAX_RETRY_SLEEP)
                     log.warning(
                         "network error (%s), attempt %d/%d, retrying in %.0fs",
-                        exc.reason, attempt, MAX_ATTEMPTS, delay,
+                        exc.reason,
+                        attempt,
+                        MAX_ATTEMPTS,
+                        delay,
                     )
                     time.sleep(delay)
                     last_exc = GitHubError(0, f"network error: {exc.reason}")
@@ -191,7 +200,9 @@ class GitHubClient:
     # ----------------------------------------------------------------- public
 
     def get(
-        self, path: str, params: dict[str, Any] | None = None,
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
         use_cache: bool = True,
     ) -> JsonDict | JsonList:
         """GET one API path with ETag caching. Returns parsed JSON."""

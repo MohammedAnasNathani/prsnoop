@@ -1,4 +1,5 @@
 """Model, stats, and fetcher behavior tests."""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from prsnoop.stats import build_activity
 
 # ------------------------------------------------------------------- models
 
+
 class TestPRRecord:
     def test_days_to_merge(self, sample_prs):
         merged_fast, merged_slow, open_pr = sample_prs
@@ -21,9 +23,15 @@ class TestPRRecord:
     def test_from_api_merged_state(self, now):
         record = PRRecord.from_api(
             {
-                "number": 1, "title": "t", "html_url": "u", "state": "closed",
-                "created_at": "2026-07-10T00:00:00Z", "merged_at": "2026-07-12T00:00:00Z",
-                "additions": 1, "deletions": 1, "changed_files": 1,
+                "number": 1,
+                "title": "t",
+                "html_url": "u",
+                "state": "closed",
+                "created_at": "2026-07-10T00:00:00Z",
+                "merged_at": "2026-07-12T00:00:00Z",
+                "additions": 1,
+                "deletions": 1,
+                "changed_files": 1,
             },
             repo="o/r",
         )
@@ -33,8 +41,12 @@ class TestPRRecord:
     def test_from_api_open_state(self):
         record = PRRecord.from_api(
             {
-                "number": 1, "title": "t", "html_url": "u", "state": "open",
-                "created_at": "2026-07-10T00:00:00Z", "merged_at": None,
+                "number": 1,
+                "title": "t",
+                "html_url": "u",
+                "state": "open",
+                "created_at": "2026-07-10T00:00:00Z",
+                "merged_at": None,
             },
             repo="o/r",
         )
@@ -48,6 +60,7 @@ class TestPRRecord:
 
 
 # -------------------------------------------------------------------- stats
+
 
 class TestBuildStats:
     def test_counts(self, activity):
@@ -92,11 +105,15 @@ class TestBuildStats:
 
 # -------------------------------------------------------------------- fetch
 
+
 class TestFetchUserActivity:
     def test_fetch_assembles_everything(self, fake_client, now):
         prs, reviews, issues, enriched = fetch_user_activity(
-            fake_client, "octocat", days=30,
-            since="2026-07-01", until="2026-07-31",
+            fake_client,
+            "octocat",
+            days=30,
+            since="2026-07-01",
+            until="2026-07-31",
         )
         assert enriched is True
         assert len(prs) == 2

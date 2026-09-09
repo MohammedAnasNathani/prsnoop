@@ -1,4 +1,5 @@
 """Renderer output tests: every format must be complete, valid, and ASCII."""
+
 from __future__ import annotations
 
 import csv
@@ -94,9 +95,20 @@ class TestCSV:
         out = render_csv(activity)
         rows = list(csv.reader(io.StringIO(out)))
         assert rows[0] == [
-            "repo", "number", "title", "state", "created_at", "merged_at",
-            "additions", "deletions", "changed_files", "labels", "comments",
-            "language", "days_to_merge", "url",
+            "repo",
+            "number",
+            "title",
+            "state",
+            "created_at",
+            "merged_at",
+            "additions",
+            "deletions",
+            "changed_files",
+            "labels",
+            "comments",
+            "language",
+            "days_to_merge",
+            "url",
         ]
         assert len(rows) == 4  # header + 3 PRs
         yarl = next(r for r in rows[1:] if r[0] == "aio-libs/yarl")

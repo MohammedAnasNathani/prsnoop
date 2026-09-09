@@ -5,6 +5,7 @@ rates, timing percentiles, day-by-day activity, streaks, and per-repo /
 per-language breakdowns. The language mix is inferred from the primary
 language of each PR's repository, which the fetcher enriches.
 """
+
 from __future__ import annotations
 
 import statistics
@@ -121,9 +122,7 @@ def _streaks(dates: set[str], today: str) -> tuple[int, int]:
         return longest, 0
     current = 1
     cursor = last
-    while (
-        datetime.strftime(cursor - timedelta(days=1), "%Y-%m-%d") in dates
-    ):
+    while datetime.strftime(cursor - timedelta(days=1), "%Y-%m-%d") in dates:
         cursor = cursor - timedelta(days=1)
         current += 1
     return longest, current
@@ -204,9 +203,7 @@ def build_stats(
         size_buckets[_size_bucket(p.additions + p.deletions)] += 1
     size_median: int | None = None
     if sized:
-        size_median = round(
-            statistics.median(p.additions + p.deletions for p in sized)
-        )
+        size_median = round(statistics.median(p.additions + p.deletions for p in sized))
 
     # ---- repo performance: where this contributor's work lands ----
     per_repo: dict[str, list[PRRecord]] = {}
@@ -218,7 +215,8 @@ def build_stats(
             continue
         merged_n = sum(1 for p in group if p.state == MERGED)
         merge_days_group = sorted(
-            d for d in (p.days_to_merge for p in group if p.state == MERGED)
+            d
+            for d in (p.days_to_merge for p in group if p.state == MERGED)
             if d is not None
         )
         repo_performance.append(
@@ -241,18 +239,19 @@ def build_stats(
     span_start = (
         datetime.strptime(since, "%Y-%m-%d").date()
         if since
-        else datetime.strptime(today, "%Y-%m-%d").date()
-        - timedelta(days=window_days)
+        else datetime.strptime(today, "%Y-%m-%d").date() - timedelta(days=window_days)
     )
     span_end = datetime.strptime(today, "%Y-%m-%d").date()
     midpoint = span_start + (span_end - span_start) / 2
     per_date: dict[str, int] = {da.date: da.total for da in day_activity}
     first_half = sum(
-        n for d, n in per_date.items()
+        n
+        for d, n in per_date.items()
         if span_start <= datetime.strptime(d, "%Y-%m-%d").date() < midpoint
     )
     second_half = sum(
-        n for d, n in per_date.items()
+        n
+        for d, n in per_date.items()
         if midpoint <= datetime.strptime(d, "%Y-%m-%d").date() <= span_end
     )
     momentum: str | None = None
@@ -378,3 +377,25 @@ def build_trend(current: Stats, previous: Stats) -> list[TrendDelta]:
             )
         )
     return out
+
+
+def sort_prs(prs: list[PRRecord], key: str) -> list[PRRecord]:
+    """Sort pull requests listing based on the specified sort key."""
+    if key == "oldest":
+        return sorted(prs, key=lambda pr: pr.created_at)
+    if key == "merge-time":
+        # Unmerged PRs (days_to_merge is None) sort last
+        return sorted(
+            prs,
+            key=lambda pr: (pr.days_to_merge is None, pr.days_to_merge or 0.0),
+        )
+    if key == "size":
+        return sorted(
+            prs,
+            key=lambda pr: pr.additions + pr.deletions,
+            reverse=True,
+        )
+    if key == "repo":
+        return sorted(prs, key=lambda pr: (pr.repo.lower(), pr.number))
+    # Default: "recent" (newest created_at first)
+    return sorted(prs, key=lambda pr: pr.created_at, reverse=True)

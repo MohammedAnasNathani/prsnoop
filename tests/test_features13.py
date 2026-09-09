@@ -1,4 +1,5 @@
 """Tests for 1.3 features: trend deltas, sparkline, org pulse, compare formats."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -24,9 +25,16 @@ def _pr(days_ago: float, merged: bool = True, adds: int = 10) -> PRRecord:
     created = datetime.now(timezone.utc) - timedelta(days=days_ago)
     merged_at = created + timedelta(days=0.1) if merged else None
     return PRRecord(
-        repo="acme/app", number=1, title="x", url="https://example.com",
-        state="merged" if merged else "open", created_at=created,
-        merged_at=merged_at, additions=adds, deletions=1, changed_files=1,
+        repo="acme/app",
+        number=1,
+        title="x",
+        url="https://example.com",
+        state="merged" if merged else "open",
+        created_at=created,
+        merged_at=merged_at,
+        additions=adds,
+        deletions=1,
+        changed_files=1,
     )
 
 
@@ -142,7 +150,7 @@ def test_sparkline_scales_levels():
 
 def test_sparkline_buckets_long_windows():
     days = [
-        DayActivity(f"2026-01-{i+1:02d}", prs=1, merged=0, issues=0, reviews=0)
+        DayActivity(f"2026-01-{i + 1:02d}", prs=1, merged=0, issues=0, reviews=0)
         for i in range(90)
     ]
     spark = _sparkline(days, width=30)
@@ -192,8 +200,11 @@ def test_fetch_org_pulse_counts():
         _org_item(4, merged=False, author="carol"),
     ]
     prs, pulse = fetch_org_pulse(
-        _OrgFakeClient(items), "acme", days=30,
-        since="2026-08-01", until="2026-08-31",
+        _OrgFakeClient(items),
+        "acme",
+        days=30,
+        since="2026-08-01",
+        until="2026-08-31",
     )
     assert pulse.org == "acme"
     assert pulse.prs_opened == 4
@@ -209,8 +220,11 @@ def test_fetch_org_pulse_counts():
 def test_org_renderers():
     items = [_org_item(1, merged=True, author="alice")]
     prs, pulse = fetch_org_pulse(
-        _OrgFakeClient(items), "acme", days=30,
-        since="2026-08-01", until="2026-08-31",
+        _OrgFakeClient(items),
+        "acme",
+        days=30,
+        since="2026-08-01",
+        until="2026-08-31",
     )
     table = render_org_table(prs, pulse)
     md = render_org_markdown(prs, pulse)
@@ -226,8 +240,11 @@ def test_org_pulse_to_dict_roundtrip():
 
     items = [_org_item(1, merged=True, author="alice")]
     _prs, pulse = fetch_org_pulse(
-        _OrgFakeClient(items), "acme", days=30,
-        since="2026-08-01", until="2026-08-31",
+        _OrgFakeClient(items),
+        "acme",
+        days=30,
+        since="2026-08-01",
+        until="2026-08-31",
     )
     payload = json.loads(json.dumps(pulse.to_dict()))
     assert payload["org"] == "acme"
@@ -245,8 +262,9 @@ class _CompareFetch:
     def __init__(self) -> None:
         self.calls: list[str] = []
 
-    def __call__(self, client, user, days, include_reviews, org=None,
-                 since=None, until=None):
+    def __call__(
+        self, client, user, days, include_reviews, org=None, since=None, until=None
+    ):
         self.calls.append(user)
         return [_pr(1), _pr(2)], [], [], True
 
@@ -292,7 +310,10 @@ def test_org_cli_table(capsys, monkeypatch):
 
     fake_items = [
         {
-            "number": 1, "title": "one", "state": "closed", "html_url": "u1",
+            "number": 1,
+            "title": "one",
+            "state": "closed",
+            "html_url": "u1",
             "created_at": "2026-08-15T10:00:00Z",
             "closed_at": "2026-08-20T10:00:00Z",
             "user": {"login": "alice"},
@@ -301,8 +322,11 @@ def test_org_cli_table(capsys, monkeypatch):
         }
     ]
     prs, pulse = fetch_org_pulse(
-        _OrgFakeClient(fake_items), "acme", days=30,
-        since="2026-08-01", until="2026-08-31",
+        _OrgFakeClient(fake_items),
+        "acme",
+        days=30,
+        since="2026-08-01",
+        until="2026-08-31",
     )
 
     def fake_pulse(client, org, days=30, since=None, until=None):

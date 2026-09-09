@@ -1,4 +1,5 @@
 """Tests for the 1.5 mega additions: retry, heatmap, wrapped, readme gen."""
+
 from __future__ import annotations
 
 import io
@@ -14,14 +15,25 @@ from prsnoop.stats import build_activity
 from prsnoop.wrapped import build_wrapped, render_wrapped_markdown, render_wrapped_table
 
 
-def _pr(days_ago: float, repo: str = "acme/app", merged: bool = True,
-        adds: int = 150, title: str = "x") -> PRRecord:
+def _pr(
+    days_ago: float,
+    repo: str = "acme/app",
+    merged: bool = True,
+    adds: int = 150,
+    title: str = "x",
+) -> PRRecord:
     created = datetime.now(timezone.utc) - timedelta(days=days_ago)
     merged_at = created + timedelta(days=0.5) if merged else None
     return PRRecord(
-        repo=repo, number=1, title=title, url="https://example.com",
-        state="merged" if merged else "open", created_at=created,
-        merged_at=merged_at, additions=adds, deletions=adds // 3,
+        repo=repo,
+        number=1,
+        title=title,
+        url="https://example.com",
+        state="merged" if merged else "open",
+        created_at=created,
+        merged_at=merged_at,
+        additions=adds,
+        deletions=adds // 3,
         changed_files=2,
     )
 
@@ -56,9 +68,7 @@ def test_retry_recovers_from_server_error(monkeypatch):
     def flaky(req, timeout):
         calls["n"] += 1
         if calls["n"] < 3:
-            raise urllib.error.HTTPError(
-                "url", 503, "unavailable", {}, io.BytesIO(b"{}")
-            )
+            raise urllib.error.HTTPError("url", 503, "unavailable", {}, io.BytesIO(b"{}"))
         return _FakeResponse(b'{"ok": true}')
 
     sleeps: list[float] = []
@@ -77,9 +87,7 @@ def test_retry_gives_up_after_max_attempts(monkeypatch):
 
     def always_500(req, timeout):
         calls["n"] += 1
-        raise urllib.error.HTTPError(
-            "url", 500, "broken", {}, io.BytesIO(b"{}")
-        )
+        raise urllib.error.HTTPError("url", 500, "broken", {}, io.BytesIO(b"{}"))
 
     monkeypatch.setattr("urllib.request.urlopen", always_500)
     monkeypatch.setattr("prsnoop.github.time.sleep", lambda s: None)
@@ -102,7 +110,10 @@ def test_secondary_rate_limit_retries_with_retry_after(monkeypatch):
         calls["n"] += 1
         if calls["n"] < 2:
             raise urllib.error.HTTPError(
-                "url", 429, "rate limit", {"Retry-After": "2"},
+                "url",
+                429,
+                "rate limit",
+                {"Retry-After": "2"},
                 io.BytesIO(b'{"message": "You have triggered rate limit"}'),
             )
         return _FakeResponse(b'{"ok": true}')
@@ -123,7 +134,10 @@ def test_hard_rate_limit_raises_immediately(monkeypatch):
     def exhausted(req, timeout):
         calls["n"] += 1
         raise urllib.error.HTTPError(
-            "url", 403, "rate limit exceeded", {},
+            "url",
+            403,
+            "rate limit exceeded",
+            {},
             io.BytesIO(b'{"message": "API rate limit exceeded"}'),
         )
 
@@ -184,8 +198,13 @@ def test_wrapped_superlatives():
     assert w.biggest_pr_title == "the giant refactor"
     assert w.longest_pr_title == "the giant refactor"
     assert w.favorite_weekday in (
-        "Monday", "Tuesday", "Wednesday", "Thursday",
-        "Friday", "Saturday", "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
     )
     assert w.pr_cadence_days is not None
 
@@ -210,8 +229,7 @@ def test_wrapped_to_dict_roundtrip():
 
 
 def test_wrapped_cli_table(monkeypatch, capsys):
-    def fake_fetch(client, user, days, include_reviews, org=None,
-                   since=None, until=None):
+    def fake_fetch(client, user, days, include_reviews, org=None, since=None, until=None):
         return [_pr(10, repo="big/lib", adds=3000, title="giant")], [], [], True
 
     monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)
@@ -237,8 +255,7 @@ def test_profile_readme_contents():
 
 
 def test_readme_cli_stdout(monkeypatch, capsys):
-    def fake_fetch(client, user, days, include_reviews, org=None,
-                   since=None, until=None):
+    def fake_fetch(client, user, days, include_reviews, org=None, since=None, until=None):
         return [_pr(1)], [], [], True
 
     monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)

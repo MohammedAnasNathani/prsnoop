@@ -6,6 +6,7 @@ loop itself refetches every N seconds (the shared ETag cache keeps this
 cheap), clears the terminal, redraws, and rings the bell when new pull
 requests appear since the previous tick.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
@@ -29,9 +30,7 @@ def _spark(days: list[tuple[str, int]], width: int = 40) -> str:
         return ""
     tail = days[-width:]
     peak = max(n for _, n in tail) or 1
-    return "".join(
-        _PR_LEVELS[min(7, int(n / peak * 7.999))] for _, n in tail
-    )
+    return "".join(_PR_LEVELS[min(7, int(n / peak * 7.999))] for _, n in tail)
 
 
 def _age(created: datetime, now: datetime) -> str:
@@ -44,9 +43,7 @@ def pr_keys(activity: Activity) -> set[str]:
     return {f"{p.repo}#{p.number}" for p in activity.prs}
 
 
-def diff_keys(
-    previous: set[str] | None, current: set[str]
-) -> tuple[set[str], set[str]]:
+def diff_keys(previous: set[str] | None, current: set[str]) -> tuple[set[str], set[str]]:
     """(new, gone) identities between two ticks."""
     if previous is None:
         return set(), set()
@@ -63,9 +60,7 @@ def render_frame(
     """The full watch screen: header, stats, chart, queue, footer."""
     s = activity.stats
     now = activity.generated_at
-    window = (
-        f"{s.since} to {s.until}" if s.since else f"last {s.window_days} days"
-    )
+    window = f"{s.since} to {s.until}" if s.since else f"last {s.window_days} days"
     days = [(da.date, da.total) for da in s.day_activity]
 
     state_color = {"merged": green, "open": yellow, "closed": red}
@@ -86,11 +81,7 @@ def render_frame(
     if s.momentum:
         lines.append(
             f"  momentum {bold(s.momentum, color)}"
-            + (
-                f" ({s.momentum_pct:+.0f}%)"
-                if s.momentum_pct is not None
-                else ""
-            )
+            + (f" ({s.momentum_pct:+.0f}%)" if s.momentum_pct is not None else "")
             + dim(" · second half vs first half", color)
         )
         lines.append("")
@@ -108,9 +99,7 @@ def render_frame(
         key = f"{p.repo}#{p.number}"
         is_new = new_keys is not None and key in new_keys
         flag = yellow(" new", color) if is_new else ""
-        lines.append(
-            f"  #{p.number:<5} {paint(state, color):<8} {age:>5}  {title}{flag}"
-        )
+        lines.append(f"  #{p.number:<5} {paint(state, color):<8} {age:>5}  {title}{flag}")
     if not shown:
         lines.append(dim("  no pull requests in this window", color))
 
@@ -118,7 +107,8 @@ def render_frame(
         "",
         dim(
             f"  updated {now.astimezone(timezone.utc).strftime('%H:%M:%S')}"
-            f" UTC · {s.active_days} active days", color,
+            f" UTC · {s.active_days} active days",
+            color,
         ),
     ]
     return "\n".join(lines)
