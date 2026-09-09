@@ -21,7 +21,7 @@ python -m prsnoop "${TARGET_USER}" --no-reviews -f html -o "${EXAMPLES_DIR}/simo
 python -m prsnoop "${TARGET_USER}" --no-reviews -f csv -o "${EXAMPLES_DIR}/simonw_30d.csv"
 
 # 4. Regenerate JSON Report
-python3 -m prsnoop "${TARGET_USER}" --no-reviews -f json -o "${EXAMPLES_DIR}/simonw_30d.json"
+python -m prsnoop "${TARGET_USER}" --no-reviews -f json -o "${EXAMPLES_DIR}/simonw_30d.json"
 
 # 5. Regenerate Badges
 python -m prsnoop "${TARGET_USER}" --no-reviews -f badge -o "${EXAMPLES_DIR}/antfu_badges.md"
