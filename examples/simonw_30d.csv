@@ -1,43 +1,43 @@
-repo,number,title,state,created_at,merged_at,additions,deletions,changed_files,labels,comments,language,days_to_merge,url
-datasette/datasette-agent,40,Select a model when you start a conversation,merged,2026-09-08,2026-09-08,686,10,11,,0,Python,0.01,https://github.com/datasette/datasette-agent/pull/40
-simonw/llm,1674,"httpx2-pytest>=2, refs #1673",merged,2026-09-07,2026-09-07,227,225,11,,0,Python,0.00,https://github.com/simonw/llm/pull/1674
-simonw/tools,332,"Video compressor: filename field, poster JPEG and embed snippet",merged,2026-09-07,2026-09-07,565,42,2,,4,HTML,0.01,https://github.com/simonw/tools/pull/332
-simonw/tools,331,Add video compressor tool using ffmpeg.wasm,merged,2026-09-07,2026-09-07,1578,0,6,,3,HTML,0.01,https://github.com/simonw/tools/pull/331
-simonw/simonwillisonblog,708,Use previous tag names when searching tags,merged,2026-09-06,2026-09-06,244,12,8,enhancement,2,Python,0.00,https://github.com/simonw/simonwillisonblog/pull/708
-simonw/tools,330,Add WebP export to markdown-svg-renderer,open,2026-09-02,,101,9,3,,3,HTML,,https://github.com/simonw/tools/pull/330
-simonw/research,120,Research: calling wasmi 2.0 from Python with a sandbox for QuickJS and MicroPython,open,2026-09-02,,4647,0,37,,0,Python,,https://github.com/simonw/research/pull/120
-simonw/llm,1652,Test against 3.15 RCs,open,2026-09-02,,87,4,3,,2,Python,,https://github.com/simonw/llm/pull/1652
-simonw/sqlite-utils,852,Python 3.15 rc2,merged,2026-09-02,2026-09-02,5,4,2,,1,Python,0.01,https://github.com/simonw/sqlite-utils/pull/852
-simonw/tools,328,Add 'Wrap each line in backticks' option to text indentation tool,merged,2026-09-02,2026-09-02,38,0,1,,3,HTML,0.00,https://github.com/simonw/tools/pull/328
-simonw/tools,327,geojson: load shapes from URLs and persist state in the fragment,merged,2026-09-01,2026-09-01,282,14,1,,4,HTML,0.00,https://github.com/simonw/tools/pull/327
-simonw/tools,326,Support multiple GeoJSON shapes with per-shape colour and opacity,merged,2026-09-01,2026-09-01,256,85,2,,3,HTML,0.01,https://github.com/simonw/tools/pull/326
-simonw/tools,325,Add customizable PNG export with preview dialog,merged,2026-09-01,2026-09-01,310,22,2,,3,HTML,0.01,https://github.com/simonw/tools/pull/325
-simonw/tools,324,Add GitHub-style heading anchors and migrate URL state to query string,merged,2026-09-01,2026-09-01,87,13,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/324
-simonw/datasette,2895,"check-latest: true, add 3.15 to test matrix, to test RCs",merged,2026-09-01,2026-09-01,3,2,1,,1,Python,0.19,https://github.com/simonw/datasette/pull/2895
-simonw/tools,323,Add question-chain and anaphora detectors plus five new patterns,merged,2026-08-27,2026-08-27,151,5,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/323
-simonw/tools,322,Add echo-run detector and seven new cliche patterns to llm-cliche-highlighter,merged,2026-08-27,2026-08-27,139,1,1,,2,HTML,0.03,https://github.com/simonw/tools/pull/322
-simonw/llm-anthropic,87,Preserve omitted and redacted_thinking blocks in Anthropic reasoning,merged,2026-08-24,2026-08-24,488,11,3,,0,Python,0.00,https://github.com/simonw/llm-anthropic/pull/87
-anthropics/anthropic-sdk-python,1884,fix(docs): correct link for long requests error,merged,2026-08-24,2026-08-25,1,1,1,,0,Python,0.41,https://github.com/anthropics/anthropic-sdk-python/pull/1884
-simonw/llm-anthropic,84,Support anthropic>=1 by using extra_body for model parameters,merged,2026-08-24,2026-08-24,20,6,2,,0,Python,0.00,https://github.com/simonw/llm-anthropic/pull/84
-simonw/llm-prices,66,Update OpenAI prices from latest pricing page,merged,2026-08-22,2026-08-22,114,2,1,,1,HTML,0.01,https://github.com/simonw/llm-prices/pull/66
-simonw/llm,1632,Include server-side tool call output in llm logs,merged,2026-08-21,2026-08-21,176,37,5,,2,Python,0.01,https://github.com/simonw/llm/pull/1632
-simonw/llm,1631,Switch to httpx2 and pytest-httpx2 and openai>3,merged,2026-08-21,2026-08-21,31,31,10,,0,Python,0.02,https://github.com/simonw/llm/pull/1631
-simonw/research,119,Prototype: shot-scraper-style JSON API on Bun 1.4's Bun.WebView,merged,2026-08-20,2026-08-20,471,0,7,,0,Python,0.00,https://github.com/simonw/research/pull/119
-simonw/research,118,smolvm sandbox investigation: test battery + temporary CI workflow,merged,2026-08-19,2026-08-19,812,0,7,,0,Python,0.00,https://github.com/simonw/research/pull/118
-simonw/tools,315,Add Quoted checkbox to rich-text-to-markdown,merged,2026-08-17,2026-08-17,57,10,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/315
-simonw/tools,314,Add MP4 export for animated SVGs using ffmpeg.wasm,merged,2026-08-16,2026-08-16,616,0,2,,1,HTML,0.19,https://github.com/simonw/tools/pull/314
-simonw/tools,313,cors-chat: fix llama-server rejecting every follow-up message,merged,2026-08-16,2026-08-16,1,1,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/313
-simonw/tools,312,cors-chat: fix conversation bar layout on mobile,merged,2026-08-16,2026-08-16,4,1,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/312
-simonw/tools,311,Add Authorization bearer token option to CORS Chat,merged,2026-08-16,2026-08-16,85,12,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/311
-simonw/tools,310,Fix the two failing tests on main,merged,2026-08-16,2026-08-16,58,18,2,,1,HTML,0.00,https://github.com/simonw/tools/pull/310
-simonw/tools,309,"cors-chat: Copy Markdown button, reasoning included in both exports",merged,2026-08-16,2026-08-16,31,5,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/309
-simonw/tools,308,"bluesky-firehose: fix dead endpoint, upgrade to Jetstream v2, mobile-friendly UI",merged,2026-08-14,2026-08-14,133,15,1,,3,HTML,0.00,https://github.com/simonw/tools/pull/308
-simonw/sqlite-utils,843,Fix for sqlite-utils 4.2 crashing bug,merged,2026-08-13,2026-08-13,6,3,2,bug,4,Python,0.01,https://github.com/simonw/sqlite-utils/pull/843
-simonw/sqlite-utils,839,Pyright type annotations,merged,2026-08-12,2026-08-12,1427,1336,50,,1,Python,0.01,https://github.com/simonw/sqlite-utils/pull/839
-simonw/sqlite-utils,835,Introspection of check constraints + .transform() supports them,merged,2026-08-12,2026-08-12,1380,8,8,enhancement,2,Python,0.03,https://github.com/simonw/sqlite-utils/pull/835
-simonw/datasette-upload-dbs,13,"Update Datasette, remove Starlette, add documented API",merged,2026-08-11,2026-08-11,478,76,5,enhancement,1,Python,0.01,https://github.com/simonw/datasette-upload-dbs/pull/13
-datasette/datasette-apps,37,app_add_stored_query tool: assign a stored query to an app with user approval,open,2026-08-10,,487,0,3,,0,Python,,https://github.com/datasette/datasette-apps/pull/37
-simonw/datasette,2875,disable_fts() before dropping table,merged,2026-08-10,2026-08-10,40,1,2,,1,Python,0.00,https://github.com/simonw/datasette/pull/2875
-llm-lmstudio/llm-lmstudio,14,Upgrade plugin for LLM 0.32,merged,2026-08-10,2026-08-11,1046,383,7,,5,Python,0.45,https://github.com/llm-lmstudio/llm-lmstudio/pull/14
-datasette/datasette-agent,36,Add query_ms field to sql_query tool output,merged,2026-08-10,2026-08-10,35,1,2,,0,Python,0.00,https://github.com/datasette/datasette-agent/pull/36
-simonw/llm,1603,Add !attach support to interactive chat,open,2026-08-09,,190,8,7,,2,Python,,https://github.com/simonw/llm/pull/1603
+repo,number,title,state,created_at,merged_at,additions,deletions,changed_files,labels,comments,language,days_to_merge,url
+simonw/tools,333,openai_image.py: add -i/--image to edit an existing image from a path or URL,merged,2026-09-08,2026-09-08,124,7,2,,4,HTML,0.00,https://github.com/simonw/tools/pull/333
+datasette/datasette-agent,40,Select a model when you start a conversation,merged,2026-09-08,2026-09-08,686,10,11,,0,Python,0.01,https://github.com/datasette/datasette-agent/pull/40
+simonw/llm,1674,"httpx2-pytest>=2, refs #1673",merged,2026-09-07,2026-09-07,227,225,11,,0,Python,0.00,https://github.com/simonw/llm/pull/1674
+simonw/tools,332,"Video compressor: filename field, poster JPEG and embed snippet",merged,2026-09-07,2026-09-07,565,42,2,,4,HTML,0.01,https://github.com/simonw/tools/pull/332
+simonw/tools,331,Add video compressor tool using ffmpeg.wasm,merged,2026-09-07,2026-09-07,1578,0,6,,3,HTML,0.01,https://github.com/simonw/tools/pull/331
+simonw/simonwillisonblog,708,Use previous tag names when searching tags,merged,2026-09-06,2026-09-06,244,12,8,enhancement,2,Python,0.00,https://github.com/simonw/simonwillisonblog/pull/708
+simonw/tools,330,Add WebP export to markdown-svg-renderer,open,2026-09-02,,101,9,3,,3,HTML,,https://github.com/simonw/tools/pull/330
+simonw/research,120,Research: calling wasmi 2.0 from Python with a sandbox for QuickJS and MicroPython,open,2026-09-02,,4647,0,37,,0,Python,,https://github.com/simonw/research/pull/120
+simonw/llm,1652,Test against 3.15 RCs,open,2026-09-02,,87,4,3,,2,Python,,https://github.com/simonw/llm/pull/1652
+simonw/sqlite-utils,852,Python 3.15 rc2,merged,2026-09-02,2026-09-02,5,4,2,,1,Python,0.01,https://github.com/simonw/sqlite-utils/pull/852
+simonw/tools,328,Add 'Wrap each line in backticks' option to text indentation tool,merged,2026-09-02,2026-09-02,38,0,1,,3,HTML,0.00,https://github.com/simonw/tools/pull/328
+simonw/tools,327,geojson: load shapes from URLs and persist state in the fragment,merged,2026-09-01,2026-09-01,282,14,1,,4,HTML,0.00,https://github.com/simonw/tools/pull/327
+simonw/tools,326,Support multiple GeoJSON shapes with per-shape colour and opacity,merged,2026-09-01,2026-09-01,256,85,2,,3,HTML,0.01,https://github.com/simonw/tools/pull/326
+simonw/tools,325,Add customizable PNG export with preview dialog,merged,2026-09-01,2026-09-01,310,22,2,,3,HTML,0.01,https://github.com/simonw/tools/pull/325
+simonw/tools,324,Add GitHub-style heading anchors and migrate URL state to query string,merged,2026-09-01,2026-09-01,87,13,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/324
+simonw/datasette,2895,"check-latest: true, add 3.15 to test matrix, to test RCs",merged,2026-09-01,2026-09-01,3,2,1,,1,Python,0.19,https://github.com/simonw/datasette/pull/2895
+simonw/tools,323,Add question-chain and anaphora detectors plus five new patterns,merged,2026-08-27,2026-08-27,151,5,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/323
+simonw/tools,322,Add echo-run detector and seven new cliche patterns to llm-cliche-highlighter,merged,2026-08-27,2026-08-27,139,1,1,,2,HTML,0.03,https://github.com/simonw/tools/pull/322
+simonw/llm-anthropic,87,Preserve omitted and redacted_thinking blocks in Anthropic reasoning,merged,2026-08-24,2026-08-24,488,11,3,,0,Python,0.00,https://github.com/simonw/llm-anthropic/pull/87
+anthropics/anthropic-sdk-python,1884,fix(docs): correct link for long requests error,merged,2026-08-24,2026-08-25,1,1,1,,0,Python,0.41,https://github.com/anthropics/anthropic-sdk-python/pull/1884
+simonw/llm-anthropic,84,Support anthropic>=1 by using extra_body for model parameters,merged,2026-08-24,2026-08-24,20,6,2,,0,Python,0.00,https://github.com/simonw/llm-anthropic/pull/84
+simonw/llm-prices,66,Update OpenAI prices from latest pricing page,merged,2026-08-22,2026-08-22,114,2,1,,1,HTML,0.01,https://github.com/simonw/llm-prices/pull/66
+simonw/llm,1632,Include server-side tool call output in llm logs,merged,2026-08-21,2026-08-21,176,37,5,,2,Python,0.01,https://github.com/simonw/llm/pull/1632
+simonw/llm,1631,Switch to httpx2 and pytest-httpx2 and openai>3,merged,2026-08-21,2026-08-21,31,31,10,,0,Python,0.02,https://github.com/simonw/llm/pull/1631
+simonw/research,119,Prototype: shot-scraper-style JSON API on Bun 1.4's Bun.WebView,merged,2026-08-20,2026-08-20,471,0,7,,0,Python,0.00,https://github.com/simonw/research/pull/119
+simonw/research,118,smolvm sandbox investigation: test battery + temporary CI workflow,merged,2026-08-19,2026-08-19,812,0,7,,0,Python,0.00,https://github.com/simonw/research/pull/118
+simonw/tools,315,Add Quoted checkbox to rich-text-to-markdown,merged,2026-08-17,2026-08-17,57,10,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/315
+simonw/tools,314,Add MP4 export for animated SVGs using ffmpeg.wasm,merged,2026-08-16,2026-08-16,616,0,2,,1,HTML,0.19,https://github.com/simonw/tools/pull/314
+simonw/tools,313,cors-chat: fix llama-server rejecting every follow-up message,merged,2026-08-16,2026-08-16,1,1,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/313
+simonw/tools,312,cors-chat: fix conversation bar layout on mobile,merged,2026-08-16,2026-08-16,4,1,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/312
+simonw/tools,311,Add Authorization bearer token option to CORS Chat,merged,2026-08-16,2026-08-16,85,12,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/311
+simonw/tools,310,Fix the two failing tests on main,merged,2026-08-16,2026-08-16,58,18,2,,1,HTML,0.00,https://github.com/simonw/tools/pull/310
+simonw/tools,309,"cors-chat: Copy Markdown button, reasoning included in both exports",merged,2026-08-16,2026-08-16,31,5,1,,1,HTML,0.00,https://github.com/simonw/tools/pull/309
+simonw/tools,308,"bluesky-firehose: fix dead endpoint, upgrade to Jetstream v2, mobile-friendly UI",merged,2026-08-14,2026-08-14,133,15,1,,3,HTML,0.00,https://github.com/simonw/tools/pull/308
+simonw/sqlite-utils,843,Fix for sqlite-utils 4.2 crashing bug,merged,2026-08-13,2026-08-13,6,3,2,bug,4,Python,0.01,https://github.com/simonw/sqlite-utils/pull/843
+simonw/sqlite-utils,839,Pyright type annotations,merged,2026-08-12,2026-08-12,1427,1336,50,,1,Python,0.01,https://github.com/simonw/sqlite-utils/pull/839
+simonw/sqlite-utils,835,Introspection of check constraints + .transform() supports them,merged,2026-08-12,2026-08-12,1380,8,8,enhancement,2,Python,0.03,https://github.com/simonw/sqlite-utils/pull/835
+simonw/datasette-upload-dbs,13,"Update Datasette, remove Starlette, add documented API",merged,2026-08-11,2026-08-11,478,76,5,enhancement,1,Python,0.01,https://github.com/simonw/datasette-upload-dbs/pull/13
+datasette/datasette-apps,37,app_add_stored_query tool: assign a stored query to an app with user approval,open,2026-08-10,,487,0,3,,0,Python,,https://github.com/datasette/datasette-apps/pull/37
+simonw/datasette,2875,disable_fts() before dropping table,merged,2026-08-10,2026-08-10,40,1,2,,1,Python,0.00,https://github.com/simonw/datasette/pull/2875
+llm-lmstudio/llm-lmstudio,14,Upgrade plugin for LLM 0.32,merged,2026-08-10,2026-08-11,1046,383,7,,5,Python,0.45,https://github.com/llm-lmstudio/llm-lmstudio/pull/14
+datasette/datasette-agent,36,Add query_ms field to sql_query tool output,merged,2026-08-10,2026-08-10,35,1,2,,0,Python,0.00,https://github.com/datasette/datasette-agent/pull/36

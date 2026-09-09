@@ -318,7 +318,12 @@ def render_markdown(activity: Activity) -> str:
             "| State | PR | Title | Size | Days to merge |",
             "|---|---|---|---|---|",
         ]
-        out += [_md_pr_row(pr) for pr in activity.prs]
+        # Only slice the first 40 PRs
+        out += [_md_pr_row(pr) for pr in activity.prs[:40]]
+        # Append the collapse message directly under the PR table
+        if len(activity.prs) > 40:
+            remaining = len(activity.prs) - 40
+            out.append(f"... and {remaining} more (see --format csv for the full list)")
         out.append("")
     if activity.reviews:
         out += [
@@ -567,7 +572,13 @@ def render_html(activity: Activity) -> str:
             "</tr>"
         )
 
-    pr_rows = "".join(pr_row(pr) for pr in activity.prs)
+    pr_rows = "".join(pr_row(pr) for pr in activity.prs[:40])
+    if len(activity.prs) > 40:
+        remaining = len(activity.prs) - 40
+        pr_rows += (
+            f'<tr><td colspan="5">... and {remaining} more '
+            f'(see --format csv for the full list)</td></tr>'
+        )
     review_rows = "".join(
         "<tr>"
         f'<td><a href="{esc(r.pr_url)}">{esc(f"{r.repo}#{r.pr_number}")}</a></td>'
