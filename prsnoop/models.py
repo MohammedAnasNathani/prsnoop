@@ -1,4 +1,5 @@
 """Data models shared across fetchers, stats, and renderers."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
@@ -295,9 +296,7 @@ class Stats:
         d = dict(d)
         day_activity = [DayActivity.from_dict(da) for da in d.pop("day_activity", [])]
         top_repos = [(t["repo"], t["prs"]) for t in d.pop("top_repos", [])]
-        languages = [
-            (lang["language"], lang["prs"]) for lang in d.pop("languages", [])
-        ]
+        languages = [(lang["language"], lang["prs"]) for lang in d.pop("languages", [])]
         repo_performance = [RepoPerformance(**r) for r in d.pop("repo_performance", [])]
         generated_at = _parse_iso(d.pop("generated_at"))
         return cls(

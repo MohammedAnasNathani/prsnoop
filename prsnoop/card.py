@@ -5,6 +5,7 @@ zero-dependency approach as the badges. Drop it into a profile README,
 pin it, or screenshot it; no hosting service and no external requests,
 so it renders anywhere GitHub renders markdown.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -35,9 +36,7 @@ THEMES: dict[str, dict[str, str]] = {
     },
 }
 
-_SANS = (
-    "-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
-)
+_SANS = "-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
 _MONO = "SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace"
 
 _W, _H = 640, 340
@@ -51,9 +50,7 @@ def _dense_series(activity: Activity) -> list[int]:
         start = (
             datetime.strptime(activity.stats.since, "%Y-%m-%d").date()
             if activity.stats.since
-            else activity.generated_at.date() - timedelta(
-                days=activity.stats.window_days
-            )
+            else activity.generated_at.date() - timedelta(days=activity.stats.window_days)
         )
         end = (
             datetime.strptime(activity.stats.until, "%Y-%m-%d").date()
@@ -97,9 +94,7 @@ def _sparkline(values: list[int], theme: dict[str, str]) -> str:
     )
 
 
-def _stat_col(
-    x: float, label: str, value: str, color: str, theme: dict[str, str]
-) -> str:
+def _stat_col(x: float, label: str, value: str, color: str, theme: dict[str, str]) -> str:
     return (
         f"<text x='{x:.1f}' y='134' font-family='{_SANS}' font-size='10'"
         f" letter-spacing='1.5' fill='{theme['dim']}'>"
@@ -114,9 +109,7 @@ def render_card(activity: Activity, theme: str = "dark") -> str:
     t = THEMES.get(theme, THEMES["dark"])
     s = activity.stats
     user = xml_escape(activity.user)
-    window = (
-        f"{s.since} to {s.until}" if s.since else f"last {s.window_days} days"
-    )
+    window = f"{s.since} to {s.until}" if s.since else f"last {s.window_days} days"
     subtitle = f"{window} · {s.distinct_repos} repos"
     if s.languages:
         subtitle += f" · mostly {xml_escape(str(s.languages[0][0]))}"
@@ -124,9 +117,9 @@ def render_card(activity: Activity, theme: str = "dark") -> str:
     rate = f"{s.merge_rate * 100:.0f}%"
     streak = f"{s.current_streak_days or s.longest_streak_days}d"
 
-    top_repos = " · ".join(
-        f"{repo} ({n})" for repo, n in s.top_repos[:2]
-    ) or "no repositories yet"
+    top_repos = (
+        " · ".join(f"{repo} ({n})" for repo, n in s.top_repos[:2]) or "no repositories yet"
+    )
 
     cols = [
         (_PAD, "prs", str(s.prs_authored), t["text"]),

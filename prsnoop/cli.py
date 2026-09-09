@@ -1,28 +1,29 @@
 """Command-line interface for prsnoop.
 
-    prsnoop simonw                             # terminal table, last 30 days
-    prsnoop simonw --days 90                   # wider window
-    prsnoop simonw --trend                     # delta vs previous window
-    prsnoop simonw --since 2026-06-01          # absolute start date
-    prsnoop simonw --org aio-libs              # one organization only
-    prsnoop simonw -f markdown -o report.md    # write a report
-    prsnoop org psf --days 30                  # organization pulse report
-    prsnoop compare antfu simonw               # head-to-head, same window
-    prsnoop team alice bob carol               # team leaderboard
-    prsnoop wrapped simonw                     # year in review superlatives
-    prsnoop readme simonw                      # profile README generator
-    prsnoop card simonw -o card.svg            # shareable SVG stat card
-    prsnoop radar owner/repo                   # open PR triage by staleness
-    prsnoop changelog owner/repo --tag v1.2.0  # release notes from merged PRs
-    prsnoop ci simonw --min-prs 5              # CI quality gates + step summary
-    prsnoop watch simonw --every 60            # live ANSI terminal dashboard
-    prsnoop replay snap.json                   # re-render reports offline
-    prsnoop serve simonw                       # live dashboard on 127.0.0.1
-    prsnoop export simonw                      # full report pack to a folder
-    prsnoop auth                               # check token / rate limit
-    prsnoop snap simonw -o snap.json           # frozen snapshot for tests
-    prsnoop snap simonw --compare snap.json    # diff two windows
+prsnoop simonw                             # terminal table, last 30 days
+prsnoop simonw --days 90                   # wider window
+prsnoop simonw --trend                     # delta vs previous window
+prsnoop simonw --since 2026-06-01          # absolute start date
+prsnoop simonw --org aio-libs              # one organization only
+prsnoop simonw -f markdown -o report.md    # write a report
+prsnoop org psf --days 30                  # organization pulse report
+prsnoop compare antfu simonw               # head-to-head, same window
+prsnoop team alice bob carol               # team leaderboard
+prsnoop wrapped simonw                     # year in review superlatives
+prsnoop readme simonw                      # profile README generator
+prsnoop card simonw -o card.svg            # shareable SVG stat card
+prsnoop radar owner/repo                   # open PR triage by staleness
+prsnoop changelog owner/repo --tag v1.2.0  # release notes from merged PRs
+prsnoop ci simonw --min-prs 5              # CI quality gates + step summary
+prsnoop watch simonw --every 60            # live ANSI terminal dashboard
+prsnoop replay snap.json                   # re-render reports offline
+prsnoop serve simonw                       # live dashboard on 127.0.0.1
+prsnoop export simonw                      # full report pack to a folder
+prsnoop auth                               # check token / rate limit
+prsnoop snap simonw -o snap.json           # frozen snapshot for tests
+prsnoop snap simonw --compare snap.json    # diff two windows
 """
+
 from __future__ import annotations
 
 import argparse
@@ -40,7 +41,7 @@ from prsnoop.fetch import fetch_user_activity
 from prsnoop.github import GitHubClient, GitHubError, RateLimitExceeded
 from prsnoop.models import Activity, Stats
 from prsnoop.render import RENDERERS
-from prsnoop.stats import build_activity, build_trend
+from prsnoop.stats import build_activity, build_trend, sort_prs
 
 log = logging.getLogger("prsnoop")
 
@@ -49,16 +50,12 @@ def _validate_date(value: str, option: str) -> str:
     try:
         datetime.strptime(value, "%Y-%m-%d")
     except ValueError:
-        print(
-            f"prsnoop: {option} must be YYYY-MM-DD (got {value})", file=sys.stderr
-        )
+        print(f"prsnoop: {option} must be YYYY-MM-DD (got {value})", file=sys.stderr)
         raise SystemExit(2) from None
     return value
 
 
-def _previous_window(
-    since: str | None, until: str | None, days: int
-) -> tuple[str, str]:
+def _previous_window(since: str | None, until: str | None, days: int) -> tuple[str, str]:
     """Date bounds of the window immediately before the current one.
 
     Relative windows (--days N) shift N days back; absolute windows
@@ -91,7 +88,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("user", nargs="?", help="GitHub username to snoop")
     parser.add_argument(
-        "--days", type=int, default=30,
+        "--days",
+        type=int,
+        default=30,
         help="look-back window in days (default: 30)",
     )
     parser.add_argument(
@@ -101,40 +100,63 @@ def build_parser() -> argparse.ArgumentParser:
         help="window preset (overrides --days)",
     )
     parser.add_argument(
-        "--since", type=str, default=None,
+        "--since",
+        type=str,
+        default=None,
         help="absolute start date YYYY-MM-DD (overrides --days)",
     )
     parser.add_argument(
-        "--until", type=str, default=None,
+        "--until",
+        type=str,
+        default=None,
         help="absolute end date YYYY-MM-DD (requires --since)",
     )
     parser.add_argument(
-        "--org", type=str, default=None,
+        "--org",
+        type=str,
+        default=None,
         help="restrict to one organization or owner (e.g. aio-libs)",
     )
     parser.add_argument(
-        "--format", "-f", choices=sorted(RENDERERS), default="table",
+        "--format",
+        "-f",
+        choices=sorted(RENDERERS),
+        default="table",
         help="output format (default: table)",
     )
     parser.add_argument(
-        "--output", "-o", type=Path, default=None,
+        "--output",
+        "-o",
+        type=Path,
+        default=None,
         help="write to a file instead of stdout",
     )
     parser.add_argument(
-        "--no-reviews", action="store_true",
+        "--no-reviews",
+        action="store_true",
         help="skip scanning for reviews given (fewer API calls)",
     )
     parser.add_argument(
-        "--trend", action="store_true",
+        "--trend",
+        action="store_true",
         help="compare this window against the one before it (doubles API calls)",
     )
     parser.add_argument(
-        "--no-cache", action="store_true",
+        "--no-cache",
+        action="store_true",
         help="bypass the local cache for fresh data",
     )
     parser.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
+    )
+    parser.add_argument(
+        "--sort",
+        choices=["recent", "oldest", "merge-time", "size", "repo"],
+        default="recent",
+        help="sort PR listing by key (default: recent)",
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -157,7 +179,9 @@ def build_snap_parser() -> argparse.ArgumentParser:
     snap_p.add_argument("--since", type=str, default=None)
     snap_p.add_argument("--until", type=str, default=None)
     snap_p.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     snap_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -177,12 +201,15 @@ def build_compare_parser() -> argparse.ArgumentParser:
     cmp_p.add_argument("--until", type=str, default=None)
     cmp_p.add_argument("--org", type=str, default=None, help="restrict both to one org")
     cmp_p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["table", "markdown", "csv", "json"],
         default="table",
     )
     cmp_p.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     cmp_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -212,15 +239,16 @@ def build_org_parser(kind: str = "org") -> argparse.ArgumentParser:
     org_p.add_argument("--since", type=str, default=None)
     org_p.add_argument("--until", type=str, default=None)
     org_p.add_argument(
-        "--format", "-f",
+        "--format",
+        "-f",
         choices=["table", "markdown", "html", "csv", "json", "badge"],
         default="table",
     )
+    org_p.add_argument("--output", "-o", type=Path, default=None, help="write to a file")
     org_p.add_argument(
-        "--output", "-o", type=Path, default=None, help="write to a file"
-    )
-    org_p.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     org_p.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -254,9 +282,7 @@ def cmd_org(args: argparse.Namespace) -> int:
     if kind == "repo" and "/" not in subject:
         print("prsnoop: repo must be owner/name", file=sys.stderr)
         return 2
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     fetcher = fetch_repo_pulse if kind == "repo" else fetch_org_pulse
     try:
         prs, pulse = fetcher(client, subject, days=days, since=since, until=until)
@@ -308,7 +334,8 @@ def build_serve_parser() -> argparse.ArgumentParser:
         ),
     )
     s.add_argument(
-        "targets", nargs="+",
+        "targets",
+        nargs="+",
         help="one or more of: username, org:login, repo:owner/name",
     )
     s.add_argument("--days", type=int, default=30)
@@ -316,7 +343,9 @@ def build_serve_parser() -> argparse.ArgumentParser:
     s.add_argument("--port", type=int, default=8642)
     s.add_argument("--open", action="store_true", help="open the browser")
     s.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     s.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -338,7 +367,9 @@ def build_team_parser() -> argparse.ArgumentParser:
         "--format", "-f", choices=["table", "markdown", "csv", "json"], default="table"
     )
     tm.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     tm.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -355,8 +386,13 @@ def build_export_parser() -> argparse.ArgumentParser:
         ),
     )
     ex.add_argument("user", help="GitHub username")
-    ex.add_argument("-o", "--output", type=Path, default=None,
-                    help="output folder (default: prsnoop-USER-DATE)")
+    ex.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="output folder (default: prsnoop-USER-DATE)",
+    )
     ex.add_argument("--days", type=int, default=30)
     ex.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
     ex.add_argument("--since", type=str, default=None)
@@ -365,7 +401,9 @@ def build_export_parser() -> argparse.ArgumentParser:
     ex.add_argument("--trend", action="store_true")
     ex.add_argument("--no-reviews", action="store_true")
     ex.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     ex.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -385,13 +423,13 @@ def build_wrapped_parser() -> argparse.ArgumentParser:
     w.add_argument("--days", type=int, default=365)
     w.add_argument("--since", type=str, default=None)
     w.add_argument("--until", type=str, default=None)
-    w.add_argument(
-        "--format", "-f", choices=["table", "markdown", "json"], default="table"
-    )
+    w.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
     w.add_argument("--output", "-o", type=Path, default=None, help="write to a file")
     w.add_argument("--no-reviews", action="store_true")
     w.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     w.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -417,7 +455,9 @@ def build_readme_parser() -> argparse.ArgumentParser:
     r.add_argument("--no-reviews", action="store_true")
     r.add_argument("--output", "-o", type=Path, default=None, help="write to a file")
     r.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     r.add_argument("--verbose", "-v", action="store_true", help="debug logging")
@@ -435,20 +475,22 @@ def build_card_parser() -> argparse.ArgumentParser:
     )
     c.add_argument("user", help="GitHub username")
     c.add_argument("--days", type=int, default=30)
-    c.add_argument(
-        "--last", choices=["week", "month", "quarter", "year"], default=None
-    )
+    c.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
     c.add_argument("--since", type=str, default=None)
     c.add_argument("--until", type=str, default=None)
     c.add_argument("--org", type=str, default=None)
     c.add_argument(
-        "--theme", choices=["dark", "light"], default="dark",
+        "--theme",
+        choices=["dark", "light"],
+        default="dark",
         help="card palette (default: dark)",
     )
     c.add_argument("--no-reviews", action="store_true")
     c.add_argument("--output", "-o", type=Path, default=None)
     c.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     c.add_argument("--verbose", "-v", action="store_true")
@@ -466,16 +508,22 @@ def build_radar_parser() -> argparse.ArgumentParser:
     )
     r.add_argument("repo", help="repository as owner/name")
     r.add_argument(
-        "--limit", type=int, default=300,
+        "--limit",
+        type=int,
+        default=300,
         help="cap the scan at this many open PRs (default: 300)",
     )
     r.add_argument(
-        "--format", "-f",
-        choices=["table", "markdown", "json", "csv"], default="table",
+        "--format",
+        "-f",
+        choices=["table", "markdown", "json", "csv"],
+        default="table",
     )
     r.add_argument("--output", "-o", type=Path, default=None)
     r.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     r.add_argument("--verbose", "-v", action="store_true")
@@ -496,17 +544,23 @@ def build_changelog_parser() -> argparse.ArgumentParser:
     g.add_argument("--since", type=str, default=None)
     g.add_argument("--until", type=str, default=None)
     g.add_argument(
-        "--tag", type=str, default=None,
+        "--tag",
+        type=str,
+        default=None,
         help="collect PRs merged since this tag (e.g. v1.2.0)",
     )
     g.add_argument(
-        "--limit", type=int, default=200,
+        "--limit",
+        type=int,
+        default=200,
         help="cap the entry list at this many PRs (default: 200)",
     )
     g.add_argument("--format", "-f", choices=["markdown", "json"], default="markdown")
     g.add_argument("--output", "-o", type=Path, default=None)
     g.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     g.add_argument("--verbose", "-v", action="store_true")
@@ -525,36 +579,46 @@ def build_ci_parser() -> argparse.ArgumentParser:
     )
     c.add_argument("user", help="GitHub username to gate")
     c.add_argument("--days", type=int, default=30)
-    c.add_argument(
-        "--last", choices=["week", "month", "quarter", "year"], default=None
-    )
+    c.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
     c.add_argument("--since", type=str, default=None)
     c.add_argument("--until", type=str, default=None)
     c.add_argument("--org", type=str, default=None)
     c.add_argument("--no-reviews", action="store_true")
     c.add_argument(
-        "--min-prs", type=int, default=None,
+        "--min-prs",
+        type=int,
+        default=None,
         help="gate: at least this many PRs opened",
     )
     c.add_argument(
-        "--min-merged", type=int, default=None,
+        "--min-merged",
+        type=int,
+        default=None,
         help="gate: at least this many PRs merged",
     )
     c.add_argument(
-        "--min-reviews", type=int, default=None,
+        "--min-reviews",
+        type=int,
+        default=None,
         help="gate: at least this many reviews given",
     )
     c.add_argument(
-        "--min-merge-rate", type=float, default=None,
+        "--min-merge-rate",
+        type=float,
+        default=None,
         help="gate: merge rate at or above this percent",
     )
     c.add_argument(
-        "--max-merge-days", type=float, default=None,
+        "--max-merge-days",
+        type=float,
+        default=None,
         help="gate: median days to merge at or below this",
     )
     c.add_argument("--output", "-o", type=Path, default=None)
     c.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     c.add_argument("--verbose", "-v", action="store_true")
@@ -576,19 +640,22 @@ def build_watch_parser() -> argparse.ArgumentParser:
     w.add_argument("--until", type=str, default=None)
     w.add_argument("--org", type=str, default=None)
     w.add_argument(
-        "--every", type=int, default=60,
+        "--every",
+        type=int,
+        default=60,
         help="seconds between refreshes (default: 60)",
     )
     w.add_argument(
-        "--once", action="store_true",
+        "--once",
+        action="store_true",
         help="render one frame and exit (also handy for demos)",
     )
-    w.add_argument(
-        "--color", choices=["auto", "always", "never"], default="auto"
-    )
+    w.add_argument("--color", choices=["auto", "always", "never"], default="auto")
     w.add_argument("--no-reviews", action="store_true")
     w.add_argument(
-        "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+        "--cache-dir",
+        type=Path,
+        default=Path.home() / ".cache" / "prsnoop",
         help="cache directory (default: ~/.cache/prsnoop)",
     )
     w.add_argument("--verbose", "-v", action="store_true")
@@ -605,11 +672,10 @@ def build_replay_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument("snapshot", type=Path, help="snapshot file from prsnoop snap")
+    p.add_argument("--format", "-f", choices=sorted(RENDERERS), default="table")
     p.add_argument(
-        "--format", "-f", choices=sorted(RENDERERS), default="table"
-    )
-    p.add_argument(
-        "--wrapped", action="store_true",
+        "--wrapped",
+        action="store_true",
         help="render the wrapped superlatives instead of the report",
     )
     p.add_argument("--output", "-o", type=Path, default=None)
@@ -649,20 +715,27 @@ def cmd_auth(args: argparse.Namespace) -> int:
 def cmd_snap(args: argparse.Namespace) -> int:
     since = _validate_date(args.since, "--since") if args.since else None
     until = _validate_date(args.until, "--until") if args.until else None
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     try:
         prs, reviews, issues, _ = fetch_user_activity(
-            client, args.user, days=args.days, include_reviews=True,
-            since=since, until=until,
+            client,
+            args.user,
+            days=args.days,
+            include_reviews=True,
+            since=since,
+            until=until,
         )
     except (GitHubError, RateLimitExceeded) as exc:
         print(f"prsnoop: {exc}", file=sys.stderr)
         return 3
     activity = build_activity(
-        args.user, prs, reviews, issues,
-        window_days=args.days, since=since or "", until=until or "",
+        args.user,
+        prs,
+        reviews,
+        issues,
+        window_days=args.days,
+        since=since or "",
+        until=until or "",
     )
     if args.compare:
         return _compare_snapshots(args.compare, activity)
@@ -701,24 +774,32 @@ def _compare_snapshots(old_path: Path, new: Activity) -> int:
 def cmd_compare(args: argparse.Namespace) -> int:
     since = _validate_date(args.since, "--since") if args.since else None
     until = _validate_date(args.until, "--until") if args.until else None
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     users = [args.user_a, args.user_b]
     activities: list[Activity] = []
     for user in users:
         try:
             prs, reviews, issues, _ = fetch_user_activity(
-                client, user, days=args.days, include_reviews=False,
-                org=args.org, since=since, until=until,
+                client,
+                user,
+                days=args.days,
+                include_reviews=False,
+                org=args.org,
+                since=since,
+                until=until,
             )
         except (GitHubError, RateLimitExceeded) as exc:
             print(f"prsnoop: {exc}", file=sys.stderr)
             return 3
         activities.append(
             build_activity(
-                user, prs, reviews, issues,
-                window_days=args.days, since=since or "", until=until or "",
+                user,
+                prs,
+                reviews,
+                issues,
+                window_days=args.days,
+                since=since or "",
+                until=until or "",
             )
         )
 
@@ -736,7 +817,9 @@ def cmd_compare(args: argparse.Namespace) -> int:
         ),
         (
             "longest streak",
-            f"{a.longest_streak_days}d", f"{b.longest_streak_days}d", "high",
+            f"{a.longest_streak_days}d",
+            f"{b.longest_streak_days}d",
+            "high",
         ),
         ("repos", a.distinct_repos, b.distinct_repos, "high"),
     ]
@@ -841,15 +924,17 @@ def cmd_team(args: argparse.Namespace) -> int:
     if len(set(args.users)) != len(args.users):
         print("prsnoop: team has duplicate usernames", file=sys.stderr)
         return 2
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     stats: list[Stats] = []
     for user in args.users:
         try:
             prs, reviews, issues, _ = fetch_user_activity(
-                client, user, days=days, include_reviews=False,
-                since=since, until=until,
+                client,
+                user,
+                days=days,
+                include_reviews=False,
+                since=since,
+                until=until,
             )
         except RateLimitExceeded as exc:
             print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
@@ -859,8 +944,13 @@ def cmd_team(args: argparse.Namespace) -> int:
             return 3
         stats.append(
             build_activity(
-                user, prs, reviews, issues,
-                window_days=days, since=since or "", until=until or "",
+                user,
+                prs,
+                reviews,
+                issues,
+                window_days=days,
+                since=since or "",
+                until=until or "",
             ).stats
         )
     stats.sort(key=lambda s: (-s.prs_merged, -s.prs_authored))
@@ -871,8 +961,11 @@ def cmd_team(args: argparse.Namespace) -> int:
             "since": since or "",
             "until": until or "",
             "ranking": [
-                {"rank": i + 1, "user": s.user,
-                 **{name: fn(s) for name, fn in _TEAM_COLUMNS}}
+                {
+                    "rank": i + 1,
+                    "user": s.user,
+                    **{name: fn(s) for name, fn in _TEAM_COLUMNS},
+                }
                 for i, s in enumerate(stats)
             ],
         }
@@ -935,29 +1028,46 @@ def cmd_export(args: argparse.Namespace) -> int:
     out_dir = args.output or Path(
         f"prsnoop-{args.user}-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
     )
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     try:
         prs, reviews, issues, fully = fetch_user_activity(
-            client, args.user, days=days, include_reviews=not args.no_reviews,
-            org=args.org, since=since, until=until,
+            client,
+            args.user,
+            days=days,
+            include_reviews=not args.no_reviews,
+            org=args.org,
+            since=since,
+            until=until,
         )
         activity = build_activity(
-            args.user, prs, reviews, issues,
-            window_days=days, since=since or "", until=until or "",
+            args.user,
+            prs,
+            reviews,
+            issues,
+            window_days=days,
+            since=since or "",
+            until=until or "",
         )
         if args.trend:
             prev_since, prev_until = _previous_window(since, until, days)
             try:
                 p_prs, p_rev, p_iss, _ = fetch_user_activity(
-                    client, args.user, days=days,
-                    include_reviews=not args.no_reviews, org=args.org,
-                    since=prev_since, until=prev_until,
+                    client,
+                    args.user,
+                    days=days,
+                    include_reviews=not args.no_reviews,
+                    org=args.org,
+                    since=prev_since,
+                    until=prev_until,
                 )
                 prev_activity = build_activity(
-                    args.user, p_prs, p_rev, p_iss,
-                    window_days=days, since=prev_since, until=prev_until,
+                    args.user,
+                    p_prs,
+                    p_rev,
+                    p_iss,
+                    window_days=days,
+                    since=prev_since,
+                    until=prev_until,
                 )
                 activity.trend = build_trend(activity.stats, prev_activity.stats)
             except (GitHubError, RateLimitExceeded) as exc:
@@ -998,29 +1108,45 @@ def _fetch_activity(args: argparse.Namespace, days: int) -> Activity:
     if args.until and not args.since:
         print("prsnoop: --until requires --since", file=sys.stderr)
         raise SystemExit(2)
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     prs, reviews, issues, _ = fetch_user_activity(
-        client, args.user, days=days, include_reviews=not args.no_reviews,
-        org=getattr(args, "org", None), since=since, until=until,
+        client,
+        args.user,
+        days=days,
+        include_reviews=not args.no_reviews,
+        org=getattr(args, "org", None),
+        since=since,
+        until=until,
     )
     activity = build_activity(
-        args.user, prs, reviews, issues,
-        window_days=days, since=since or "", until=until or "",
+        args.user,
+        prs,
+        reviews,
+        issues,
+        window_days=days,
+        since=since or "",
+        until=until or "",
     )
     if getattr(args, "trend", False):
         prev_since, prev_until = _previous_window(since, until, days)
         try:
             p_prs, p_rev, p_iss, _ = fetch_user_activity(
-                client, args.user, days=days,
+                client,
+                args.user,
+                days=days,
                 include_reviews=not args.no_reviews,
                 org=getattr(args, "org", None),
-                since=prev_since, until=prev_until,
+                since=prev_since,
+                until=prev_until,
             )
             prev_activity = build_activity(
-                args.user, p_prs, p_rev, p_iss,
-                window_days=days, since=prev_since, until=prev_until,
+                args.user,
+                p_prs,
+                p_rev,
+                p_iss,
+                window_days=days,
+                since=prev_since,
+                until=prev_until,
             )
             activity.trend = build_trend(activity.stats, prev_activity.stats)
         except (GitHubError, RateLimitExceeded) as exc:
@@ -1120,9 +1246,7 @@ def cmd_radar(args: argparse.Namespace) -> int:
     if args.limit < 1:
         print("prsnoop: --limit must be >= 1", file=sys.stderr)
         return 2
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     try:
         report = fetch_radar(client, args.repo, limit=args.limit)
     except RateLimitExceeded as exc:
@@ -1164,13 +1288,16 @@ def cmd_changelog(args: argparse.Namespace) -> int:
         return 2
     since = _validate_date(args.since, "--since") if args.since else None
     until = _validate_date(args.until, "--until") if args.until else None
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     try:
         ch = build_changelog(
-            client, args.repo, days=args.days, since=since,
-            until=until, tag=args.tag, limit=args.limit,
+            client,
+            args.repo,
+            days=args.days,
+            since=since,
+            until=until,
+            tag=args.tag,
+            limit=args.limit,
         )
     except RateLimitExceeded as exc:
         print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
@@ -1255,27 +1382,32 @@ def cmd_watch(args: argparse.Namespace) -> int:
         color = False
     else:
         color = supports_color(sys.stdout)
-    client = GitHubClient(
-        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
-    )
+    client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     previous: set[str] | None = None
     tick = 0
     while True:
         try:
             prs, reviews, issues, _ = fetch_user_activity(
-                client, args.user, days=args.days,
-                include_reviews=not args.no_reviews, org=args.org,
-                since=since, until=until,
+                client,
+                args.user,
+                days=args.days,
+                include_reviews=not args.no_reviews,
+                org=args.org,
+                since=since,
+                until=until,
             )
             activity = build_activity(
-                args.user, prs, reviews, issues,
-                window_days=args.days, since=since or "", until=until or "",
+                args.user,
+                prs,
+                reviews,
+                issues,
+                window_days=args.days,
+                since=since or "",
+                until=until or "",
             )
             current = pr_keys(activity)
             new_keys, _gone = diff_keys(previous, current)
-            frame = render_frame(
-                activity, color=color, new_keys=new_keys, tick=tick + 1
-            )
+            frame = render_frame(activity, color=color, new_keys=new_keys, tick=tick + 1)
             for stream in (sys.stdout, sys.stderr):
                 reconfigure = getattr(stream, "reconfigure", None)
                 if reconfigure is not None:
@@ -1294,8 +1426,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
             return 0
         except (GitHubError, RateLimitExceeded) as exc:
             print(
-                f"prsnoop watch: refresh failed: {exc}; retrying in"
-                f" {args.every}s",
+                f"prsnoop watch: refresh failed: {exc}; retrying in {args.every}s",
                 file=sys.stderr,
             )
             if args.once:
@@ -1349,7 +1480,9 @@ def run(argv: list[str] | None = None) -> int:
             "--clear-cache", action="store_true", help="empty the cache dir"
         )
         auth_parser.add_argument(
-            "--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop",
+            "--cache-dir",
+            type=Path,
+            default=Path.home() / ".cache" / "prsnoop",
             help="cache directory (default: ~/.cache/prsnoop)",
         )
         auth_parser.add_argument("--verbose", "-v", action="store_true")
@@ -1516,27 +1649,41 @@ def run(argv: list[str] | None = None) -> int:
             until=until,
         )
         activity = build_activity(
-            args.user, prs, reviews, issues,
-            window_days=days, since=since or "", until=until or "",
+            args.user,
+            prs,
+            reviews,
+            issues,
+            window_days=days,
+            since=since or "",
+            until=until or "",
         )
+        # Apply listing sort (does not affect stats)
+        activity.prs = sort_prs(activity.prs, args.sort)
         if args.trend:
             prev_since, prev_until = _previous_window(since, until, days)
             try:
                 p_prs, p_reviews, p_issues, _ = fetch_user_activity(
-                    client, args.user, days=args.days,
-                    include_reviews=not args.no_reviews, org=args.org,
-                    since=prev_since, until=prev_until,
+                    client,
+                    args.user,
+                    days=args.days,
+                    include_reviews=not args.no_reviews,
+                    org=args.org,
+                    since=prev_since,
+                    until=prev_until,
                 )
                 prev_activity = build_activity(
-                    args.user, p_prs, p_reviews, p_issues,
-                    window_days=args.days, since=prev_since, until=prev_until,
+                    args.user,
+                    p_prs,
+                    p_reviews,
+                    p_issues,
+                    window_days=args.days,
+                    since=prev_since,
+                    until=prev_until,
                 )
                 trend = build_trend(activity.stats, prev_activity.stats)
                 activity.trend = trend
             except (GitHubError, RateLimitExceeded) as exc:
-                print(
-                    f"prsnoop: trend window skipped: {exc}", file=sys.stderr
-                )
+                print(f"prsnoop: trend window skipped: {exc}", file=sys.stderr)
     except RateLimitExceeded as exc:
         print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
         print(

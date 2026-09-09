@@ -13,6 +13,7 @@ Strategy
 * Reviews cannot be searched directly. We scan the reviews endpoint of each
   PR the user interacted with and keep reviews on PRs they did not author.
 """
+
 from __future__ import annotations
 
 import logging
@@ -87,7 +88,8 @@ def fetch_user_activity(
     if not fully_enriched:
         log.warning(
             "%d PRs found; enrichment budget is %d, lines-changed totals are partial",
-            len(pr_items), ENRICH_BUDGET,
+            len(pr_items),
+            ENRICH_BUDGET,
         )
 
     _attach_languages(client, prs, repos)
@@ -130,11 +132,13 @@ def fetch_user_activity(
         # streaks only see reviews submitted inside the report window.
         start = datetime.fromisoformat(since).replace(tzinfo=timezone.utc)
         end = (
-            datetime.fromisoformat(until).replace(tzinfo=timezone.utc)
-            + timedelta(days=1)
-        ) if until else None
+            (datetime.fromisoformat(until).replace(tzinfo=timezone.utc) + timedelta(days=1))
+            if until
+            else None
+        )
         reviews = [
-            r for r in reviews
+            r
+            for r in reviews
             if r.submitted_at >= start and (end is None or r.submitted_at < end)
         ]
     return prs, reviews, issues, fully_enriched
@@ -156,15 +160,11 @@ def _pr_record(client: GitHubClient, item: JsonDict, repo: str) -> PRRecord:
     record = PRRecord.from_api(payload, repo)
     # Search items already carry labels; the pulls detail does not.
     if not record.labels:
-        record.labels = [
-            lb["name"] for lb in (item.get("labels") or []) if lb.get("name")
-        ]
+        record.labels = [lb["name"] for lb in (item.get("labels") or []) if lb.get("name")]
     return record
 
 
-def _attach_languages(
-    client: GitHubClient, prs: list[PRRecord], repos: set[str]
-) -> None:
+def _attach_languages(client: GitHubClient, prs: list[PRRecord], repos: set[str]) -> None:
     """Set PRRecord.language from each repository's primary language.
 
     Uses a per-repo cache so a user with 50 PRs into 3 repos costs 3 calls,
