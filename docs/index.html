@@ -420,7 +420,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <div class="wrap hd">
     <div class="id">
       <a class="logo" href="#top">prsnoop<u>_</u></a>
-      <span class="ver">v1.6.0</span>
+      <span class="ver">v2.0.0</span>
     </div>
     <nav>
       <a class="lnk" href="#features">features</a>
@@ -433,12 +433,13 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 <main id="top">
   <!-- ==================== hero ==================== -->
   <section class="wrap hero">
-    <p class="kick rise"><span class="dot"></span>v1.6.0 · mit · stdlib only</p>
+    <p class="kick rise"><span class="dot"></span>v2.0.0 · mit · stdlib only</p>
     <h1 class="rise d1">what did your pull requests <em>actually</em> do?</h1>
     <p class="sub rise d2">
       prsnoop reads any GitHub user's pull requests and returns what the
       profile page never shows: <b>merge rate, time-to-merge, streaks,
-      languages.</b>
+      languages</b>. v2 scores it, gamifies it, forecasts it, and answers
+      your questions about it.
     </p>
 
     <div class="installbar rise d2">
@@ -448,7 +449,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
     <div class="checks rise d2">
       <span>zero dependencies</span>
       <span>python 3.10+</span>
-      <span>171 offline tests</span>
+      <span>209 offline tests</span>
       <span>no telemetry</span>
     </div>
 
@@ -461,9 +462,9 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 <pre id="termout"><span class="dim">$</span> <span id="typed"></span><span class="cur"></span><span class="ln"><span class="dim">prsnoop | simonw</span></span><span class="ln"><span class="dim">window: last 30 days</span></span><span class="ln"> </span><span class="ln">  Pull requests       <span class="num">42</span></span><span class="ln">    merged            <span class="ok">37</span></span><span class="ln">    open              <span class="dim">5</span></span><span class="ln">    closed            <span class="dim">0</span></span><span class="ln">  Merge rate          <span class="num">88%</span> <span class="bar">█████████░</span></span><span class="ln">  Merge time          median <span class="num">0.0d</span> · p90 <span class="num">0.0d</span></span><span class="ln">  Streaks             longest <span class="ok">6d</span> · current 3d</span><span class="ln">  Languages           Python 23 · HTML 19</span><span class="ln">  Activity chart      <span class="dim">.:;+.X...+.=.:#X...=;</span></span></pre>
       </div>
       <div class="rail">
-        <div class="cell"><div class="k">commands to report</div><div class="v">1</div></div>
+        <div class="cell"><div class="k">commands</div><div class="v">20<span class="u">subcommands</span></div></div>
         <div class="cell"><div class="k">runtime dependencies</div><div class="v">0<span class="u">third-party</span></div></div>
-        <div class="cell"><div class="k">offline tests</div><div class="v">171<span class="u">passing</span></div></div>
+        <div class="cell"><div class="k">offline tests</div><div class="v">209<span class="u">passing</span></div></div>
         <div class="cell"><div class="k">merge rate above</div><div class="v g">88%</div></div>
       </div>
     </div>
@@ -473,7 +474,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <section class="wrap sec" id="features">
     <div class="shead sf">
       <div class="lab">01 · specification</div>
-      <h2>six instruments</h2>
+      <h2>fifteen instruments</h2>
     </div>
     <div class="bento">
       <article class="card w2 sf">
@@ -519,9 +520,72 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
         <div class="mt" data-cmd="prsnoop readme simonw" data-out="paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop readme simonw</span><span class="mt-o">paste ready</span></div>
       </article>
 
+      <article class="card sf">
+        <div class="cidx">06 // score</div>
+        <h3>your number, 0-100</h3>
+        <p>Five weighted pillars, a letter grade, burnout risk.</p>
+        <div class="mt" data-cmd="prsnoop score simonw" data-out="87.3 · grade A · excellent"><span class="mt-p">$</span> <span class="mt-c">prsnoop score simonw</span><span class="mt-o">87.3 · grade A · excellent</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">07 // achievements</div>
+        <h3>43 badges to unlock</h3>
+        <p>Four rarity tiers, points, completion %.</p>
+        <div class="mt" data-cmd="prsnoop achievements simonw" data-out="650 pts · 17/43 unlocked"><span class="mt-p">$</span> <span class="mt-c">prsnoop achievements simonw</span><span class="mt-o">650 pts · 17/43 unlocked</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">08 // forecast</div>
+        <h3>your pace, projected</h3>
+        <p>Least-squares fit, rising or falling, PRs/week.</p>
+        <div class="mt" data-cmd="prsnoop forecast simonw" data-out="rising · 3.4 prs/week · ~102 next year"><span class="mt-p">$</span> <span class="mt-c">prsnoop forecast simonw</span><span class="mt-o">rising · 3.4 prs/week · ~102 next year</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">09 // ask</div>
+        <h3>talk to your data</h3>
+        <p>Plain-English Q&A, computed locally, no api key.</p>
+        <div class="mt" data-cmd='prsnoop ask simonw "top language?"' data-out="python, 23 prs"><span class="mt-p">$</span> <span class="mt-c">prsnoop ask simonw "top language?"</span><span class="mt-o">python, 23 prs</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">10 // tui</div>
+        <h3>htop for github</h3>
+        <p>Full-screen live dashboard. 4 tabs, keyboard nav.</p>
+        <div class="mt" data-cmd="prsnoop tui simonw" data-out="4 tabs · j/k scroll · live refresh"><span class="mt-p">$</span> <span class="mt-c">prsnoop tui simonw</span><span class="mt-o">4 tabs · j/k scroll · live refresh</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">11 // timeline</div>
+        <h3>every event, one stream</h3>
+        <p>PRs, merges, issues, reviews, weekly buckets.</p>
+        <div class="mt" data-cmd="prsnoop timeline simonw" data-out="142 events · 9 weeks"><span class="mt-p">$</span> <span class="mt-c">prsnoop timeline simonw</span><span class="mt-o">142 events · 9 weeks</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">12 // network</div>
+        <h3>where your work flows</h3>
+        <p>Review graph + graphviz dot export.</p>
+        <div class="mt" data-cmd="prsnoop network simonw -f dot" data-out="digraph prsnoop { ... }"><span class="mt-p">$</span> <span class="mt-c">prsnoop network simonw -f dot</span><span class="mt-o">digraph prsnoop { ... }</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">13 // digest</div>
+        <h3>built for cron</h3>
+        <p>Slack, email, Discord. Paste into a webhook.</p>
+        <div class="mt" data-cmd="prsnoop digest simonw -f slack" data-out="accelerating: 12 prs and climbing"><span class="mt-p">$</span> <span class="mt-c">prsnoop digest simonw -f slack</span><span class="mt-o">accelerating: 12 prs and climbing</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">14 // report</div>
+        <h3>one-page html masterpiece</h3>
+        <p>Sparkline, score bars, achievement wall, language donut, forecast strip. One file, no assets, prints beautifully.</p>
+        <div class="mt" data-cmd="prsnoop report simonw -o report.html" data-out="1 file · opens anywhere"><span class="mt-p">$</span> <span class="mt-c">prsnoop report simonw -o report.html</span><span class="mt-o">1 file · opens anywhere</span></div>
+      </article>
+
       <article class="card w3 sf">
-        <div class="cidx">06 // alive on your machine</div>
-        <h3>nothing leaves the machine</h3>
+        <div class="cidx">15 // still zero dependencies</div>
+        <h3>alive on your machine</h3>
         <div class="mtrow">
           <div class="mt" data-cmd="prsnoop serve simonw" data-out="127.0.0.1:8642"><span class="mt-p">$</span> <span class="mt-c">prsnoop serve simonw</span><span class="mt-o">127.0.0.1:8642</span></div>
           <div class="mt" data-cmd="prsnoop watch simonw" data-out="1 new pr · bell"><span class="mt-p">$</span> <span class="mt-c">prsnoop watch simonw</span><span class="mt-o">1 new pr · bell</span></div>
@@ -657,6 +721,41 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
           <tr>
             <td>offline report replay</td>
             <td class="yes">[ YES ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>health score + burnout risk</td>
+            <td class="hl">0-100, graded</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>achievements, 43 badges</td>
+            <td class="hl">4 rarity tiers</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">gamified</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>pace forecasting</td>
+            <td class="hl">least-squares</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>natural-language Q&A</td>
+            <td class="hl">local, no key</td>
+            <td class="no">[ NO ]</td>
+            <td class="no">copilot</td>
+            <td class="no">[ NO ]</td>
+          </tr>
+          <tr>
+            <td>full-screen live tui</td>
+            <td class="hl">curses, 4 tabs</td>
             <td class="no">[ NO ]</td>
             <td class="no">[ NO ]</td>
             <td class="no">[ NO ]</td>

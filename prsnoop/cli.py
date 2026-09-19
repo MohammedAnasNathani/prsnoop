@@ -17,6 +17,15 @@
     prsnoop ci simonw --min-prs 5              # CI quality gates + step summary
     prsnoop watch simonw --every 60            # live ANSI terminal dashboard
     prsnoop replay snap.json                   # re-render reports offline
+    prsnoop score simonw                       # contributor health score 0-100
+    prsnoop achievements simonw                # 40+ unlockable achievement board
+    prsnoop forecast simonw                    # linear-regression pace projections
+    prsnoop ask simonw "top language?"         # natural-language Q&A, no API key
+    prsnoop timeline simonw                    # chronological event stream
+    prsnoop network simonw                     # review/work flow graph + dot export
+    prsnoop digest simonw --format slack       # Slack/email/Discord digest
+    prsnoop report simonw -o report.html       # one-page HTML masterpiece
+    prsnoop tui simonw                         # full-screen live terminal dashboard
     prsnoop serve simonw                       # live dashboard on 127.0.0.1
     prsnoop export simonw                      # full report pack to a folder
     prsnoop auth                               # check token / rate limit
@@ -1338,6 +1347,374 @@ def cmd_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def cmd_score(args: argparse.Namespace) -> int:
+    from prsnoop.score import render_score_json, render_score_markdown, render_score_table
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    from prsnoop.score import compute_score
+    hs = compute_score(activity)
+    rendered = {"json": render_score_json, "markdown": render_score_markdown}.get(
+        args.format, render_score_table)(hs)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_achievements(args: argparse.Namespace) -> int:
+    from prsnoop.achievements import (
+        build_report,
+        render_board_json,
+        render_board_markdown,
+        render_board_table,
+    )
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    rep = build_report(activity)
+    rendered = {"json": render_board_json, "markdown": render_board_markdown}.get(
+        args.format, render_board_table)(rep)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_forecast(args: argparse.Namespace) -> int:
+    from prsnoop.forecast import (
+        build_forecast,
+        render_forecast_json,
+        render_forecast_markdown,
+        render_forecast_table,
+    )
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.horizon < 1:
+        print("prsnoop: --horizon must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    fc = build_forecast(activity, horizon_days=args.horizon)
+    rendered = {"json": render_forecast_json, "markdown": render_forecast_markdown}.get(
+        args.format, render_forecast_table)(fc)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_ask(args: argparse.Namespace) -> int:
+    from prsnoop.ask import answer_all, render_ask
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    answers = answer_all(activity, args.questions)
+    _emit(render_ask(answers), args.output)
+    return 0
+
+
+def cmd_timeline(args: argparse.Namespace) -> int:
+    from prsnoop.timeline import (
+        build_timeline,
+        render_timeline_markdown,
+        render_timeline_table,
+    )
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    tl = build_timeline(activity)
+    if args.format == "json":
+        rendered = json.dumps(tl.to_dict(), indent=2)
+    elif args.format == "markdown":
+        rendered = render_timeline_markdown(tl)
+    else:
+        rendered = render_timeline_table(tl)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_network(args: argparse.Namespace) -> int:
+    from prsnoop.network import build_network, render_dot, render_network_table
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    net = build_network(activity)
+    if args.format == "dot":
+        rendered = render_dot(net)
+    elif args.format == "json":
+        rendered = json.dumps(net.to_dict(), indent=2)
+    else:
+        rendered = render_network_table(net)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_digest(args: argparse.Namespace) -> int:
+    from prsnoop.digest import build_digest, render_digest
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    d = build_digest(activity)
+    _emit(render_digest(d, args.format), args.output)
+    return 0
+
+
+def cmd_report(args: argparse.Namespace) -> int:
+    from prsnoop.report import render_report_html
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    _emit(render_report_html(activity), args.output)
+    return 0
+
+
+def cmd_tui(args: argparse.Namespace) -> int:
+    from prsnoop.tui import run_tui
+
+    if args.days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.every < 5:
+        print("prsnoop: --every must be >= 5 seconds", file=sys.stderr)
+        return 2
+    print(
+        f"prsnoop tui: starting dashboard for {args.user} (ctrl-c or q to quit)",
+        file=sys.stderr,
+    )
+    run_tui(args.user, days=args.days, org=args.org,
+            cache_dir=args.cache_dir, refresh_seconds=args.every)
+    print("prsnoop tui: closed", file=sys.stderr)
+    return 0
+
+
+def build_score_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="prsnoop score",
+                                description="Contributor health score, 0-100 with grade.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_achievements_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop achievements",
+        description="Achievement board: 40+ unlockables, rarity tiers.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_forecast_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="prsnoop forecast",
+                                description="Linear-regression pace projections.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--horizon", type=int, default=30,
+                   help="days to project forward (default: 30)")
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_ask_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop ask",
+        description="Natural-language Q&A over the snapshot (local).")
+    p.add_argument("user")
+    p.add_argument("questions", nargs="+", help='e.g. "how many prs?" "top language?"')
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_timeline_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop timeline",
+        description="Chronological activity stream + weekly buckets.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_network_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="prsnoop network",
+                                description="Work/review flow graph, dot export.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "dot", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_digest_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="prsnoop digest",
+                                description="Scheduled digest: Slack, email, Discord.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=7)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["slack", "email", "discord"], default="slack")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_report_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="prsnoop report",
+                                description="One-page self-contained HTML masterpiece.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_tui_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="prsnoop tui",
+                                description="Full-screen live terminal dashboard (curses).")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--every", type=int, default=300,
+                   help="seconds between background refreshes (default: 300)")
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
 def run(argv: list[str] | None = None) -> int:
     raw = list(sys.argv[1:] if argv is None else argv)
     if raw and raw[0] == "auth":
@@ -1459,6 +1836,51 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_replay(replay_args)
+    if raw and raw[0] == "score":
+        a = build_score_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_score(a)
+    if raw and raw[0] == "achievements":
+        a = build_achievements_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_achievements(a)
+    if raw and raw[0] == "forecast":
+        a = build_forecast_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_forecast(a)
+    if raw and raw[0] == "ask":
+        a = build_ask_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_ask(a)
+    if raw and raw[0] == "timeline":
+        a = build_timeline_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_timeline(a)
+    if raw and raw[0] == "network":
+        a = build_network_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_network(a)
+    if raw and raw[0] == "digest":
+        a = build_digest_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_digest(a)
+    if raw and raw[0] == "report":
+        a = build_report_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_report(a)
+    if raw and raw[0] == "tui":
+        a = build_tui_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_tui(a)
     if raw and raw[0] == "me":
         me_args = build_parser().parse_args(raw[1:])
         logging.basicConfig(

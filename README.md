@@ -7,8 +7,10 @@
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-261230)](https://docs.astral.sh/ruff/)
 
 One command, one GitHub username, a full report of what their pull requests
-actually did. In the terminal, or as Markdown, HTML, CSV, JSON, or SVG
-badges. No account, no dashboard, no runtime dependencies.
+actually did. v2 adds a health score, 40+ achievements, pace forecasting,
+natural-language Q&A, a full-screen live TUI, review networks, digests, and
+a one-page HTML report, on top of the classic table, Markdown, HTML, CSV,
+JSON, and badge outputs. Still zero runtime dependencies.
 
 ```text
 $ prsnoop simonw --days 30
@@ -279,6 +281,72 @@ prsnoop replay august.json --wrapped
 HTML reports for wide windows include a GitHub-style contribution
 calendar, one cell per day, greener means more shipped.
 
+Score your contributor health, 0-100 with a letter grade, five weighted
+pillars, and a burnout-risk flag computed from streak length and workload:
+
+```text
+$ prsnoop score simonw
+
+  SCORE   87.3 / 100   grade A (excellent)
+
+  output          82.0  x0.30  [######################......]
+  impact          94.0  x0.25  [##########################..]
+  ...
+  burnout risk: low (healthy pacing across the window)
+```
+
+Unlock achievements, 40+ badges across common, rare, epic, and legendary
+tiers, with points and completion percentage:
+
+```text
+$ prsnoop achievements simonw
+
+  SCORE   650 pts   17/43 unlocked (40%)
+
+  UNLOCKED
+   <>    Speed Demon      rare      A PR merged in under 1 hour
+   (vv)  Landed           common    Got your first PR merged
+   ...
+```
+
+Forecast your pace with a least-squares fit over the daily series:
+
+```bash
+prsnoop forecast simonw                  # trajectory, PRs/week, next-30 projection
+prsnoop forecast simonw --horizon 90     # longer horizon
+```
+
+Ask questions in plain English, answered locally from the snapshot with no
+API key:
+
+```text
+$ prsnoop ask simonw "how many prs?" "top language?" "merge rate?"
+
+  Q: how many prs?
+  A: simonw opened 42 pull requests in the last 30 days (37 merged, 5 still open).
+```
+
+Watch the terminal turn into a dashboard. A full-screen curses UI with four
+tabbed views, scrolling, and periodic refresh, htop for GitHub:
+
+```bash
+prsnoop tui simonw                       # 1-4 tabs, j/k scroll, r refresh, q quit
+```
+
+See the review network, render the timeline, generate a Slack digest, and
+produce a one-page HTML masterpiece with score bars, an achievement wall, a
+language donut, and a forecast strip:
+
+```bash
+prsnoop network simonw --format dot | dot -Tpng -o network.png
+prsnoop timeline simonw
+prsnoop digest simonw --format slack     # paste into a webhook
+prsnoop report simonw -o report.html     # one file, no assets, opens anywhere
+```
+
+HTML reports for wide windows include a GitHub-style contribution
+calendar, one cell per day, greener means more shipped.
+
 Freeze a snapshot now, diff against it later. Handy for weekly reviews,
 standup prep, or proving a productive month:
 
@@ -418,6 +486,11 @@ Exit codes: 0 success, 1 failed gate (`prsnoop ci` only), 2 usage error,
 | Open PR triage radar | yes | manual | no | no |
 | Release notes from merged PRs | yes | manual | no | repo focused |
 | CI quality gates | yes | no | no | no |
+| Health score + burnout risk | yes | no | no | no |
+| Achievements (40+ badges) | yes | no | gamified | no |
+| Pace forecasting | yes | no | no | no |
+| Natural-language Q&A | yes | no | copilot | no |
+| Full-screen live TUI | yes | no | no | no |
 | Output formats | 6 | text | web views | web views, API |
 | Runs over SSH, in CI, offline | yes | yes | no | no |
 
@@ -436,7 +509,7 @@ git clone https://github.com/MohammedAnasNathani/prsnoop && cd prsnoop
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest          # 171 tests, all offline
+pytest          # 209 tests, all offline
 ruff check .    # lint
 mypy            # strict typing
 ```
