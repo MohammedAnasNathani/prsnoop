@@ -176,16 +176,6 @@ header {
 .installbar .copybtn:hover { background: var(--green2); }
 .installbar .copybtn:active { transform: scale(0.97); }
 .installbar .copybtn.ok { background: var(--green2); }
-.livedemo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
-.ld { border: 1px solid #242b36; border-radius: 14px; padding: 14px 16px; text-decoration: none;
-color: #e8edf4; background: #12161d; transition: transform .2s, border-color .2s; line-height: 1.5; }
-.ld:hover { transform: translateY(-3px); border-color: #41d67c; }
-.ld b { display: block; font-size: 13px; color: #41d67c; }
-.ld span { display: block; font-size: 12px; color: #8b95a5; }
-.ld.ld1:hover { border-color: #58a6ff; }
-.ld.ld2:hover { border-color: #b58cff; }
-.ld.ld3:hover { border-color: #f4633a; }
-@media (max-width: 760px) { .livedemo { grid-template-columns: 1fr; } }
 .checks {
   margin-top: 26px; display: flex; justify-content: center; gap: 8px 22px; flex-wrap: wrap;
   font-family: var(--mono); font-size: 12.5px; color: var(--dim);
@@ -278,13 +268,6 @@ color: #e8edf4; background: #12161d; transition: transform .2s, border-color .2s
 
 /* --------------------------------------------------------- bento */
 .bento { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-
-/* full-width closer card: commands in a row */
-.mtrow {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 16px;
-  margin-top: 12px;
-}
-.mtrow .mt { margin-top: 0; }
 .card {
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
   padding: 22px 24px 20px; text-align: left; position: relative;
@@ -390,7 +373,6 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 /* ------------------------------------------------- responsive */
 @media (max-width: 960px) {
   .bento { grid-template-columns: 1fr 1fr; }
-  .mtrow { grid-template-columns: 1fr 1fr; }
   .ft { grid-template-columns: 1fr 1fr; gap: 40px; }
   .rail { grid-template-columns: 1fr 1fr; }
   .rail .cell:nth-child(2n) { border-left: 0; }
@@ -403,7 +385,6 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   .installbar .copybtn { padding: 0 16px; }
   .bento { grid-template-columns: 1fr; }
   .card.w2, .card.w3 { grid-column: span 1; }
-  .mtrow { grid-template-columns: 1fr; }
   .rail { grid-template-columns: 1fr; }
   .rail .cell { border-left: 0; }
   .rail .cell + .cell { border-top: 1px solid var(--line); }
@@ -418,6 +399,18 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   .sf { opacity: 1 !important; }
 }
 
+/* demo console */
+.demobar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.demobtn {
+  font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--dim); background: transparent; border: 1px solid var(--line2);
+  border-radius: 9px; padding: 11px 20px; cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background .15s ease;
+}
+.demobtn:hover { color: var(--text); border-color: var(--dim); }
+.demobtn.live { color: #04110a; background: var(--green); border-color: var(--green); }
+#demoterm { min-height: 19em; }
+
 /* entrance: hero rises once; everything else is scroll-faded */
 .rise { opacity: 0; transform: translateY(14px); animation: rise .7s var(--ease) forwards; }
 .rise.d1 { animation-delay: .08s } .rise.d2 { animation-delay: .16s } .rise.d3 { animation-delay: .24s }
@@ -430,10 +423,11 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <div class="wrap hd">
     <div class="id">
       <a class="logo" href="#top">prsnoop<u>_</u></a>
-      <span class="ver">v2.0.0</span>
+      <span class="ver">v1.5.0</span>
     </div>
     <nav>
       <a class="lnk" href="#features">features</a>
+      <a class="lnk" href="#demo">demo</a>
       <a class="lnk" href="#eco">compare</a>
       <a class="gh" href="https://github.com/MohammedAnasNathani/prsnoop">★ <span id="starcount">--</span></a>
     </nav>
@@ -443,13 +437,11 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 <main id="top">
   <!-- ==================== hero ==================== -->
   <section class="wrap hero">
-    <p class="kick rise"><span class="dot"></span>v2.0.0 · mit · stdlib only</p>
+    <p class="kick rise"><span class="dot"></span>v1.5.0 · mit · stdlib only</p>
     <h1 class="rise d1">what did your pull requests <em>actually</em> do?</h1>
     <p class="sub rise d2">
-      prsnoop reads any GitHub user's pull requests and returns what the
-      profile page never shows: <b>merge rate, time-to-merge, streaks,
-      languages</b>. v2 scores it, gamifies it, forecasts it, and answers
-      your questions about it.
+      Give it a GitHub username. Get back what the profile page never shows:
+      <b>merge rate, time to merge, streaks, languages.</b>
     </p>
 
     <div class="installbar rise d2">
@@ -459,13 +451,8 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
     <div class="checks rise d2">
       <span>zero dependencies</span>
       <span>python 3.10+</span>
-      <span>209 offline tests</span>
+      <span>139 offline tests</span>
       <span>no telemetry</span>
-    </div>
-    <div class="livedemo rise d2">
-      <a href="showcase.html" class="ld ld1"><b>see it live</b> interactive showcase<span>force graph · heatmap · explorer</span></a>
-      <a href="wrapped.html" class="ld ld2"><b>wrapped story</b> slides mode<span>simonw's real year</span></a>
-      <a href="battle.html" class="ld ld3"><b>battle</b> antfu vs simonw<span>animated versus page</span></a>
     </div>
 
     <div class="termzone rise d3">
@@ -477,9 +464,9 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
 <pre id="termout"><span class="dim">$</span> <span id="typed"></span><span class="cur"></span><span class="ln"><span class="dim">prsnoop | simonw</span></span><span class="ln"><span class="dim">window: last 30 days</span></span><span class="ln"> </span><span class="ln">  Pull requests       <span class="num">42</span></span><span class="ln">    merged            <span class="ok">37</span></span><span class="ln">    open              <span class="dim">5</span></span><span class="ln">    closed            <span class="dim">0</span></span><span class="ln">  Merge rate          <span class="num">88%</span> <span class="bar">█████████░</span></span><span class="ln">  Merge time          median <span class="num">0.0d</span> · p90 <span class="num">0.0d</span></span><span class="ln">  Streaks             longest <span class="ok">6d</span> · current 3d</span><span class="ln">  Languages           Python 23 · HTML 19</span><span class="ln">  Activity chart      <span class="dim">.:;+.X...+.=.:#X...=;</span></span></pre>
       </div>
       <div class="rail">
-        <div class="cell"><div class="k">commands</div><div class="v">20<span class="u">subcommands</span></div></div>
+        <div class="cell"><div class="k">commands to report</div><div class="v">1</div></div>
         <div class="cell"><div class="k">runtime dependencies</div><div class="v">0<span class="u">third-party</span></div></div>
-        <div class="cell"><div class="k">offline tests</div><div class="v">209<span class="u">passing</span></div></div>
+        <div class="cell"><div class="k">offline tests</div><div class="v">139<span class="u">passing</span></div></div>
         <div class="cell"><div class="k">merge rate above</div><div class="v g">88%</div></div>
       </div>
     </div>
@@ -489,138 +476,126 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <section class="wrap sec" id="features">
     <div class="shead sf">
       <div class="lab">01 · specification</div>
-      <h2>fifteen instruments</h2>
+      <h2>eleven instruments</h2>
     </div>
     <div class="bento">
       <article class="card w2 sf">
-        <div class="cidx">01 // the report</div>
-        <h3>one user, the whole truth</h3>
-        <p>What you opened, what landed, how fast.</p>
+        <div class="cidx">01 // funnel</div>
+        <h3>authored → merged, honestly</h3>
+        <p>What you opened, and what actually landed. Drafts never count against you.</p>
         <div class="mini">
           <div class="mrow"><span>merged</span><span class="track"><i class="fill" style="--w:88%"></i></span><b>37</b></div>
           <div class="mrow"><span>open</span><span class="track"><i class="fill n" style="--w:13%"></i></span><b>5</b></div>
           <div class="mrow"><span>closed</span><span class="track"><i class="fill n" style="--w:2%"></i></span><b>0</b></div>
         </div>
-        <div class="mt" data-cmd="prsnoop simonw" data-out="42 prs · 88% · median 0.0d"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw</span><span class="mt-o">42 prs · 88% · median 0.0d</span></div>
+        <div class="mt" data-cmd="prsnoop simonw --only merged" data-out="37 merged · 88% rate"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw --only merged</span><span class="mt-o">37 merged · 88% rate</span></div>
       </article>
 
       <article class="card sf">
-        <div class="cidx">02 // wrapped</div>
+        <div class="cidx">02 // velocity</div>
+        <h3>time to merge</h3>
+        <p>Median hides the tail. p90 answers the real question.</p>
+        <div class="mt" data-cmd="prsnoop simonw --days 30" data-out="median 0.0d · p90 0.0d"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw --days 30</span><span class="mt-o">median 0.0d · p90 0.0d</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">03 // cadence</div>
+        <h3>daily + streaks</h3>
+        <p>Your rhythm, as data.</p>
+        <div class="mt" data-cmd="prsnoop simonw --days 90" data-out="longest 6d · current 3d"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw --days 90</span><span class="mt-o">longest 6d · current 3d</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">04 // scope</div>
+        <h3>org + repo pulse</h3>
+        <p>Whole orgs, single repos. Maintainers get a mode too.</p>
+        <div class="mt" data-cmd="prsnoop org vueuse" data-out="42 prs · 22 authors"><span class="mt-p">$</span> <span class="mt-c">prsnoop org vueuse</span><span class="mt-o">42 prs · 22 authors</span></div>
+        <div class="mt" data-cmd="prsnoop repo psf/requests" data-out="6 prs · 2 authors · backlog 1"><span class="mt-p">$</span> <span class="mt-c">prsnoop repo psf/requests</span><span class="mt-o">6 prs · 2 authors · backlog 1</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">05 // delta</div>
+        <h3>month over month</h3>
+        <p>This window vs the one before it, same size, same clock.</p>
+        <div class="mt" data-cmd="prsnoop simonw --trend" data-out="6 metrics · faster merges marked up"><span class="mt-p">$</span> <span class="mt-c">prsnoop simonw --trend</span><span class="mt-o">6 metrics · faster merges marked up</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">06 // live</div>
+        <h3>a dashboard, minus the server</h3>
+        <p>Local web dashboard on 127.0.0.1. Auto-refreshes. Nothing leaves the machine.</p>
+        <div class="mt" data-cmd="prsnoop serve simonw" data-out="serving 127.0.0.1:8642 · json at /api/report"><span class="mt-p">$</span> <span class="mt-c">prsnoop serve simonw</span><span class="mt-o">serving 127.0.0.1:8642 · json at /api/report</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">07 // team</div>
+        <h3>rank the whole squad</h3>
+        <p>Any number of contributors, one window, one honest leaderboard.</p>
+        <div class="mt" data-cmd="prsnoop team antfu simonw" data-out="1 simonw · 2 antfu · ranked by merged"><span class="mt-p">$</span> <span class="mt-c">prsnoop team antfu simonw</span><span class="mt-o">1 simonw · 2 antfu · ranked by merged</span></div>
+      </article>
+
+      <article class="card sf">
+        <div class="cidx">08 // export</div>
+        <h3>one command, whole pack</h3>
+        <p>txt, md, html, csv, json, badges. A dated folder, ready to send.</p>
+        <div class="mt" data-cmd="prsnoop export simonw --trend" data-out="6 files written · export complete"><span class="mt-p">$</span> <span class="mt-c">prsnoop export simonw --trend</span><span class="mt-o">6 files written · export complete</span></div>
+      </article>
+
+      <article class="card w2 sf">
+        <div class="cidx">09 // wrapped</div>
         <h3>your year, in superlatives</h3>
-        <p>Biggest patch, busiest month, longest streak.</p>
-        <div class="mt" data-cmd="prsnoop wrapped simonw" data-out="922 prs · 43d streak"><span class="mt-p">$</span> <span class="mt-c">prsnoop wrapped simonw</span><span class="mt-o">922 prs · 43d streak</span></div>
+        <p>Biggest patch, busiest month, longest streak, favorite weekday. One command.</p>
+        <div class="mt" data-cmd="prsnoop wrapped simonw" data-out="922 prs · +1.45M lines · 43d streak"><span class="mt-p">$</span> <span class="mt-c">prsnoop wrapped simonw</span><span class="mt-o">922 prs · +1.45M lines · 43d streak</span></div>
       </article>
 
       <article class="card sf">
-        <div class="cidx">03 // maintainer</div>
-        <h3>the open queue, ranked</h3>
-        <p>By waiting age. Merged PRs become release notes.</p>
-        <div class="mt" data-cmd="prsnoop radar owner/repo" data-out="23 open · median 6d"><span class="mt-p">$</span> <span class="mt-c">prsnoop radar owner/repo</span><span class="mt-o">23 open · median 6d</span></div>
-        <div class="mt" data-cmd="prsnoop changelog repo --tag v1.2" data-out="18 prs · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop changelog repo --tag v1.2</span><span class="mt-o">18 prs · paste ready</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">04 // teams + gates</div>
-        <h3>rank the squad</h3>
-        <p>One leaderboard. Gates that fail loudly.</p>
-        <div class="mt" data-cmd="prsnoop team antfu simonw" data-out="1 simonw · 2 antfu"><span class="mt-p">$</span> <span class="mt-c">prsnoop team antfu simonw</span><span class="mt-o">1 simonw · 2 antfu</span></div>
-        <div class="mt" data-cmd="prsnoop ci simonw --min-prs 5" data-out="all gates passed"><span class="mt-p">$</span> <span class="mt-c">prsnoop ci simonw --min-prs 5</span><span class="mt-o">all gates passed</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">05 // show it off</div>
-        <h3>badges, cards, readme</h3>
-        <p>Hand-built svg. No badge service.</p>
-        <div class="mt" data-cmd="prsnoop card simonw -o card.svg" data-out="640x340 · sparkline in"><span class="mt-p">$</span> <span class="mt-c">prsnoop card simonw -o card.svg</span><span class="mt-o">640x340 · sparkline in</span></div>
-        <div class="mt" data-cmd="prsnoop readme simonw" data-out="paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop readme simonw</span><span class="mt-o">paste ready</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">06 // score</div>
-        <h3>your number, 0-100</h3>
-        <p>Five weighted pillars, a letter grade, burnout risk.</p>
-        <div class="mt" data-cmd="prsnoop score simonw" data-out="87.3 · grade A · excellent"><span class="mt-p">$</span> <span class="mt-c">prsnoop score simonw</span><span class="mt-o">87.3 · grade A · excellent</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">07 // achievements</div>
-        <h3>43 badges to unlock</h3>
-        <p>Four rarity tiers, points, completion %.</p>
-        <div class="mt" data-cmd="prsnoop achievements simonw" data-out="650 pts · 17/43 unlocked"><span class="mt-p">$</span> <span class="mt-c">prsnoop achievements simonw</span><span class="mt-o">650 pts · 17/43 unlocked</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">08 // forecast</div>
-        <h3>your pace, projected</h3>
-        <p>Least-squares fit, rising or falling, PRs/week.</p>
-        <div class="mt" data-cmd="prsnoop forecast simonw" data-out="rising · 3.4 prs/week · ~102 next year"><span class="mt-p">$</span> <span class="mt-c">prsnoop forecast simonw</span><span class="mt-o">rising · 3.4 prs/week · ~102 next year</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">09 // ask</div>
-        <h3>talk to your data</h3>
-        <p>Plain-English Q&A, computed locally, no api key.</p>
-        <div class="mt" data-cmd='prsnoop ask simonw "top language?"' data-out="python, 23 prs"><span class="mt-p">$</span> <span class="mt-c">prsnoop ask simonw "top language?"</span><span class="mt-o">python, 23 prs</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">10 // tui</div>
-        <h3>htop for github</h3>
-        <p>Full-screen live dashboard. 4 tabs, keyboard nav.</p>
-        <div class="mt" data-cmd="prsnoop tui simonw" data-out="4 tabs · j/k scroll · live refresh"><span class="mt-p">$</span> <span class="mt-c">prsnoop tui simonw</span><span class="mt-o">4 tabs · j/k scroll · live refresh</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">11 // timeline</div>
-        <h3>every event, one stream</h3>
-        <p>PRs, merges, issues, reviews, weekly buckets.</p>
-        <div class="mt" data-cmd="prsnoop timeline simonw" data-out="142 events · 9 weeks"><span class="mt-p">$</span> <span class="mt-c">prsnoop timeline simonw</span><span class="mt-o">142 events · 9 weeks</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">12 // network</div>
-        <h3>where your work flows</h3>
-        <p>Review graph + graphviz dot export.</p>
-        <div class="mt" data-cmd="prsnoop network simonw -f dot" data-out="digraph prsnoop { ... }"><span class="mt-p">$</span> <span class="mt-c">prsnoop network simonw -f dot</span><span class="mt-o">digraph prsnoop { ... }</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">13 // digest</div>
-        <h3>built for cron</h3>
-        <p>Slack, email, Discord. Paste into a webhook.</p>
-        <div class="mt" data-cmd="prsnoop digest simonw -f slack" data-out="accelerating: 12 prs and climbing"><span class="mt-p">$</span> <span class="mt-c">prsnoop digest simonw -f slack</span><span class="mt-o">accelerating: 12 prs and climbing</span></div>
-      </article>
-
-      <article class="card sf">
-        <div class="cidx">14 // report</div>
-        <h3>one-page html masterpiece</h3>
-        <p>Sparkline, score bars, achievement wall, language donut, forecast strip. One file, no assets, prints beautifully.</p>
-        <div class="mt" data-cmd="prsnoop report simonw -o report.html" data-out="1 file · opens anywhere"><span class="mt-p">$</span> <span class="mt-c">prsnoop report simonw -o report.html</span><span class="mt-o">1 file · opens anywhere</span></div>
+        <div class="cidx">10 // readme</div>
+        <h3>profile readme, generated</h3>
+        <p>Badges, stats table, top repos. Paste it into your profile.</p>
+        <div class="mt" data-cmd="prsnoop readme simonw" data-out="badges + stats + top repos · paste ready"><span class="mt-p">$</span> <span class="mt-c">prsnoop readme simonw</span><span class="mt-o">badges + stats + top repos · paste ready</span></div>
       </article>
 
       <article class="card w3 sf">
-        <div class="cidx">15 // still zero dependencies</div>
-        <h3>alive on your machine</h3>
-        <div class="mtrow">
-          <div class="mt" data-cmd="prsnoop serve simonw" data-out="127.0.0.1:8642"><span class="mt-p">$</span> <span class="mt-c">prsnoop serve simonw</span><span class="mt-o">127.0.0.1:8642</span></div>
-          <div class="mt" data-cmd="prsnoop watch simonw" data-out="1 new pr · bell"><span class="mt-p">$</span> <span class="mt-c">prsnoop watch simonw</span><span class="mt-o">1 new pr · bell</span></div>
-          <div class="mt" data-cmd="prsnoop replay snap.json" data-out="zero network"><span class="mt-p">$</span> <span class="mt-c">prsnoop replay snap.json</span><span class="mt-o">zero network</span></div>
-          <div class="mt" data-cmd="prsnoop export simonw" data-out="6 files · 1 folder"><span class="mt-p">$</span> <span class="mt-c">prsnoop export simonw</span><span class="mt-o">6 files · 1 folder</span></div>
-        </div>
+        <div class="cidx">11 // head-to-head</div>
+        <h3>two developers, one identical window</h3>
+        <p>Side by side, same clock on both sides. No favorable timeframes.</p>
+        <div class="mt" data-cmd="prsnoop compare antfu simonw --days 30" data-out="42 vs 10 prs · same window · same clock"><span class="mt-p">$</span> <span class="mt-c">prsnoop compare antfu simonw --days 30</span><span class="mt-o">42 vs 10 prs · same window · same clock</span></div>
       </article>
+    </div>
+  </section>
+
+  <!-- ==================== live demo ==================== -->
+  <section class="wrap sec" id="demo">
+    <div class="shead sf">
+      <div class="lab">02 · live demo</div>
+      <h2>don't take our word for it</h2>
+      <div class="ref">real outputs, captured live · pick a command</div>
+    </div>
+    <div class="demobar sf">
+      <button class="demobtn live" data-demo="report">REPORT</button>
+      <button class="demobtn" data-demo="compare">COMPARE</button>
+      <button class="demobtn" data-demo="badges">BADGES</button>
+      <button class="demobtn" data-demo="org">ORG PULSE</button>
+    </div>
+    <div class="term sf" style="margin-top:18px">
+      <div class="tbar">
+        <div class="dots"><i></i><i></i><i></i></div>
+        <div>prsnoop · demo console</div>
+      </div>
+      <pre id="demoterm"><span class="dim">$</span> <span id="demotyped"></span><span class="cur"></span></pre>
     </div>
   </section>
 
   <!-- ==================== statement ==================== -->
   <section class="wrap sec statement sf">
-    <p>the whole dependency tree is <span class="g">nothing</span> you have to install.</p>
-    <div class="sub2">urllib · json · dataclasses. everything else is already on your machine.</div>
+    <p>Everything it needs <span class="g">already ships</span> with Python.</p>
+    <div class="sub2">urllib · json · dataclasses. The rest is already on your machine.</div>
   </section>
 
   <!-- ==================== ecosystem ==================== -->
   <section class="wrap sec" id="eco">
     <div class="shead sf">
-      <div class="lab">02 · ecosystem</div>
+      <div class="lab">03 · ecosystem</div>
       <h2>how it compares</h2>
     </div>
     <div class="mxscroll sf">
@@ -706,76 +681,6 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
             <td class="no">[ NO ]</td>
           </tr>
           <tr>
-            <td>open pr triage radar</td>
-            <td class="yes">[ YES ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>release notes generator</td>
-            <td class="yes">[ YES ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>ci quality gates</td>
-            <td class="yes">[ YES ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>svg stat card, no service</td>
-            <td class="yes">[ YES ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>offline report replay</td>
-            <td class="yes">[ YES ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>health score + burnout risk</td>
-            <td class="hl">0-100, graded</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>achievements, 43 badges</td>
-            <td class="hl">4 rarity tiers</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">gamified</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>pace forecasting</td>
-            <td class="hl">least-squares</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>natural-language Q&A</td>
-            <td class="hl">local, no key</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">copilot</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
-            <td>full-screen live tui</td>
-            <td class="hl">curses, 4 tabs</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-            <td class="no">[ NO ]</td>
-          </tr>
-          <tr>
             <td>readme badges, no service</td>
             <td class="yes">[ YES ]</td>
             <td class="no">shields.io</td>
@@ -797,7 +702,7 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   <!-- ==================== closer ==================== -->
   <section class="wrap sec closer">
     <div class="shead sf">
-      <div class="lab">03 · your turn</div>
+      <div class="lab">04 · your turn</div>
       <h2>two minutes to a report</h2>
     </div>
     <div class="term sf">
@@ -880,29 +785,41 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   btn.addEventListener("click", copy);
 })();
 
-/* ---- typed hero command, then the report streams in ---- */
+/* ---- typed hero command, then the report streams in. click the terminal to replay. ---- */
+let playHero = () => {};
 (() => {
   const target = document.getElementById("typed");
   const out = document.getElementById("termout");
+  const term = target.closest(".term");
   const cmd = "prsnoop simonw --days 30";
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    target.textContent = cmd;
-    return;
-  }
-  out.classList.add("armed");
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const lines = [...out.querySelectorAll(".ln")];
-  let i = 0;
-  const type = () => {
-    target.textContent = cmd.slice(0, ++i);
-    if (i < cmd.length) {
-      setTimeout(type, 30 + Math.random() * 38);
-    } else {
-      lines.forEach((ln, n) => {
-        setTimeout(() => ln.classList.add("on"), 140 + n * 85);
-      });
+  playHero = () => {
+    target.textContent = "";
+    lines.forEach((ln) => ln.classList.remove("on"));
+    if (reduced) {
+      target.textContent = cmd;
+      lines.forEach((ln) => ln.classList.add("on"));
+      return;
     }
+    out.classList.add("armed");
+    let i = 0;
+    const type = () => {
+      target.textContent = cmd.slice(0, ++i);
+      if (i < cmd.length) {
+        setTimeout(type, 30 + Math.random() * 38);
+      } else {
+        lines.forEach((ln, n) => {
+          setTimeout(() => ln.classList.add("on"), 140 + n * 85);
+        });
+      }
+    };
+    setTimeout(type, 200);
   };
-  setTimeout(type, 480);
+  setTimeout(playHero, 480);
+  term.style.cursor = "pointer";
+  term.title = "click to replay";
+  term.addEventListener("click", playHero);
 })();
 
 /* ---- scroll fade: opacity is a pure function of scroll position.
@@ -976,6 +893,88 @@ footer { margin-top: clamp(110px, 12vw, 170px); border-top: 1px solid var(--line
   window.addEventListener("resize", onScroll);
   setInterval(onScroll, 150);
   update();
+})();
+
+/* ---- demo console: four real commands, typed live, looping while visible ---- */
+(() => {
+  const typed = document.getElementById("demotyped");
+  const out = document.getElementById("demoterm");
+  if (!typed || !out) return;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DEMOS = {
+    report: { cmd: "prsnoop simonw --days 30", lines: [
+      ["dim", "prsnoop | simonw · window: last 30 days"],
+      ["txt", "Pull requests <N>43</N> · merged <G>38</G> · open 5"],
+      ["txt", "Issues opened <N>32</N> (closed: 25)"],
+      ["txt", "Lines changed <G>+17717</G> / <R>-2421</R>"],
+      ["txt", "Merge rate <N>88%</N> · median <N>0.0d</N> · p90 <N>0.0d</N>"],
+      ["txt", "Active days <N>22</N> · streaks longest <G>6d</G>"],
+      ["txt", "Repos <N>13</N> · Momentum steady"],
+      ["dim", "captured live · Sep 2026"],
+      ["ok", "exit 0 · table in 0.9s"]]},
+    compare: { cmd: "prsnoop compare antfu simonw --days 30", lines: [
+      ["dim", "prsnoop | antfu vs simonw · same window"],
+      ["txt", "pull requests <N>10</N> / <N>43</N>"],
+      ["txt", "merged <N>8</N> / <N>38</N>"],
+      ["txt", "merge rate <N>80%</N> / <G>88%</G>"],
+      ["txt", "issues <N>1</N> / <N>32</N> · streaks <N>3d</N> / <G>6d</G>"],
+      ["dim", "captured live · Sep 2026"],
+      ["ok", "exit 0 · same window, no excuses"]]},
+    badges: { cmd: "prsnoop simonw -f badge -o badges.md", lines: [
+      ["txt", "![prs](data:image/svg+xml;base64,<D>PHN2ZyB4bWxu…</D>)"],
+      ["txt", "![merged](data:image/svg+xml;base64,<D>PHJlY3Qgd2lk…</D>)"],
+      ["txt", "![rate](data:image/svg+xml;base64,<D>PGcgZmlsbD0n…</D>)"],
+      ["txt", "![streak](data:image/svg+xml;base64,<D>PHRleHQge…</D>)"],
+      ["dim", "4 badges · paste into any README · no service"],
+      ["ok", "exit 0 · badges.md written"]]},
+    org: { cmd: "prsnoop org vueuse --days 30", lines: [
+      ["dim", "prsnoop org | vueuse · 2026-08-09 to 2026-09-08"],
+      ["txt", "PRs opened <N>42</N> · merged <N>11</N> · open 26"],
+      ["txt", "Authors <N>22</N> · Repos <N>1</N> · Median merge <N>3.8d</N>"],
+      ["txt", "Top: lazerg <N>8</N> · haoku123 <N>7</N> · giaBaoJS <N>3</N>"],
+      ["dim", "captured live · Sep 2026"],
+      ["ok", "exit 0 · one search, whole org"]]}
+  };
+  const btns = [...document.querySelectorAll(".demobtn")];
+  let token = 0, current = "report", visible = false;
+  const alive = (t) => t === token && visible && !document.hidden;
+  const paint = (kind, html) => {
+    const line = document.createElement("div");
+    const map = { N: "num", G: "ok", R: "bad", D: "dim" };
+    const body = html.replace(/<(N|G|R|D)>(.*?)<\/\1>/g, (_, k, v) => '<span class="' + map[k] + '">' + v + "</span>");
+    line.innerHTML = kind === "txt" ? "<span>" + body + "</span>" : '<span class="' + kind + '">' + body + "</span>";
+    out.appendChild(line);
+  };
+  const mark = (name) => btns.forEach((b) => b.classList.toggle("live", b.dataset.demo === name));
+  function run(name) {
+    const t = ++token;
+    const demo = DEMOS[name || "report"];
+    if (!demo) return;
+    current = name || "report";
+    mark(current);
+    out.querySelectorAll("div").forEach((d) => d.remove());
+    typed.textContent = "";
+    const printAll = () => {
+      demo.lines.forEach((r, j) => setTimeout(() => { if (alive(t)) paint(r[0], r[1]); }, 220 * j));
+      setTimeout(() => { if (alive(t) && !reduced) run(name); }, demo.lines.length * 220 + 3000);
+    };
+    if (reduced) { typed.textContent = demo.cmd; demo.lines.forEach((r) => paint(r[0], r[1])); return; }
+    let k = 0;
+    (function type() {
+      if (!alive(t)) return;
+      typed.textContent = demo.cmd.slice(0, ++k);
+      if (k < demo.cmd.length) setTimeout(type, 30);
+      else setTimeout(() => { if (alive(t)) printAll(); }, 350);
+    })();
+  }
+  btns.forEach((b) => b.addEventListener("click", () => run(b.dataset.demo)));
+  new IntersectionObserver((es) => {
+    es.forEach((e) => {
+      const was = visible;
+      visible = e.isIntersecting;
+      if (visible && !was) setTimeout(() => run(current), 400);
+    });
+  }, { threshold: 0.3 }).observe(out.closest(".term"));
 })();
 
 /* ---- live star count ---- */

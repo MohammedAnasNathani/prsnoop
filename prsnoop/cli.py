@@ -26,6 +26,9 @@
     prsnoop digest simonw --format slack       # Slack/email/Discord digest
     prsnoop report simonw -o report.html       # one-page HTML masterpiece
     prsnoop tui simonw                         # full-screen live terminal dashboard
+    prsnoop showcase simonw -o showcase.html   # interactive web app, one file
+    prsnoop battle antfu simonw -o vs.html     # head-to-head versus web page
+    prsnoop wrapped simonw --web -o wrap.html  # story-mode wrapped, slides
     prsnoop serve simonw                       # live dashboard on 127.0.0.1
     prsnoop export simonw                      # full report pack to a folder
     prsnoop auth                               # check token / rate limit
@@ -400,8 +403,10 @@ def build_wrapped_parser() -> argparse.ArgumentParser:
     w.add_argument("--since", type=str, default=None)
     w.add_argument("--until", type=str, default=None)
     w.add_argument(
-        "--format", "-f", choices=["table", "markdown", "json"], default="table"
+        "--format", "-f", choices=["table", "markdown", "json", "web"], default="table"
     )
+    w.add_argument("--web", action="store_true",
+                   help="render as a story-mode web page (same as -f web)")
     w.add_argument("--output", "-o", type=Path, default=None, help="write to a file")
     w.add_argument("--no-reviews", action="store_true")
     w.add_argument(
@@ -1072,7 +1077,10 @@ def cmd_wrapped(args: argparse.Namespace) -> int:
         print(f"prsnoop: {exc}", file=sys.stderr)
         return 3
     wrapped = build_wrapped(activity)
-    if args.format == "json":
+    if args.web or args.format == "web":
+        from prsnoop.wrapped import render_wrapped_story
+        rendered = render_wrapped_story(wrapped)
+    elif args.format == "json":
         rendered = json.dumps(wrapped.to_dict(), indent=2)
     elif args.format == "markdown":
         rendered = render_wrapped_markdown(wrapped)
@@ -1567,6 +1575,85 @@ def cmd_tui(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def cmd_showcase(args: argparse.Namespace) -> int:
+    from prsnoop.showcase import render_showcase_html
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    _emit(render_showcase_html(activity), args.output)
+    return 0
+
+
+def cmd_battle(args: argparse.Namespace) -> int:
+    from prsnoop.battle import render_battle_html
+
+    if args.user_a == args.user_b:
+        print("prsnoop: battle needs two different users", file=sys.stderr)
+        return 2
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    sides: list[Activity] = []
+    for user in (args.user_a, args.user_b):
+        try:
+            prs, reviews, issues, _ = fetch_user_activity(
+                client, user, days=args.days, include_reviews=False,
+                org=args.org)
+        except RateLimitExceeded as exc:
+            print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+            return 4
+        except GitHubError as exc:
+            print(f"prsnoop: {exc}", file=sys.stderr)
+            return 3
+        sides.append(build_activity(user, prs, reviews, issues,
+                                    window_days=args.days))
+    _emit(render_battle_html(sides[0], sides[1]), args.output)
+    return 0
+
+
+def build_showcase_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop showcase",
+        description="Interactive single-file web app: force graph, heatmap, "
+                    "PR explorer, achievements, gauge.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_battle_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop battle",
+        description="Head-to-head versus web page with animated bars.")
+    p.add_argument("user_a")
+    p.add_argument("user_b")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
 def build_score_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="prsnoop score",
                                 description="Contributor health score, 0-100 with grade.")
@@ -1841,6 +1928,16 @@ def run(argv: list[str] | None = None) -> int:
             format="%(levelname)s %(name)s: %(message)s",
         )
         return cmd_replay(replay_args)
+    if raw and raw[0] == "showcase":
+        a = build_showcase_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_showcase(a)
+    if raw and raw[0] == "battle":
+        a = build_battle_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_battle(a)
     if raw and raw[0] == "score":
         a = build_score_parser().parse_args(raw[1:])
         logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,

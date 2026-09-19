@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prsnoop"
-version = "2.0.0"
+version = "2.1.0"
 description = "Snoop GitHub pull requests, issues, and reviews into clean reports"
 readme = "README.md"
 license = {text = "MIT"}
@@ -49,6 +49,11 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM"]
 ignore = ["SIM108"]
+
+[tool.ruff.lint.per-file-ignores]
+"prsnoop/showcase.py" = ["E501"]
+"prsnoop/battle.py" = ["E501"]
+"prsnoop/wrapped.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"

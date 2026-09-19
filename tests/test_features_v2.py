@@ -429,3 +429,101 @@ def test_v2_commands_registered():
     for cmd in ["score", "achievements", "forecast", "ask", "timeline",
                 "network", "digest", "report", "tui"]:
         assert cmd in text, f"{cmd} missing from help"
+
+
+# ---------------------------------------------------------------- v2.1 web
+
+
+def _pr231(days_ago: float, number: int = 1, merged: bool = True, adds: int = 200):
+    created = datetime.now(timezone.utc) - timedelta(days=days_ago)
+    merged_at = created + timedelta(hours=6) if merged else None
+    return PRRecord(
+        repo="acme/app", number=number, title=f"feature {number}",
+        url="u", state="merged" if merged else "open", created_at=created,
+        merged_at=merged_at, additions=adds, deletions=adds // 3,
+        changed_files=3,
+    )
+
+
+def test_showcase_html_structure():
+    from prsnoop.showcase import render_showcase_html
+
+    act = _activity([_pr231(1, 1), _pr231(3, 2, merged=False)])
+    html = render_showcase_html(act)
+    assert html.startswith("<!doctype html>")
+    # no unreplaced placeholders
+    for token in ("__DATA__", "__JS__", "__CSS__", "__USER__", "__WINDOW__",
+                  "__GEN__", "__ACHDONE__", "__ACHTOTAL__", "__ACHSCORE__"):
+        assert token not in html
+    # key sections present
+    assert "contribution graph" in html
+    assert "pull request explorer" in html
+    assert "window.__PRSNOOP__ = {" in html
+    assert "heatmap" in html and "donut" in html and "gauge" in html
+    # embedded data parses back
+    m = html.split("window.__PRSNOOP__ = ", 1)[1].split(";</script>", 1)[0]
+    payload = json.loads(m)
+    assert payload["user"] == "t"
+    assert payload["stats"]["prs"] == 2
+
+
+def test_battle_html_structure():
+    from prsnoop.battle import render_battle_html
+
+    a = _activity([_pr231(1, 1), _pr231(2, 2)])
+    b = _activity([_pr231(1, 3, adds=900)], user="u2")
+    html = render_battle_html(a, b)
+    assert html.startswith("<!doctype html>")
+    assert "vs" in html and "judging" in html
+    assert '"a":' in html and '"b":' in html
+    assert "prsnoop battle" in html
+
+
+def test_wrapped_story_slides():
+    from prsnoop.wrapped import build_wrapped, render_wrapped_story
+
+    w = build_wrapped(_activity([_pr231(1, 1)]))
+    html = render_wrapped_story(w)
+    assert html.startswith("<!doctype html>")
+    assert 'class="slide active"' in html
+    assert "your year in code" in html
+    assert html.count('<section class="slide') >= 8
+
+
+def test_cli_showcase_and_wrapped_web(monkeypatch, tmp_path):
+    def fake(client, user, days=30, include_reviews=True, org=None,
+             since=None, until=None):
+        return [_pr231(1, 1), _pr231(3, 2, merged=False)], [], [], True
+
+    monkeypatch.setattr(cli, "fetch_user_activity", fake)
+    monkeypatch.setattr(cli, "GitHubClient", lambda **kw: object())
+
+    out = tmp_path / "showcase.html"
+    assert cli.run(["showcase", "t", "-o", str(out)]) == 0
+    assert out.read_text(encoding="utf-8").startswith("<!doctype html>")
+
+    wrap = tmp_path / "wrap.html"
+    assert cli.run(["wrapped", "t", "--web", "-o", str(wrap)]) == 0
+    assert 'class="slide active"' in wrap.read_text(encoding="utf-8")
+
+
+def test_cli_battle(monkeypatch, tmp_path):
+    calls = {"n": 0}
+
+    def fake(client, user, days=30, include_reviews=True, org=None,
+             since=None, until=None):
+        calls["n"] += 1
+        return [_pr231(1, 1, adds=100)], [], [], True
+
+
+    monkeypatch.setattr(cli, "fetch_user_activity", fake)
+    monkeypatch.setattr(cli, "GitHubClient", lambda **kw: object())
+    out = tmp_path / "vs.html"
+    assert cli.run(["battle", "t1", "t2", "-o", str(out)]) == 0
+    html = out.read_text(encoding="utf-8")
+    assert "t1" in html and "t2" in html
+    assert "takes it" in html or "dead heat" in html
+
+
+def test_cli_battle_rejects_same_user():
+    assert cli.run(["battle", "same", "same"]) == 2
