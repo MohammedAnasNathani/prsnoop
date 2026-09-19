@@ -7,9 +7,12 @@ Keys: 1-4 tabs, j/k or arrows scroll, r refetch, q quit.
 """
 from __future__ import annotations
 
-import curses
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import curses
 
 from prsnoop.fetch import fetch_user_activity
 from prsnoop.github import GitHubClient
@@ -188,7 +191,18 @@ def run_tui(
     cache_dir: Path | None = None,
     refresh_seconds: int = 300,
 ) -> None:
-    """Blocking curses loop. Returns when the user presses q."""
+    """Blocking curses loop. Returns when the user presses q.
+
+    curses is imported lazily: Windows ships no curses module, so the
+    command must fail with a clear message instead of an import error.
+    """
+    try:
+        import curses
+    except ImportError as exc:  # pragma: no cover - platform specific
+        raise SystemExit(
+            "prsnoop tui: the curses module is not available on this platform. "
+            "On Windows, use 'prsnoop serve' for the browser dashboard instead."
+        ) from exc
 
     def _loop(stdscr: curses.window) -> None:
         curses.curs_set(0)

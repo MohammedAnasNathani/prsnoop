@@ -407,6 +407,7 @@ def test_cli_report(monkeypatch, capsys, tmp_path):
 
 def test_cli_tui_rejects_bad_every(monkeypatch, capsys):
     _fake_fetch(monkeypatch)
+    # validation happens before curses import, so this is platform-safe
     assert cli.run(["tui", "t", "--every", "1"]) == 2
 
 
