@@ -96,7 +96,12 @@ def _previous_window(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prsnoop",
-        description="Snoop GitHub pull requests, issues, and reviews into clean reports.",
+        description=(
+            "Snoop GitHub pull requests, issues, and reviews into clean reports. "
+            "Subcommands: score, achievements, forecast, ask, timeline, network, "
+            "digest, report, tui, wrapped, readme, card, radar, changelog, ci, "
+            "watch, serve, export, team, compare, org, repo, snap, replay, me, auth."
+        ),
     )
     parser.add_argument("user", nargs="?", help="GitHub username to snoop")
     parser.add_argument(
