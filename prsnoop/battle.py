@@ -1,8 +1,8 @@
 """Battle: a head-to-head versus web page between two contributors.
 
-One self-contained HTML file: mirrored stat panels, animated metric bars
-that fill toward whoever is winning, a per-metric win tally, and a verdict
-banner. The crowd-pleaser for compare demos.
+Design language: tale of the tape. A boxing fight-card: two fighters, one
+metric list down the middle, bars growing outward from the center line,
+stamped verdict. One self-contained HTML file.
 """
 from __future__ import annotations
 
@@ -10,6 +10,21 @@ import json
 
 from prsnoop.models import Activity, JsonDict
 from prsnoop.score import compute_score
+
+METRICS = [
+    ("prs", "PULL REQUESTS", "higher"),
+    ("merged", "MERGED", "higher"),
+    ("rate", "MERGE RATE", "higher"),
+    ("reviews", "REVIEWS GIVEN", "higher"),
+    ("issues", "ISSUES OPENED", "higher"),
+    ("added", "LINES ADDED", "higher"),
+    ("streak", "BEST STREAK (D)", "higher"),
+    ("active", "ACTIVE DAYS", "higher"),
+    ("repos", "REPOSITORIES", "higher"),
+    ("langs", "LANGUAGES", "higher"),
+    ("median", "MEDIAN MERGE (D)", "lower"),
+    ("score", "HEALTH SCORE", "higher"),
+]
 
 
 def _side(activity: Activity) -> JsonDict:
@@ -33,132 +48,194 @@ def _side(activity: Activity) -> JsonDict:
     }
 
 
-METRICS = [
-    ("prs", "pull requests", "higher"),
-    ("merged", "merged", "higher"),
-    ("rate", "merge rate %", "higher"),
-    ("reviews", "reviews given", "higher"),
-    ("issues", "issues opened", "higher"),
-    ("added", "lines added", "higher"),
-    ("streak", "best streak (d)", "higher"),
-    ("active", "active days", "higher"),
-    ("repos", "repositories", "higher"),
-    ("langs", "languages", "higher"),
-    ("median", "median merge (d)", "lower"),
-    ("score", "health score", "higher"),
-]
-
 _CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0c10;color:#e8edf4;min-height:100vh;
-font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-display:flex;flex-direction:column;align-items:center;padding:40px 18px}
-.vs{font-size:clamp(40px,10vw,96px);font-weight:900;letter-spacing:-3px;margin:6px 0 2px}
-.vs .a{color:#58a6ff}.vs .x{color:#f4633a}
-.tag{color:#8b95a5;font-size:14px;margin-bottom:26px}
-.duel{display:grid;grid-template-columns:1fr 1fr;gap:22px;width:100%;max-width:900px}
-@media(max-width:680px){.duel{grid-template-columns:1fr}}
-.side{background:#12161d;border:1px solid #242b36;border-radius:18px;padding:22px}
-.side.win{border-color:#41d67c;box-shadow:0 0 30px rgba(65,214,124,.12)}
-.side h2{font-size:24px;margin-bottom:2px}
-.side .g{color:#8b95a5;font-size:13px;margin-bottom:14px}
-.metric{margin:11px 0}
-.metric .row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
-.metric .row .lab{color:#8b95a5}
-.metric .row b{font-variant-numeric:tabular-nums}
-.metric .track{height:9px;background:#1b212b;border-radius:5px;overflow:hidden}
-.metric .fill{height:100%;border-radius:5px;width:0;
-transition:width 1.3s cubic-bezier(.22,1,.36,1)}
-.mine .fill{background:linear-gradient(90deg,#58a6ff,#79c0ff)}
-.theirs .fill{background:linear-gradient(90deg,#f4633a,#ff9d8a)}
-.metric .wmark{font-size:10px;letter-spacing:1.5px;color:#41d67c}
-.verdict{margin-top:28px;text-align:center}
-.verdict .big{font-size:clamp(22px,5vw,38px);font-weight:800}
-.verdict .score{color:#8b95a5;font-size:15px;margin-top:6px}
-.tally{display:flex;gap:16px;justify-content:center;margin-top:12px;font-size:14px;color:#8b95a5}
-.tally b{font-size:20px}
-.tally .a{color:#58a6ff}.tally .t{color:#f4633a}
-footer{margin-top:34px;color:#57616f;font-size:12px}
-footer a{color:#58a6ff;text-decoration:none}
+:root{--bg:#060a08;--panel:#0a100d;--panel2:#0d1512;--line:#18251e;
+--line2:#20322a;--text:#d9e6dc;--dim:#7f948a;--faint:#48584f;
+--a:#3dffa2;--b:#ff5a3c;--amber:#f0b429;
+--sans:'Space Grotesk',sans-serif;--mono:'IBM Plex Mono',monospace}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+min-height:100vh;display:flex;flex-direction:column;align-items:center;
+padding:34px 18px 60px;position:relative}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+background-image:linear-gradient(var(--line) 1px,transparent 1px),
+linear-gradient(90deg,var(--line) 1px,transparent 1px);
+background-size:44px 44px;opacity:.3}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;
+background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.09) 3px 4px);
+mix-blend-mode:overlay}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.34em;
+color:var(--a);text-transform:uppercase;position:relative;z-index:1}
+.names{display:flex;align-items:center;gap:clamp(14px,4vw,40px);margin:14px 0 4px;
+position:relative;z-index:1;flex-wrap:wrap;justify-content:center}
+.name{font-size:clamp(30px,7vw,72px);font-weight:700;letter-spacing:-2px;
+text-transform:uppercase;line-height:1}
+.name.fa{color:var(--a)}.name.fb{color:var(--b)}
+.vs{font-family:var(--mono);font-size:clamp(16px,3vw,26px);color:var(--faint);
+font-weight:600}
+.sub{font-family:var(--mono);font-size:11px;letter-spacing:.24em;
+color:var(--dim);text-transform:uppercase;margin-bottom:30px;position:relative;z-index:1}
+.tape{width:100%;max-width:880px;position:relative;z-index:1;
+border:1px solid var(--line);background:var(--panel);padding:6px 0}
+.trow{display:grid;grid-template-columns:1fr 190px 1fr;align-items:center;
+padding:13px 18px;border-bottom:1px solid var(--line);position:relative}
+.trow:last-child{border-bottom:0}
+.tlab{font-family:var(--mono);font-size:10px;letter-spacing:.22em;
+color:var(--faint);text-align:center;text-transform:uppercase}
+.tval{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.tval small{font-size:11px;color:var(--dim);font-weight:400}
+.ta{text-align:right}.tb{text-align:left}
+.bar{height:7px;background:var(--panel2);margin-top:7px;position:relative;
+overflow:hidden;border:1px solid var(--line)}
+.bar i{position:absolute;top:0;bottom:0;width:0;
+transition:width 1.2s cubic-bezier(.22,1,.36,1)}
+.ta .bar i{right:0;background:var(--a)}
+.tb .bar i{left:0;background:var(--b)}
+.wmark{font-family:var(--mono);font-size:9px;letter-spacing:.18em;
+color:var(--amber);margin-left:8px}
+.wmark.left{margin-left:0;margin-right:8px}
+.trow.wa .tval.a-val{color:var(--a)}
+.trow.wb .tval.b-val{color:var(--b)}
+/* fighter header cards */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:22px;width:100%;
+max-width:880px;margin:26px 0;position:relative;z-index:1}
+@media(max-width:680px){.cards{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);background:var(--panel);padding:22px;
+position:relative}
+.card .who{font-family:var(--mono);font-size:10px;letter-spacing:.26em;
+text-transform:uppercase;margin-bottom:10px}
+.card.fa .who{color:var(--a)}.card.fb .who{color:var(--b)}
+.card .score{font-size:52px;font-weight:700;line-height:1;
+font-variant-numeric:tabular-nums}
+.card .gr{font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+color:var(--dim);margin-top:8px;text-transform:uppercase}
+.verdict{margin-top:34px;position:relative;z-index:1;text-align:center}
+.vstamp{display:inline-block;font-size:clamp(20px,4.6vw,34px);font-weight:700;
+letter-spacing:.06em;text-transform:uppercase;color:var(--a);
+border:2px solid var(--a);padding:14px 34px;transform:rotate(-2deg);
+opacity:0;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s}
+.vstamp.show{opacity:1;transform:rotate(-2deg) scale(1)}
+.vstamp.tie{color:var(--amber);border-color:var(--amber)}
+.vscore{font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+color:var(--dim);text-transform:uppercase;margin-top:16px}
+.tally{display:flex;gap:26px;justify-content:center;margin-top:14px;
+font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--dim)}
+.tally b{font-size:19px;color:var(--text)}
+footer{margin-top:40px;font-family:var(--mono);font-size:10px;
+letter-spacing:.2em;color:var(--faint);text-transform:uppercase;
+position:relative;z-index:1}
+footer a{color:var(--dim);text-decoration:none}
 """
 
 
 def render_battle_html(a: Activity, b: Activity) -> str:
-    sa, sb = _side(a), _side(b)
+    sa = _side(a)
+    sb = _side(b)
     payload = json.dumps({"a": sa, "b": sb, "metrics": METRICS}, ensure_ascii=True)
     metrics_js = json.dumps(METRICS)
-    return (
-        """<!doctype html>
+    page = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>prsnoop battle: __A__ vs __B__</title><style>__CSS__</style></head>
+<title>PRSNOOP · TALE OF THE TAPE: __A__ × __B__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>__CSS__</style></head>
 <body>
-<div class="vs"><span class="a">__A__</span> <span style="color:#57616f">vs</span>
-<span class="x">__B__</span></div>
-<p class="tag">same window · same clock · every metric judged</p>
-<div class="duel">
-  <div class="side mine" id="sideA"><h2>__A__</h2><div class="g" id="gA"></div>
-    <div id="metricsA"></div></div>
-  <div class="side theirs" id="sideB"><h2>__B__</h2><div class="g" id="gB"></div>
-    <div id="metricsB"></div></div>
+<p class="eyebrow">prsnoop · field comparison · same window · same clock</p>
+<div class="names">
+  <span class="name fa">__A__</span>
+  <span class="vs">×</span>
+  <span class="name fb">__B__</span>
 </div>
+<p class="sub">tale of the tape · every metric judged · no favorable timeframes</p>
+
+<div class="cards">
+  <div class="card fa" id="cardA"><div class="who">corner a · __A__</div>
+  <div class="score" id="scoreA">0.0</div><div class="gr" id="grA"></div></div>
+  <div class="card fb" id="cardB"><div class="who">corner b · __B__</div>
+  <div class="score" id="scoreB">0.0</div><div class="gr" id="grB"></div></div>
+</div>
+
+<div class="tape" id="tape"></div>
+
 <div class="verdict">
-  <div class="big" id="verdict">judging…</div>
-  <div class="score" id="vscore"></div>
-  <div class="tally"><span><b class="a" id="tallyA">0</b> metrics __A__</span>
-  <span><b class="t" id="tallyB">0</b> metrics __B__</span></div>
+  <div class="vstamp" id="vstamp">JUDGING</div>
+  <p class="vscore" id="vscore"></p>
+  <div class="tally">
+    <span><b id="tallyA">0</b> ROUNDS __A__</span>
+    <span><b id="tallyB">0</b> ROUNDS __B__</span>
+  </div>
 </div>
-<footer>generated by <a href="https://github.com/MohammedAnasNathani/prsnoop">prsnoop battle</a>
-· one file · zero assets</footer>
+
+<footer><a href="https://github.com/MohammedAnasNathani/prsnoop">COMPILED BY PRSNOOP</a>
+· ZERO DEPENDENCIES · ONE FILE</footer>
 <script>window.__BATTLE__ = __DATA__;</script>
 <script>
 const B = window.__BATTLE__;
 const M = __METRICS__;
 const $ = (q) => document.querySelector(q);
 let winsA = 0, winsB = 0;
-M.forEach(([key, label, dir]) => {
+const tape = $('#tape');
+M.forEach(([key, label, dir], idx) => {
   const va = B.a[key], vb = B.b[key];
+  const shown = (v) => v + (key === 'rate' ? '%' : key === 'score' ? '' : '');
   const aWins = dir === 'higher' ? va > vb : va < vb;
   const bWins = dir === 'higher' ? vb > va : vb < va;
+  const tie = va === vb;
+  if (aWins) winsA++;
+  if (bWins) winsB++;
   const peak = Math.max(va, vb, 1e-9);
-  const pa = dir === 'lower' ? (1 - va / (va + vb || 1)) : va / peak;
-  const pb = dir === 'lower' ? (1 - vb / (va + vb || 1)) : vb / peak;
-  if (aWins) winsA++; if (bWins) winsB++;
-  const row = (side, v, frac, win) => `
-    <div class="metric">
-      <div class="row"><span class="lab">${label}</span>
-      <b>${v}${key === 'rate' ? '%' : ''} ${win ? '<span class="wmark">★ wins</span>' : ''}</b></div>
-      <div class="track"><div class="fill" data-w="${Math.round(frac * 100)}"></div></div>
-    </div>`;
-  $('#metricsA').insertAdjacentHTML('beforeend',
-    row('a', va, pa, aWins && !(va === vb)));
-  $('#metricsB').insertAdjacentHTML('beforeend',
-    row('b', vb, pb, bWins && !(va === vb)));
+  const pa = Math.round((dir === 'lower'
+    ? (1 - va / (va + vb || 1)) : va / peak) * 100);
+  const pb = Math.round((dir === 'lower'
+    ? (1 - vb / (va + vb || 1)) : vb / peak) * 100);
+  const row = document.createElement('div');
+  row.className = 'trow' + (aWins && !tie ? ' wa' : '') + (bWins && !tie ? ' wb' : '');
+  row.innerHTML =
+    '<div class="tval ta a-val">' + shown(va) +
+      (aWins && !tie ? '<span class="wmark">★</span>' : '') +
+      '<div class="bar"><i data-w="' + pa + '"></i></div></div>' +
+    '<div class="tlab">' + String(idx + 1).padStart(2, '0') + ' · ' + label + '</div>' +
+    '<div class="tval tb b-val">' + shown(vb) +
+      (bWins && !tie ? '<span class="wmark">★</span>' : '') +
+      '<div class="bar"><i data-w="' + pb + '"></i></div></div>';
+  tape.appendChild(row);
 });
 $('#tallyA').textContent = winsA;
 $('#tallyB').textContent = winsB;
-$('#gA').textContent = 'health ' + B.a.score + ' · grade ' + B.a.grade;
-$('#gB').textContent = 'health ' + B.b.score + ' · grade ' + B.b.grade;
+$('#scoreA').textContent = B.a.score;
+$('#scoreB').textContent = B.b.score;
+$('#grA').textContent = 'grade ' + B.a.grade + ' · corner a';
+$('#grB').textContent = 'grade ' + B.b.grade + ' · corner b';
 setTimeout(() => {
-  document.querySelectorAll('.fill').forEach((f) => { f.style.width = f.dataset.w + '%'; });
-}, 250);
+  $$('.bar i').forEach((f) => { f.style.width = f.dataset.w + '%'; });
+}, 300);
 setTimeout(() => {
-  const total = winsA + winsB;
-  let text, win = null;
-  if (winsA > winsB) { win = 'A'; text = B.a.user + ' takes it'; }
-  else if (winsB > winsA) { win = 'B'; text = B.b.user + ' takes it'; }
-  else { text = 'dead heat'; }
-  if (winsA === winsB && total > 0) {
-    if (B.a.score > B.b.score) { win = 'A'; text = B.a.user + ' takes it on score'; }
-    else if (B.b.score > B.a.score) { win = 'B'; text = B.b.user + ' takes it on score'; }
+  let text = 'DEAD HEAT', tie = true;
+  if (winsA > winsB) { text = B.a.user + ' TAKES IT'; tie = false; }
+  else if (winsB > winsA) { text = B.b.user + ' TAKES IT'; tie = false; }
+  else if (B.a.score > B.b.score) { text = B.a.user + ' ON SCORE'; tie = false; }
+  else if (B.b.score > B.a.score) { text = B.b.user + ' ON SCORE'; tie = false; }
+  const st = $('#vstamp');
+  st.textContent = text;
+  st.classList.add('show');
+  if (tie) st.classList.add('tie');
+  if (!tie) {
+    const w = text === B.a.user + ' TAKES IT' ? 'A' : 'B';
+    $(w === 'A' ? '#cardA' : '#cardB').style.borderColor =
+      w === 'A' ? 'var(--a)' : 'var(--b)';
   }
-  $('#verdict').textContent = text;
-  $('#vscore').textContent = 'health score: ' + B.a.score + ' vs ' + B.b.score;
-  if (win) $('#side' + win).classList.add('win');
-}, 1800);
+  $('#vscore').textContent =
+    'health score ' + B.a.score + ' vs ' + B.b.score +
+    ' · rounds ' + winsA + ' to ' + winsB;
+}, 1900);
 </script>
 </body></html>"""
-        .replace("__A__", sa["user"])
+    return (
+        page.replace("__A__", sa["user"])
         .replace("__B__", sb["user"])
         .replace("__CSS__", _CSS)
         .replace("__DATA__", payload)

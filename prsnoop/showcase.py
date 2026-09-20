@@ -1,36 +1,20 @@
 """Showcase: generate a full interactive single-file web app.
 
-This is the spectacle command. One HTML file containing:
-- animated count-up hero stats
-- an interactive GitHub-style contribution heatmap with hover tooltips
-- a live force-directed graph of the user's repo network (canvas physics,
-  drag nodes, hover labels)
-- a language donut rendered on canvas
-- an animated health-score gauge
-- the achievement wall with rarity filters
-- a PR explorer with live search, state filter, and column sorting
-- a forecast chart that draws itself
-- a dark/light theme toggle
-
-No external assets, no network calls from the page: the data rides inside
-the file as embedded JSON.
+Design language: surveillance dossier. Radar green on near black, mono
+telemetry labels, corner brackets, scanlines, stamp verdicts. One HTML file;
+the data rides inside as embedded JSON.
 """
 from __future__ import annotations
 
 import json
 from datetime import date as date_cls
 from datetime import timedelta
+from xml.sax.saxutils import escape as x_escape
 
 from prsnoop.achievements import build_report
 from prsnoop.forecast import build_forecast
 from prsnoop.models import Activity, JsonDict
 from prsnoop.score import compute_score
-
-
-def x_escape(text: str) -> str:
-    from xml.sax.saxutils import escape
-
-    return escape(text)
 
 
 def _series(activity: Activity) -> list[tuple[str, int, int, int, int]]:
@@ -124,261 +108,310 @@ def build_data(activity: Activity) -> JsonDict:
         ],
     }
 
-
 _CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0c10;--card:#12161d;--card2:#171c24;--edge:#242b36;--text:#e8edf4;
---dim:#8b95a5;--faint:#57616f;--green:#41d67c;--blue:#58a6ff;--amber:#f0b429;
---red:#f4633a;--purple:#b58cff;--pink:#ff7eb6}
-body.light{--bg:#f6f7f9;--card:#ffffff;--card2:#f0f2f5;--edge:#dce0e6;
---text:#1a212b;--dim:#5a6572;--faint:#98a1ad}
-body{background:var(--bg);color:var(--text);transition:background .35s,color .35s;
-font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-min-height:100vh}
-.wrap{max-width:1060px;margin:0 auto;padding:34px 22px 80px}
-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.logo{font-family:ui-monospace,Menlo,monospace;font-size:13px;letter-spacing:.2em;
-color:var(--faint);text-transform:uppercase}
-.logo b{color:var(--green)}
-h1{font-size:clamp(30px,6vw,52px);letter-spacing:-1.5px;margin:18px 0 4px}
-h1 .u{background:linear-gradient(90deg,var(--blue),var(--green));
--webkit-background-clip:text;background-clip:text;color:transparent}
-.sub{color:var(--dim);margin-bottom:8px}
-#theme{background:var(--card);border:1px solid var(--edge);color:var(--dim);
-border-radius:20px;padding:7px 16px;cursor:pointer;font-size:13px}
-#theme:hover{color:var(--text);border-color:var(--blue)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
-gap:12px;margin:26px 0}
-.stat{background:var(--card);border:1px solid var(--edge);border-radius:14px;
-padding:16px 18px;position:relative;overflow:hidden}
-.stat:after{content:"";position:absolute;inset:0;
-background:linear-gradient(120deg,transparent 30%,rgba(88,166,255,.06) 50%,transparent 70%);
-transform:translateX(-100%);animation:sheen 6s infinite}
-@keyframes sheen{0%,60%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-.stat .k{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--dim)}
-.stat .v{font-size:30px;font-weight:800;margin-top:5px;
-font-variant-numeric:tabular-nums}
-.stat .v.g{color:var(--green)}.stat .v.b{color:var(--blue)}.stat .v.a{color:var(--amber)}
-.card{background:var(--card);border:1px solid var(--edge);border-radius:16px;
-padding:20px 22px;margin:16px 0}
-.card h2{font-size:11.5px;letter-spacing:2px;text-transform:uppercase;
-color:var(--dim);margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-.card h2 .hint{font-size:11px;letter-spacing:0;text-transform:none;color:var(--faint)}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:760px){.row2{grid-template-columns:1fr}}
-/* score gauge */
-.gaugewrap{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
-.gauge{position:relative;width:170px;height:170px;flex:none}
-.gauge svg{transform:rotate(-90deg)}
-.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;
-align-items:center;justify-content:center}
-.gauge .num b{font-size:44px;line-height:1}
-.gauge .num span{font-size:11px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
-.pillars{flex:1;min-width:230px}
-.pillar{margin:9px 0}
-.pillar .top{display:flex;justify-content:space-between;font-size:12.5px;
-color:var(--dim);margin-bottom:4px}
+:root{
+--bg:#060a08;--panel:#0a100d;--panel2:#0d1512;--line:#18251e;--line2:#20322a;
+--text:#d9e6dc;--dim:#7f948a;--faint:#48584f;
+--acc:#3dffa2;--acc-dim:#1d7a51;--amber:#f0b429;--red:#ff5a3c;
+--sans:'Space Grotesk',sans-serif;--mono:'IBM Plex Mono',monospace}
+body.light{
+--bg:#eef1ec;--panel:#f7f9f5;--panel2:#e9ede7;--line:#d3dad1;--line2:#c2cbc0;
+--text:#131a15;--dim:#4c5a51;--faint:#93a096;--acc:#0b7a4b;--acc-dim:#0b7a4b}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+min-height:100vh;position:relative}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+background-image:linear-gradient(var(--line) 1px,transparent 1px),
+linear-gradient(90deg,var(--line) 1px,transparent 1px);
+background-size:44px 44px;opacity:.35}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:40;
+background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.09) 3px 4px);
+mix-blend-mode:overlay}
+.wrap{max-width:1040px;margin:0 auto;padding:30px 22px 90px;position:relative;z-index:1}
+.topbar{display:flex;justify-content:space-between;align-items:center;
+font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--faint);
+border-bottom:1px solid var(--line2);padding-bottom:12px;text-transform:uppercase}
+.topbar .live{color:var(--acc)}
+.topbar .live:before{content:"●";margin-right:7px;animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+#theme{background:transparent;border:1px solid var(--line2);color:var(--dim);
+font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;padding:6px 14px;
+cursor:pointer;text-transform:uppercase}
+#theme:hover{color:var(--acc);border-color:var(--acc-dim)}
+.subject{margin:44px 0 10px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.34em;
+color:var(--acc);text-transform:uppercase}
+.subject h1{font-size:clamp(44px,9vw,96px);font-weight:700;letter-spacing:-2px;
+line-height:.95;text-transform:uppercase;margin:10px 0 14px}
+.dossier{font-family:var(--mono);font-size:11.5px;color:var(--dim);
+display:flex;flex-wrap:wrap;gap:6px 26px;border-top:1px solid var(--line2);
+border-bottom:1px solid var(--line2);padding:10px 0}
+.dossier b{color:var(--text);font-weight:500}
+.panel{position:relative;background:var(--panel);border:1px solid var(--line);
+padding:22px 24px;margin:18px 0}
+.panel>i{position:absolute;width:14px;height:14px;border:0 solid var(--acc);
+opacity:.9}
+.panel>i.tl{top:-1px;left:-1px;border-top-width:1px;border-left-width:1px}
+.panel>i.tr{top:-1px;right:-1px;border-top-width:1px;border-right-width:1px}
+.panel>i.bl{bottom:-1px;left:-1px;border-bottom-width:1px;border-left-width:1px}
+.panel>i.br{bottom:-1px;right:-1px;border-bottom-width:1px;border-right-width:1px}
+.panel h2{font-family:var(--mono);font-size:10.5px;font-weight:500;
+letter-spacing:.3em;color:var(--dim);text-transform:uppercase;
+display:flex;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:6px}
+.panel h2 .no{color:var(--acc)}
+.panel h2 .hint{font-size:10px;letter-spacing:.12em;color:var(--faint);
+text-transform:none}
+.strip{display:grid;grid-template-columns:repeat(6,1fr);
+border:1px solid var(--line);background:var(--panel)}
+.strip .cell{padding:16px 14px 14px;border-right:1px solid var(--line);
+position:relative}
+.strip .cell:last-child{border-right:0}
+.strip .idx{font-family:var(--mono);font-size:9px;letter-spacing:.2em;
+color:var(--faint)}
+.strip .v{font-size:clamp(20px,3.4vw,34px);font-weight:700;margin-top:6px;
+font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.strip .v small{font-size:12px;font-weight:400;color:var(--dim)}
+.strip .lab{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+color:var(--dim);text-transform:uppercase;margin-top:4px}
+@media(max-width:820px){.strip{grid-template-columns:repeat(3,1fr)}
+.strip .cell:nth-child(3n){border-right:0}
+.strip .cell{border-bottom:1px solid var(--line)}}
+.assess{display:flex;gap:34px;flex-wrap:wrap;align-items:center}
+.stamp{flex:none;width:158px;height:158px;border:2px solid var(--acc);
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+position:relative;transform:rotate(-2deg)}
+.stamp:before{content:"";position:absolute;inset:5px;border:1px solid var(--acc-dim)}
+.stamp .g{font-size:64px;font-weight:700;line-height:1;color:var(--acc)}
+.stamp .s{font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+color:var(--dim);margin-top:6px}
+.pillars{flex:1;min-width:260px}
+.pillar{margin:13px 0}
+.pillar .top{display:flex;justify-content:space-between;
+font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--dim);
+text-transform:uppercase;margin-bottom:6px}
 .pillar .top b{color:var(--text)}
-.pillar .track{height:7px;background:var(--card2);border-radius:4px;overflow:hidden}
-.pillar .fill{height:100%;border-radius:4px;width:0;
-transition:width 1.2s cubic-bezier(.22,1,.36,1)}
-.risk{margin-top:12px;font-size:13px;color:var(--dim)}
-.risk b{padding:2px 10px;border-radius:10px;font-size:12px}
-.risk.low b{color:var(--green);border:1px solid var(--green)}
-.risk.moderate b{color:var(--amber);border:1px solid var(--amber)}
-.risk.high b{color:var(--red);border:1px solid var(--red)}
-/* heatmap */
-#heatmap{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,13px);
+.seg{display:flex;gap:3px}
+.seg span{height:9px;flex:1;background:var(--panel2);border:1px solid var(--line)}
+.seg span.on{background:var(--acc);border-color:var(--acc);opacity:0;
+transition:opacity .2s}
+.risk{margin-top:14px;font-family:var(--mono);font-size:11.5px;
+letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+.risk b{color:var(--amber);border:1px solid var(--amber);padding:2px 10px;
+margin-left:6px}
+.risk.low b{color:var(--acc);border-color:var(--acc)}
+.risk.high b{color:var(--red);border-color:var(--red)}
+#heatmap{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,12px);
 gap:3px;overflow-x:auto;padding-bottom:6px}
-#heatmap .cell{width:13px;height:13px;border-radius:3px;background:var(--card2);
-cursor:pointer;transition:transform .12s}
-#heatmap .cell:hover{transform:scale(1.35);outline:1px solid var(--blue)}
-#hm-tip{position:fixed;pointer-events:none;background:var(--card2);color:var(--text);
-border:1px solid var(--edge);border-radius:8px;padding:7px 11px;font-size:12px;
-display:none;z-index:9;box-shadow:0 6px 20px rgba(0,0,0,.4)}
-/* achievements */
-.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
-.filters button{background:var(--card2);border:1px solid var(--edge);color:var(--dim);
-padding:5px 14px;border-radius:16px;font-size:12px;cursor:pointer}
-.filters button.on{color:var(--text);border-color:var(--blue)}
-.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}
-.ach{border:1px solid var(--edge);border-radius:12px;padding:12px 14px;
-background:var(--card2);cursor:default;transition:transform .15s}
-.ach:hover{transform:translateY(-2px)}
-.ach .ic{font-size:22px}
-.ach .nm{font-weight:700;font-size:13.5px;margin:6px 0 2px}
-.ach .ds{font-size:11.5px;color:var(--dim);line-height:1.4}
-.ach .rr{font-size:10px;letter-spacing:1.2px;text-transform:uppercase;margin-top:7px}
-.ach.locked{opacity:.42;filter:grayscale(.8)}
-.r-common .rr{color:var(--dim)}.r-rare .rr{color:var(--blue)}
-.r-epic .rr{color:var(--purple)}.r-legendary .rr{color:var(--amber)}
-.ach.r-legendary:not(.locked){border-color:var(--amber);box-shadow:0 0 18px rgba(240,180,41,.15)}
-/* pr explorer */
-.tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.tools input,.tools select{background:var(--card2);border:1px solid var(--edge);
-color:var(--text);border-radius:8px;padding:8px 12px;font-size:13px;outline:none}
+#heatmap .cell{width:12px;height:12px;background:var(--panel2);
+border:1px solid var(--line);cursor:pointer;transition:transform .1s}
+#heatmap .cell:hover{transform:scale(1.4);outline:1px solid var(--acc);z-index:2}
+.hm-legend{display:flex;justify-content:flex-end;gap:4px;align-items:center;
+font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--faint);
+margin-top:8px;text-transform:uppercase}
+.hm-legend i{width:11px;height:11px;display:inline-block;
+border:1px solid var(--line)}
+#hm-tip{position:fixed;pointer-events:none;display:none;z-index:60;
+background:var(--panel2);border:1px solid var(--acc-dim);color:var(--text);
+font-family:var(--mono);font-size:11px;padding:8px 12px;
+box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#graph{width:100%;height:360px;display:block;background:var(--panel2);
+cursor:crosshair}
+.mat{display:flex;height:34px;border:1px solid var(--line);overflow:hidden}
+.mat div{height:100%;transform:scaleX(0);transform-origin:left;
+transition:transform 1.1s cubic-bezier(.22,1,.36,1)}
+.mleg{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 22px}
+.mleg span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+color:var(--dim)}
+.mleg i{display:inline-block;width:9px;height:9px;margin-right:7px}
+.afilters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.afilters button{background:transparent;border:1px solid var(--line2);
+color:var(--dim);font-family:var(--mono);font-size:10px;letter-spacing:.2em;
+padding:6px 15px;cursor:pointer;text-transform:uppercase}
+.afilters button.on{color:var(--bg);background:var(--acc);border-color:var(--acc)}
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+gap:10px}
+.ach{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);
+background:var(--panel2);padding:13px 15px}
+.ach .glyph{font-size:20px;line-height:1;color:var(--acc);width:24px;flex:none;
+text-align:center}
+.ach .bd{flex:1;min-width:0}
+.ach .nm{font-weight:700;font-size:13.5px;letter-spacing:.02em}
+.ach .ds{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.45}
+.ach .rr{font-family:var(--mono);font-size:9px;letter-spacing:.24em;
+color:var(--faint);margin-top:7px;text-transform:uppercase}
+.ach .stamp2{flex:none;font-family:var(--mono);font-size:9px;letter-spacing:.2em;
+color:var(--acc);border:1px solid var(--acc);padding:3px 8px;
+transform:rotate(4deg);align-self:center}
+.ach.locked{opacity:.45}
+.ach.locked .glyph{color:var(--faint)}
+.ach.locked .stamp2{color:var(--faint);border-color:var(--line2);transform:none}
+.ach.r-legendary{border-color:var(--acc-dim)}
+.ach.r-legendary .glyph{color:var(--amber)}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tools input,.tools select{background:var(--panel2);border:1px solid var(--line2);
+color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 12px;
+outline:none}
 .tools input{flex:1;min-width:180px}
-.tools input:focus{border-color:var(--blue)}
-table{width:100%;border-collapse:collapse;font-size:13.5px}
-th{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:1px;
-text-align:left;padding:6px 10px;cursor:pointer;user-select:none}
-th:hover{color:var(--text)}
-td{padding:8px 10px;border-top:1px solid var(--edge)}
-td .st{font-size:11px;padding:2px 9px;border-radius:10px}
-.st.merged{color:var(--green);border:1px solid var(--green)}
-.st.open{color:var(--amber);border:1px solid var(--amber)}
-.st.closed{color:var(--red);border:1px solid var(--red)}
-/* forecast */
-.fcrow{display:flex;gap:26px;flex-wrap:wrap;margin-top:6px}
-.fck{font-size:13px;color:var(--dim)}
-.fck b{color:var(--text);font-size:17px}
-/* footer */
-footer{margin-top:34px;text-align:center;color:var(--faint);font-size:12px}
-footer a{color:var(--blue);text-decoration:none}
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .7s,transform .7s}
+.tools input:focus{border-color:var(--acc-dim)}
+.tools select{cursor:pointer}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px}
+th{font-weight:500;font-size:9.5px;letter-spacing:.22em;color:var(--faint);
+text-transform:uppercase;text-align:left;padding:7px 10px;cursor:pointer;
+border-bottom:1px solid var(--line2);user-select:none}
+th:hover{color:var(--acc)}
+td{padding:7px 10px;border-bottom:1px solid var(--line);color:var(--dim)}
+td .t{color:var(--text)}
+tr:hover td{background:var(--panel2)}
+td .idx{color:var(--faint)}
+td .st{font-size:10px;letter-spacing:.1em}
+.st.M{color:var(--acc)}.st.O{color:var(--amber)}.st.C{color:var(--red)}
+#fchart{width:100%;height:180px;display:block}
+.fcrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+color:var(--dim);margin-top:12px;text-transform:uppercase}
+.fcrow b{color:var(--text)}
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .7s,transform .7s}
 .reveal.in{opacity:1;transform:none}
+footer{margin-top:46px;border-top:1px solid var(--line2);padding-top:16px;
+display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--faint);
+text-transform:uppercase}
+footer a{color:var(--dim);text-decoration:none}
+footer a:hover{color:var(--acc)}
+@media print{body:after,body:before{display:none}}
 """
 
 
 def _js() -> str:
-    # Plain string (no f-string) so JS braces survive untouched.
     return """
 const D = window.__PRSNOOP__;
 const $ = (q) => document.querySelector(q);
-const fmt = (n) => n.toLocaleString('en-US');
-
-/* ---------- theme ---------- */
-function paintHeatmap() {
-  const light = document.body.classList.contains('light');
-  document.querySelectorAll('#heatmap .cell').forEach((c) => {
-    c.style.background = (light ? LCOLS_L : LCOLS)[+c.dataset.lvl];
+const $$ = (q) => Array.from(document.querySelectorAll(q));
+const fmt = (n) => Number(n).toLocaleString('en-US');
+$$('.panel').forEach((p) => {
+  ['tl', 'tr', 'bl', 'br'].forEach((c) => {
+    const i = document.createElement('i');
+    i.className = c;
+    p.appendChild(i);
   });
-}
+});
+const HEAT = ['#0d1512', '#0e2b1d', '#14522f', '#1d8a45', '#3dffa2'];
+const HEAT_L = ['#e2e7e0', '#b5e3c6', '#7fd6a2', '#37a86a', '#0b7a4b'];
 $('#theme').onclick = () => {
   document.body.classList.toggle('light');
-  paintHeatmap();
-};
-
-/* ---------- count-up hero ---------- */
-function countUp(el, target, suffix) {
-  const decimals = Number.isInteger(target) ? 0 : 1;
-  const t0 = performance.now(), dur = 1400;
-  function tick(t) {
-    const p = Math.min(1, (t - t0) / dur);
-    const eased = 1 - Math.pow(1 - p, 3);
-    const val = target * eased;
-    el.textContent = (decimals
-      ? val.toLocaleString('en-US',
-          { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-      : fmt(Math.round(val))) + (suffix || '');
-    if (p < 1) requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-}
-const heroMap = [
-  ['h-prs', D.stats.prs, ''], ['h-merged', D.stats.merged, ''],
-  ['h-rate', D.stats.rate, '%'], ['h-lines', D.stats.added, ''],
-  ['h-streak', D.stats.streak, 'd'], ['h-repos', D.stats.repos, ''],
-];
-const heroObs = new IntersectionObserver((es) => {
-  es.forEach((e) => {
-    if (!e.isIntersecting) return;
-    heroObs.unobserve(e.target);
-    const found = heroMap.find(([id]) => id === e.target.id);
-    if (found) countUp(e.target, found[1], found[2]);
+  const light = document.body.classList.contains('light');
+  $$('#heatmap .cell').forEach((c) => {
+    c.style.background = (light ? HEAT_L : HEAT)[+c.dataset.lvl];
   });
-}, { threshold: 0.4 });
-heroMap.forEach(([id]) => heroObs.observe(document.getElementById(id)));
-
-/* ---------- score gauge + pillars ---------- */
-const R = 70, CIRC = 2 * Math.PI * R;
-const g = $('#g-arc');
-g.style.strokeDasharray = CIRC;
-setTimeout(() => {
-  g.style.transition = 'stroke-dashoffset 1.6s cubic-bezier(.22,1,.36,1)';
-  g.style.strokeDashoffset = CIRC * (1 - D.score.total / 100);
-}, 250);
-$('#g-num').textContent = D.score.total;
-$('#g-grade').textContent = 'grade ' + D.score.grade;
-const COLORS = { output:'#58a6ff', impact:'#41d67c', consistency:'#f0b429',
-                 collaboration:'#b58cff', rhythm:'#ff7eb6' };
+};
+function countUp(el, target, suffix) {
+  const dec = Number.isInteger(target) ? 0 : 1;
+  const t0 = performance.now(), dur = 1500;
+  (function tick(t) {
+    const p = Math.min(1, (t - t0) / dur);
+    const v = target * (1 - Math.pow(1 - p, 3));
+    el.innerHTML = (dec
+      ? v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+      : fmt(Math.round(v))) + (suffix ? '<small>' + suffix + '</small>' : '');
+    if (p < 1) requestAnimationFrame(tick);
+  })(performance.now());
+}
+[['h-prs', D.stats.prs, ''], ['h-merged', D.stats.merged, ''],
+ ['h-rate', D.stats.rate, '%'], ['h-lines', D.stats.added, ''],
+ ['h-streak', D.stats.streak, 'd'], ['h-repos', D.stats.repos, '']]
+.forEach(([id, v, sfx]) => countUp(document.getElementById(id), v, sfx));
+$('#g-grade').textContent = D.score.grade;
+$('#g-band').textContent = D.score.band.toUpperCase() + ' · ' + D.score.total + ' / 100';
+const PCOL = { output: '#58a6ff', impact: '#41d67c', consistency: '#f0b429',
+               collaboration: '#b58cff', rhythm: '#ff7eb6' };
 const pil = $('#pillars');
-D.score.pillars.forEach((p) => {
+D.score.pillars.forEach((p, idx) => {
   const div = document.createElement('div');
   div.className = 'pillar';
-  div.innerHTML = `<div class='top'><span>${p.name} · ${p.detail}</span><b>${p.score}</b></div>
-    <div class='track'><div class='fill' style='background:${COLORS[p.name] || '#58a6ff'}'></div></div>`;
+  const segs = Array.from({ length: 20 }, (_, k) =>
+    '<span class="' + (k < Math.round(p.score / 5) ? 'on' : '') + '"></span>').join('');
+  div.innerHTML = '<div class="top"><span>' + String(idx + 1).padStart(2, '0') +
+    ' · ' + p.name + '</span><b>' + p.score + '</b></div><div class="seg">' + segs + '</div>';
   pil.appendChild(div);
-  setTimeout(() => { div.querySelector('.fill').style.width = p.score + '%'; }, 350);
+  div.querySelectorAll('.seg span.on').forEach((sp, k) => {
+    sp.style.background = PCOL[p.name] || '#58a6ff';
+    sp.style.borderColor = PCOL[p.name] || '#58a6ff';
+    setTimeout(() => { sp.style.opacity = 1; }, 500 + idx * 120 + k * 45);
+  });
 });
-$('#risk').innerHTML = `burnout risk: <b>${D.score.risk}</b>`;
-
-/* ---------- heatmap ---------- */
+$('#risk').innerHTML = 'burnout risk <b>' + D.score.risk.toUpperCase() + '</b>';
 const hm = $('#heatmap'), tip = $('#hm-tip');
 const lvl = (n) => n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : n <= 9 ? 3 : 4;
-const LCOLS = ['#242b36','#0e4429','#166a38','#2ea043','#56d364'];
-const LCOLS_L = ['#e7eaef','#9be3b0','#57cb82','#2ea043','#1a5c33'];
 D.days.forEach((d) => {
   const c = document.createElement('div');
   c.className = 'cell';
   const total = d[1] + d[2] + d[3] + d[4];
   c.dataset.lvl = lvl(total);
-  c.style.background = LCOLS[lvl(total)];
-  c.dataset.tip = `${d[0]} · ${total} item${total === 1 ? '' : 's'} (${d[1]} pr, ${d[2]} merged, ${d[3]} issue, ${d[4]} review)`;
+  c.style.background = HEAT[lvl(total)];
+  c.dataset.tip = d[0] + ' · ' + total + ' signals — ' + d[1] + ' pr / ' +
+    d[2] + ' merged / ' + d[3] + ' issue / ' + d[4] + ' review';
   c.onmousemove = (ev) => {
     tip.style.display = 'block';
     tip.textContent = c.dataset.tip;
-    tip.style.left = (ev.clientX + 14) + 'px';
-    tip.style.top = (ev.clientY + 14) + 'px';
+    tip.style.left = Math.min(ev.clientX + 14, innerWidth - 260) + 'px';
+    tip.style.top = (ev.clientY + 16) + 'px';
   };
   c.onmouseleave = () => { tip.style.display = 'none'; };
   hm.appendChild(c);
 });
-/* ---------- force graph ---------- */
+const hleg = $('#hm-legend');
+['less', '', '', '', 'more'].forEach((t, k) => {
+  const i = document.createElement('i');
+  i.style.background = HEAT[k];
+  hleg.appendChild(i);
+});
+hleg.firstChild.insertAdjacentText('beforebegin', 'less ');
 const cv = $('#graph'), ctx = cv.getContext('2d');
-function sizeCanvas() {
+function sizeGraph() {
   cv.width = cv.clientWidth * devicePixelRatio;
   cv.height = cv.clientHeight * devicePixelRatio;
   ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 }
-sizeCanvas();
-addEventListener('resize', sizeCanvas);
-const nodes = [{ id: 'you', label: D.user, r: 16, x: 0, y: 0, fixed: false, color: '#58a6ff' }];
+sizeGraph(); addEventListener('resize', sizeGraph);
+const nodes = [{ id: 'you', label: D.user, r: 15, color: '#3dffa2' }];
 const W = () => cv.clientWidth, H = () => cv.clientHeight;
 nodes[0].x = W() / 2; nodes[0].y = H() / 2;
 const maxRepo = Math.max(...D.repos.map((r) => r[1]), 1);
 D.repos.slice(0, 12).forEach(([name, n], i) => {
   const ang = (i / Math.min(D.repos.length, 12)) * Math.PI * 2;
-  nodes.push({ id: name, label: name, r: 7 + (n / maxRepo) * 16,
-    x: W() / 2 + Math.cos(ang) * 130, y: H() / 2 + Math.sin(ang) * 90,
+  nodes.push({ id: name, label: name, r: 6 + (n / maxRepo) * 15,
+    x: W() / 2 + Math.cos(ang) * 140, y: H() / 2 + Math.sin(ang) * 100,
     color: '#41d67c' });
 });
 const edges = D.repos.slice(0, 12).map(([name]) => ['you', name]);
-let drag = null, hover = null, alpha = 1;
-function pos(ev) {
+let drag = null, hoverN = null, alpha = 1;
+const pos = (ev) => {
   const r = cv.getBoundingClientRect();
   return { x: ev.clientX - r.left, y: ev.clientY - r.top };
-}
+};
 cv.onmousedown = (ev) => {
   const p = pos(ev);
-  drag = nodes.find((n) => Math.hypot(n.x - p.x, n.y - p.y) < n.r + 8) || null;
+  drag = nodes.find((n) => Math.hypot(n.x - p.x, n.y - p.y) < n.r + 10) || null;
   if (drag) drag._pin = true;
 };
 cv.onmousemove = (ev) => {
   const p = pos(ev);
-  if (drag) { drag.x = p.x; drag.y = p.y; alpha = 0.6; }
-  hover = nodes.find((n) => Math.hypot(n.x - p.x, n.y - p.y) < n.r + 6) || null;
-  cv.style.cursor = drag ? 'grabbing' : hover ? 'pointer' : 'default';
+  if (drag) { drag.x = p.x; drag.y = p.y; alpha = 0.7; }
+  hoverN = nodes.find((n) => Math.hypot(n.x - p.x, n.y - p.y) < n.r + 8) || null;
+  cv.style.cursor = drag ? 'grabbing'
+    : hoverN && hoverN.id !== 'you' ? 'pointer' : 'crosshair';
 };
 addEventListener('mouseup', () => { if (drag) { drag._pin = false; drag = null; } });
+function css(v) { return getComputedStyle(document.body).getPropertyValue(v); }
 function physics() {
   if (alpha < 0.012) return;
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a = nodes[i], b = nodes[j];
       let dx = b.x - a.x, dy = b.y - a.y;
-      let dist = Math.hypot(dx, dy) || 0.01;
-      let rep = 2600 / (dist * dist);
+      const dist = Math.hypot(dx, dy) || 0.01;
+      const rep = 2400 / (dist * dist);
       dx /= dist; dy /= dist;
       if (!a._pin && a.id !== 'you') { a.x -= dx * rep * alpha; a.y -= dy * rep * alpha; }
       if (!b._pin && b.id !== 'you') { b.x += dx * rep * alpha; b.y += dy * rep * alpha; }
@@ -388,8 +421,7 @@ function physics() {
     const a = nodes.find((n) => n.id === s), b = nodes.find((n) => n.id === t);
     let dx = b.x - a.x, dy = b.y - a.y;
     const dist = Math.hypot(dx, dy) || 0.01;
-    const want = 150;
-    const f = (dist - want) * 0.012 * alpha;
+    const f = (dist - 150) * 0.012 * alpha;
     dx /= dist; dy /= dist;
     if (!a._pin && a.id !== 'you') { a.x += dx * f; a.y += dy * f; }
     if (!b._pin && b.id !== 'you') { b.x -= dx * f; b.y -= dy * f; }
@@ -406,123 +438,134 @@ function physics() {
 function drawGraph() {
   physics();
   ctx.clearRect(0, 0, W(), H());
-  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--edge');
+  const cx = W() / 2, cy = H() / 2;
+  ctx.strokeStyle = css('--line2'); ctx.lineWidth = 1;
+  [55, 110, 165].forEach((r) => {
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  });
+  ctx.setLineDash([2, 5]);
+  ctx.beginPath();
+  ctx.moveTo(cx, 0); ctx.lineTo(cx, H());
+  ctx.moveTo(0, cy); ctx.lineTo(W(), cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
   edges.forEach(([s, t]) => {
     const a = nodes.find((n) => n.id === s), b = nodes.find((n) => n.id === t);
-    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = css('--line2'); ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
     ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.setLineDash([]);
   });
   nodes.forEach((n) => {
-    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-    ctx.fillStyle = n.color; ctx.fill();
-    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text');
-    ctx.font = (n.id === 'you' ? 'bold ' : '') + '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(n.label.length > 24 ? n.label.slice(0, 23) + '…' : n.label,
-                 n.x, n.y + n.r + 15);
-  });
-  if (hover && hover.id !== 'you') {
-    const weight = D.repos.find((r) => r[0] === hover.id);
-    if (weight) {
-      tip.style.display = 'block';
-      tip.textContent = hover.id + ' · ' + weight[1] + ' PRs';
+    if (n.id === 'you') {
+      ctx.strokeStyle = '#3dffa2'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(n.x, n.y, 20, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(n.x, n.y, 11, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(n.x - 26, n.y); ctx.lineTo(n.x - 15, n.y);
+      ctx.moveTo(n.x + 15, n.y); ctx.lineTo(n.x + 26, n.y);
+      ctx.moveTo(n.x, n.y - 26); ctx.lineTo(n.x, n.y - 15);
+      ctx.moveTo(n.x, n.y + 15); ctx.lineTo(n.x, n.y + 26);
+      ctx.stroke();
+    } else {
+      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = css('--panel');
+      ctx.fill(); ctx.strokeStyle = n.color; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.beginPath(); ctx.arc(n.x, n.y, 2.5, 0, Math.PI * 2);
+      ctx.fillStyle = n.color; ctx.fill();
     }
-  } else if (!drag) { tip.style.display = 'none'; }
+    ctx.fillStyle = n.id === 'you' ? '#3dffa2' : css('--dim');
+    ctx.font = '10px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(n.label.length > 22 ? n.label.slice(0, 21) + '…' : n.label,
+                 n.x, n.y + n.r + 16);
+  });
+  if (hoverN && hoverN.id !== 'you') {
+    const w = D.repos.find((r) => r[0] === hoverN.id);
+    if (w) {
+      tip.style.display = 'block';
+      tip.textContent = 'TARGET ' + hoverN.id + ' · ' + w[1] + ' INTERCEPTS';
+      tip.style.left = (hoverN.x + 20) + 'px';
+      tip.style.top = (hoverN.y - 14) + 'px';
+    }
+  } else if (!drag) tip.style.display = 'none';
   requestAnimationFrame(drawGraph);
 }
 requestAnimationFrame(drawGraph);
-
-/* ---------- languages donut ---------- */
-const dc = $('#donut'), dctx = dc.getContext('2d');
-function sizeDonut() {
-  const s = Math.min(dc.clientWidth, 210);
-  dc.width = s * devicePixelRatio; dc.height = s * devicePixelRatio;
-  dc.style.height = s + 'px';
-  dctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-}
-sizeDonut(); addEventListener('resize', sizeDonut);
-const DCOL = ['#58a6ff','#41d67c','#f0b429','#b58cff','#ff7eb6','#2dd4bf','#f4633a'];
-let donutT = 0;
-function drawDonut() {
-  const s = Math.min(dc.clientWidth, 210), cx = s / 2, cy = s / 2, r = s / 2 - 12;
-  dctx.clearRect(0, 0, s, s);
-  const total = D.languages.reduce((a, l) => a + l[1], 0) || 1;
-  let a0 = -Math.PI / 2;
-  D.languages.forEach(([lang, n], i) => {
-    const frac = (n / total) * Math.min(donutT, 1);
-    const a1 = a0 + frac * Math.PI * 2;
-    dctx.beginPath();
-    dctx.arc(cx, cy, r, a0, a1);
-    dctx.strokeStyle = DCOL[i % DCOL.length];
-    dctx.lineWidth = 26; dctx.stroke();
-    a0 = a1;
-  });
-  dctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--text');
-  dctx.font = 'bold 20px sans-serif'; dctx.textAlign = 'center';
-  dctx.fillText(D.stats.langs, cx, cy - 2);
-  dctx.font = '10px sans-serif';
-  dctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--dim');
-  dctx.fillText('languages', cx, cy + 16);
-  if (donutT < 1) { donutT += 0.03; requestAnimationFrame(drawDonut); }
-}
-setTimeout(drawDonut, 300);
-const legend = $('#dlegend');
+const mat = $('#mat'), mleg = $('#mleg');
+const MCOL = ['#3dffa2', '#41d67c', '#f0b429', '#b58cff', '#ff7eb6', '#2dd4bf', '#f4633a'];
+const mtotal = D.languages.reduce((a, l) => a + l[1], 0) || 1;
 D.languages.slice(0, 7).forEach(([lang, n], i) => {
+  const d = document.createElement('div');
+  d.style.cssText = 'width:' + (n / mtotal * 100).toFixed(2) +
+    '%;background:' + MCOL[i];
+  mat.appendChild(d);
   const sp = document.createElement('span');
-  sp.style.cssText = `display:inline-block;margin:3px 10px;font-size:12.5px;color:var(--dim)`;
-  sp.innerHTML = `<span style="color:${DCOL[i % DCOL.length]}">■</span> ${lang} (${n})`;
-  legend.appendChild(sp);
+  sp.innerHTML = '<i style="background:' + MCOL[i] + '"></i>' + lang +
+    ' · ' + (n / mtotal * 100).toFixed(0) + '%';
+  mleg.appendChild(sp);
 });
-
-/* ---------- achievements ---------- */
-const grid = $('#achgrid');
+setTimeout(() => {
+  $$('#mat div').forEach((d, i) => {
+    d.style.transitionDelay = (i * 90) + 'ms';
+    d.style.transform = 'scaleX(1)';
+  });
+}, 400);
+const GLYPH = { common: '◇', rare: '◆', epic: '✦', legendary: '★' };
 let rarFilter = 'all';
 function renderAch() {
+  const grid = $('#achgrid');
   grid.innerHTML = '';
   D.achievements.filter((a) => rarFilter === 'all' || a.rarity === rarFilter)
-   .forEach((a) => {
-    const div = document.createElement('div');
-    div.className = `ach r-${a.rarity}` + (a.unlocked ? '' : ' locked');
-    div.innerHTML = `<div class="ic">${a.icon}</div><div class="nm">${a.name}</div>
-      <div class="ds">${a.description}</div>
-      <div class="rr">${a.rarity} · ${a.unlocked ? 'unlocked' : a.progress}</div>`;
-    grid.appendChild(div);
-  });
+    .forEach((a, i) => {
+      const div = document.createElement('div');
+      div.className = 'ach r-' + a.rarity + (a.unlocked ? '' : ' locked');
+      div.style.opacity = 0;
+      div.innerHTML = '<div class="glyph">' + GLYPH[a.rarity] + '</div>' +
+        '<div class="bd"><div class="nm">' + a.name + '</div>' +
+        '<div class="ds">' + a.description + '</div>' +
+        '<div class="rr">' + a.rarity + ' · ' +
+        (a.unlocked ? 'granted' : 'pending · ' + a.progress) + '</div></div>' +
+        '<div class="stamp2">' + (a.unlocked ? 'granted' : 'pending') + '</div>';
+      grid.appendChild(div);
+      setTimeout(() => {
+        div.style.transition = 'opacity .4s'; div.style.opacity = '';
+      }, Math.min(i * 28, 600));
+    });
 }
 renderAch();
-document.querySelectorAll('.filters button').forEach((b) => {
+$$('.afilters button').forEach((b) => {
   b.onclick = () => {
-    document.querySelectorAll('.filters button').forEach((x) => x.classList.remove('on'));
+    $$('.afilters button').forEach((x) => x.classList.remove('on'));
     b.classList.add('on');
     rarFilter = b.dataset.f;
     renderAch();
   };
 });
-
-/* ---------- pr explorer ---------- */
-const tbl = $('#prbody');
 let sortKey = 'date', sortDir = -1, q = '', stFilter = 'all';
 function renderPrs() {
   let rows = D.prs.filter((p) =>
     (stFilter === 'all' || p.state === stFilter) &&
-    (!q || (p.title + ' ' + p.repo + '#' + p.number).toLowerCase().includes(q)));
+    (!q || (p.title + ' ' + p.repo + ' ' + p.number).toLowerCase().includes(q)));
   rows.sort((a, b) => {
     const va = a[sortKey], vb = b[sortKey];
     if (typeof va === 'number') return (va - vb) * sortDir;
     return String(va).localeCompare(String(vb)) * sortDir;
   });
-  tbl.innerHTML = rows.slice(0, 80).map((p) =>
-    `<tr><td>${p.repo}#${p.number}</td><td>${p.title}</td>
-     <td><span class="st ${p.state}">${p.state}</span></td>
-     <td style="color:var(--green)">+${fmt(p.added)}</td>
-     <td style="color:var(--red)">-${fmt(p.deleted)}</td>
-     <td>${p.date}</td></tr>`).join('')
-    || '<tr><td colspan="6" style="color:var(--dim)">no matches</td></tr>';
+  $('#prbody').innerHTML = rows.slice(0, 80).map((p, i) =>
+    '<tr><td class="idx">' + String(i + 1).padStart(3, '0') + '</td>' +
+    '<td>' + p.repo + '#' + p.number + '</td>' +
+    '<td><span class="t">' + p.title + '</span></td>' +
+    '<td><span class="st ' + p.state[0].toUpperCase() + '">[' +
+    p.state[0].toUpperCase() + ']</span></td>' +
+    '<td>+' + fmt(p.added) + '</td><td>-' + fmt(p.deleted) + '</td>' +
+    '<td>' + p.date + '</td></tr>').join('')
+    || '<tr><td colspan="7" style="color:var(--faint)">no intercepts match</td></tr>';
 }
 renderPrs();
 $('#prq').oninput = (e) => { q = e.target.value.toLowerCase(); renderPrs(); };
 $('#prst').onchange = (e) => { stFilter = e.target.value; renderPrs(); };
-document.querySelectorAll('#prtable th').forEach((th) => {
+$$('#prtable th').forEach((th) => {
   th.onclick = () => {
     const k = th.dataset.k;
     if (!k) return;
@@ -531,132 +574,161 @@ document.querySelectorAll('#prtable th').forEach((th) => {
     renderPrs();
   };
 });
-
-/* ---------- forecast chart ---------- */
 const fc = $('#fchart'), fctx = fc.getContext('2d');
 function sizeFc() {
   fc.width = fc.clientWidth * devicePixelRatio;
-  fc.height = 170 * devicePixelRatio;
+  fc.height = 180 * devicePixelRatio;
   fctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 }
 sizeFc(); addEventListener('resize', sizeFc);
 let fT = 0;
 function drawFc() {
-  const w = fc.clientWidth, h = 170;
+  const w = fc.clientWidth, h = 180;
   fctx.clearRect(0, 0, w, h);
   const days = D.days.slice(-45).map((d) => d[1] + d[2] + d[3] + d[4]);
   const peak = Math.max(...days, 1);
-  const pad = 8, step = (w - pad * 2) / (days.length + 14);
-  const pts = days.map((v, i) => [pad + i * step, h - 24 - (v / peak) * (h - 46)]);
+  const pad = 6, step = (w - pad * 2) / (days.length + 14);
+  const pts = days.map((v, i) => [pad + i * step, h - 26 - (v / peak) * (h - 52)]);
+  fctx.strokeStyle = css('--line');
+  [0.25, 0.5, 0.75].forEach((fr) => {
+    const y = 12 + (h - 46) * fr;
+    fctx.beginPath(); fctx.moveTo(0, y); fctx.lineTo(w, y); fctx.stroke();
+  });
   const draw = Math.floor(pts.length * Math.min(fT, 0.68) / 0.68);
-  fctx.strokeStyle = '#58a6ff'; fctx.lineWidth = 2; fctx.beginPath();
+  if (draw > 1) {
+    fctx.beginPath();
+    fctx.moveTo(pts[0][0], h - 26);
+    pts.slice(0, draw).forEach(([x, y]) => fctx.lineTo(x, y));
+    fctx.lineTo(pts[draw - 1][0], h - 26);
+    fctx.closePath();
+    fctx.fillStyle = 'rgba(61,255,162,.07)';
+    fctx.fill();
+  }
+  fctx.strokeStyle = '#3dffa2'; fctx.lineWidth = 1.6;
+  fctx.beginPath();
   pts.slice(0, Math.max(2, draw)).forEach(([x, y], i) => {
     if (i === 0) fctx.moveTo(x, y); else fctx.lineTo(x, y);
   });
   fctx.stroke();
   if (fT > 0.6) {
     const last = pts[pts.length - 1];
-    const slope = (D.forecast.perWeek / 7);
+    const slope = D.forecast.perWeek / 7;
     const projPeak = Math.max(peak, slope * 14);
-    fctx.setLineDash([5, 5]);
-    fctx.strokeStyle = '#41d67c';
-    fctx.beginPath();
-    fctx.moveTo(last[0], last[1]);
-    fctx.lineTo(last[0] + 14 * step, h - 24 - (slope * 14 / projPeak) * (h - 46));
-    fctx.stroke();
+    const ex = last[0] + 14 * step;
+    const ey = h - 26 - Math.max(0, slope * 14 / projPeak) * (h - 46);
+    fctx.setLineDash([4, 5]);
+    fctx.strokeStyle = '#f0b429'; fctx.lineWidth = 1.4;
+    fctx.beginPath(); fctx.moveTo(last[0], last[1]); fctx.lineTo(ex, ey); fctx.stroke();
     fctx.setLineDash([]);
-    fctx.fillStyle = '#41d67c';
-    fctx.font = '11px sans-serif';
-    fctx.fillText('projected', last[0] + 14 * step - 52, h - 34 - (slope * 14 / projPeak) * (h - 46));
+    fctx.fillStyle = '#f0b429';
+    fctx.font = '9px IBM Plex Mono, monospace';
+    fctx.fillText('PROJECTED →', ex - 74, ey - 8);
+    fctx.strokeStyle = css('--line2');
+    fctx.setLineDash([2, 4]);
+    fctx.beginPath(); fctx.moveTo(last[0], 12); fctx.lineTo(last[0], h - 26); fctx.stroke();
+    fctx.setLineDash([]);
   }
   if (fT < 1) { fT += 0.02; requestAnimationFrame(drawFc); }
 }
 setTimeout(drawFc, 500);
 $('#fline').innerHTML =
-  `trend <b>${D.forecast.direction}</b> · <b>${D.forecast.perWeek}</b> prs/week · ` +
-  `~<b>${D.forecast.next30}</b> next 30d · ~<b>${D.forecast.nextYear}</b> next year ` +
-  `(${D.forecast.confidence} confidence)`;
-
-/* ---------- reveal on scroll ---------- */
+  'trajectory <b>' + D.forecast.direction + '</b> · <b>' + D.forecast.perWeek +
+  '</b> prs/week · ~<b>' + D.forecast.next30 + '</b> next 30d · ~<b>' +
+  D.forecast.nextYear + '</b> next year · ' + D.forecast.confidence + ' confidence';
 const revObs = new IntersectionObserver((es) => {
-  es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); } });
-}, { threshold: 0.12 });
-document.querySelectorAll('.reveal').forEach((el) => revObs.observe(el));
+  es.forEach((e) => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.1 });
+$$('.reveal').forEach((el) => revObs.observe(el));
 """
 
 
 def render_showcase_html(activity: Activity) -> str:
-    """The full interactive single-file app."""
+    """The full interactive single-file app, dossier edition."""
     data = build_data(activity)
     payload = json.dumps(data, ensure_ascii=True).replace("</", "<\\/")
     user = x_escape(activity.user)
     page = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>prsnoop showcase: __USER__</title><style>__CSS__</style></head><body>
+<title>PRSNOOP · DOSSIER: __USER__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>__CSS__</style></head><body>
 <div class="wrap">
-<header>
-  <div class="logo">prsnoop <b>showcase</b></div>
-  <button id="theme">◐ theme</button>
-</header>
-<h1><span class="u">__USER__</span>'s contribution universe</h1>
-<p class="sub">window: last __WINDOW__ days · generated __GEN__ · every pixel computed locally</p>
-<div class="grid">
-  <div class="stat reveal"><div class="k">pull requests</div><div class="v b" id="h-prs">0</div></div>
-  <div class="stat reveal"><div class="k">merged</div><div class="v g" id="h-merged">0</div></div>
-  <div class="stat reveal"><div class="k">merge rate</div><div class="v a" id="h-rate">0</div></div>
-  <div class="stat reveal"><div class="k">lines added</div><div class="v g" id="h-lines">0</div></div>
-  <div class="stat reveal"><div class="k">best streak</div><div class="v b" id="h-streak">0</div></div>
-  <div class="stat reveal"><div class="k">repositories</div><div class="v" id="h-repos">0</div></div>
+<div class="topbar">
+  <span>PRSNOOP · FIELD DOSSIER · <span class="live">LIVE INTERCEPT</span></span>
+  <button id="theme">invert</button>
 </div>
 
-<div class="card reveal"><h2>health score <span class="hint">five weighted pillars</span></h2>
-<div class="gaugewrap">
-  <div class="gauge">
-    <svg width="170" height="170" viewBox="0 0 170 170">
-      <circle cx="85" cy="85" r="70" fill="none" stroke="var(--card2)" stroke-width="13"/>
-      <circle id="g-arc" cx="85" cy="85" r="70" fill="none" stroke="#41d67c"
-              stroke-width="13" stroke-linecap="round"/>
-    </svg>
-    <div class="num"><b id="g-num">0</b><span id="g-grade"></span></div>
+<div class="subject">
+  <p class="eyebrow">subject profile // clearance granted</p>
+  <h1>__USER__</h1>
+  <div class="dossier">
+    <span>SURVEILLANCE WINDOW <b>__WINDOW__ DAYS</b></span>
+    <span>DOSSIER COMPILED <b>__GEN__</b></span>
+    <span>MOMENTUM <b>__MOMENTUM__</b></span>
+    <span>CLEARANCE <b>__GRADE__</b></span>
   </div>
+</div>
+
+<div class="strip reveal">
+  <div class="cell"><div class="idx">01</div><div class="v" id="h-prs">0</div><div class="lab">pull requests</div></div>
+  <div class="cell"><div class="idx">02</div><div class="v" id="h-merged">0</div><div class="lab">merged</div></div>
+  <div class="cell"><div class="idx">03</div><div class="v" id="h-rate">0</div><div class="lab">merge rate</div></div>
+  <div class="cell"><div class="idx">04</div><div class="v" id="h-lines">0</div><div class="lab">lines added</div></div>
+  <div class="cell"><div class="idx">05</div><div class="v" id="h-streak">0</div><div class="lab">best streak</div></div>
+  <div class="cell"><div class="idx">06</div><div class="v" id="h-repos">0</div><div class="lab">repositories</div></div>
+</div>
+
+<div class="panel reveal"><h2><span><span class="no">01</span> · TARGET ASSESSMENT</span>
+<span class="hint">five weighted pillars</span></h2>
+<div class="assess">
+  <div class="stamp"><div class="g" id="g-grade"></div>
+  <div class="s" id="g-band"></div><div class="s" id="g-score"></div></div>
   <div class="pillars" id="pillars"></div>
 </div>
 <p class="risk" id="risk"></p></div>
 
-<div class="card reveal"><h2>activity heatmap <span class="hint">hover any day</span></h2>
-<div id="heatmap"></div></div>
+<div class="panel reveal"><h2><span><span class="no">02</span> · DAILY INTERCEPTS</span>
+<span class="hint">hover any day</span></h2>
+<div id="heatmap"></div>
+<div class="hm-legend" id="hm-legend"></div></div>
 
-<div class="card reveal"><h2>contribution graph <span class="hint">drag the nodes · hover for counts</span></h2>
-<canvas id="graph" style="width:100%;height:340px"></canvas></div>
+<div class="panel reveal"><h2><span><span class="no">03</span> · NETWORK MAP</span>
+<span class="hint">drag the nodes · hover for counts</span></h2>
+<canvas id="graph"></canvas></div>
 
-<div class="row2">
-<div class="card reveal"><h2>languages</h2><canvas id="donut" style="width:100%"></canvas>
-<div id="dlegend" style="text-align:center;margin-top:8px"></div></div>
-<div class="card reveal"><h2>forecast <span class="hint">least squares over the window</span></h2>
-<canvas id="fchart" style="width:100%;height:170px"></canvas>
-<p class="fcrow" id="fline"></p></div>
-</div>
+<div class="panel reveal"><h2><span><span class="no">04</span> · MATERIAL ANALYSIS</span>
+<span class="hint">languages by intercept volume</span></h2>
+<div class="mat" id="mat"></div><div class="mleg" id="mleg"></div></div>
 
-<div class="card reveal"><h2>achievements · __ACHDONE__/__ACHTOTAL__ · __ACHSCORE__ pts
+<div class="panel reveal"><h2><span><span class="no">05</span> · TRAJECTORY PROJECTION</span>
+<span class="hint">least squares over the window</span></h2>
+<canvas id="fchart"></canvas><p class="fcrow" id="fline"></p></div>
+
+<div class="panel reveal"><h2><span><span class="no">06</span> · COMMENDATIONS · __ACHDONE__/__ACHTOTAL__ · __ACHSCORE__ PTS</span>
 <span class="hint">filter by rarity</span></h2>
-<div class="filters">
+<div class="afilters">
 <button class="on" data-f="all">all</button><button data-f="common">common</button>
 <button data-f="rare">rare</button><button data-f="epic">epic</button>
 <button data-f="legendary">legendary</button></div>
 <div class="achgrid" id="achgrid"></div></div>
 
-<div class="card reveal"><h2>pull request explorer <span class="hint">search · filter · click headers to sort</span></h2>
-<div class="tools"><input id="prq" placeholder="search title or repo…">
+<div class="panel reveal"><h2><span><span class="no">07</span> · INTERCEPT LOG</span>
+<span class="hint">search · filter · sort</span></h2>
+<div class="tools"><input id="prq" placeholder="grep intercepts…">
 <select id="prst"><option value="all">all states</option><option value="merged">merged</option>
 <option value="open">open</option><option value="closed">closed</option></select></div>
 <table id="prtable"><thead><tr>
-<th data-k="repo">repo</th><th data-k="title">title</th><th data-k="state">state</th>
+<th data-k="repo">target</th><th data-k="title">transmission</th><th data-k="state">status</th>
 <th data-k="added">+lines</th><th data-k="deleted">-lines</th><th data-k="date">date</th>
 </tr></thead><tbody id="prbody"></tbody></table></div>
 
-<footer>generated by <a href="https://github.com/MohammedAnasNathani/prsnoop">prsnoop</a>
-· one file · zero external assets · all computation happened on the machine that made this page</footer>
+<footer>
+<span>END OF DOSSIER</span>
+<span><a href="https://github.com/MohammedAnasNathani/prsnoop">COMPILED BY PRSNOOP</a> · ZERO DEPENDENCIES · ALL DATA INTERCEPTED LOCALLY</span>
+</footer>
 </div>
 <div id="hm-tip"></div>
 <script>window.__PRSNOOP__ = __DATA__;</script>
@@ -666,7 +738,7 @@ __JS__
 </body></html>
 """
     replacements = {
-        "__USER__": user,
+        "__USER__": user.upper(),
         "__CSS__": _CSS,
         "__DATA__": payload,
         "__JS__": _js(),
@@ -675,6 +747,9 @@ __JS__
         "__ACHDONE__": str(data["achDone"]),
         "__ACHTOTAL__": str(len(data["achievements"])),
         "__ACHSCORE__": str(data["achScore"]),
+        "__MOMENTUM__": str(data["stats"]["momentum"] or "pending").upper(),
+        "__GRADE__": "GRADE {} · {}/100".format(
+            data["score"]["grade"], data["score"]["total"]),
     }
     for key, value in replacements.items():
         page = page.replace(key, value)
