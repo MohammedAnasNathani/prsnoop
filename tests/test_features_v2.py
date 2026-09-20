@@ -459,7 +459,8 @@ def test_showcase_html_structure():
     assert "network map" in html.lower()
     assert "intercept log" in html.lower()
     assert "window.__PRSNOOP__ = {" in html
-    assert "heatmap" in html and "donut" not in html or True
+    assert "heatmap" in html
+    assert "donut" not in html  # replaced by the material-analysis bar
     assert 'id="graph"' in html and 'class="stamp"' in html
     # embedded data parses back
     m = html.split("window.__PRSNOOP__ = ", 1)[1].split(";</script>", 1)[0]
