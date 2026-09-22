@@ -179,6 +179,66 @@ def _evaluate(activity: Activity) -> list[Achievement]:
         bool(s.top_repos) and s.top_repos[0][1] >= 10,
         f"{s.top_repos[0][1] if s.top_repos else 0}/10 in top repo")
 
+    # ---- v2.2 expansion
+    add("p90_fast", "Ninety Percent", "p90 merge time under 3 days", "epic",
+        "clock2", s.p90_days_to_merge is not None and s.p90_days_to_merge < 3,
+        f"p90 {s.p90_days_to_merge if s.p90_days_to_merge is not None else '—'}d")
+    add("no_close", "Never Closed", "10+ PRs and none closed unmerged", "rare",
+        "shield2", s.prs_authored >= 10 and s.prs_closed_unmerged == 0,
+        f"{s.prs_closed_unmerged} closed unmerged")
+    add("multi_monster", "Kraken Tamer", "3+ PRs over 1,000 lines each", "epic",
+        "tentacle",
+        sum(1 for p in prs if p.additions + p.deletions >= 1000) >= 3,
+        f"{sum(1 for p in prs if p.additions + p.deletions >= 1000)}/3")
+    add("daily_double", "Daily Double", "2+ PRs merged on the same day", "common",
+        "dice",
+        any(d[2] >= 2 for d in [(da.date, da.prs, da.merged) for da in s.day_activity]),
+        "merge days scanned")
+    day_repos: dict[str, set[str]] = {}
+    for p in prs:
+        day_repos.setdefault(p.created_at.strftime("%Y-%m-%d"), set()).add(p.repo)
+    add("wide_net", "Wide Net", "Activity across 3+ repos in one day",
+        "epic", "star", any(len(v) >= 3 for v in day_repos.values()),
+        "repo spread scanned")
+    add("half_open", "Balanced Load", "5+ open and 5+ merged", "common", "scale",
+        s.prs_open >= 5 and s.prs_merged >= 5,
+        f"{s.prs_open} open / {s.prs_merged} merged")
+    add("comment_magnet", "Comment Magnet", "50+ comments across your PRs",
+        "rare", "chat", sum(p.comments for p in prs) >= 50,
+        f"{min(sum(p.comments for p in prs), 50)}/50 comments")
+    add("debate_champ", "Debate Champion", "One PR with 15+ comments", "epic",
+        "mic", max((p.comments for p in prs), default=0) >= 15,
+        f"{max((p.comments for p in prs), default=0)}/15 on one PR")
+    add("long_haul", "Long Haul", "A PR merged after 30+ days of review",
+        "rare", "route",
+        any((p.days_to_merge or 0) >= 30 for p in merged),
+        f"{max((p.days_to_merge or 0) for p in merged) if merged else 0:.0f}/30d")
+    add("clean_window", "Clean Sweep", "Every opened PR merged (3+)", "rare",
+        "broom2", len(prs) >= 3 and len(merged) == len(prs),
+        f"{len(merged)}/{len(prs)} merged")
+    add("lines_50k", "Fifty K", "50,000+ lines added", "legendary", "mount",
+        la >= 50000, f"{min(la, 50000):,}/50,000")
+    add("issues_50", "Fifty Filed", "50+ issues opened", "legendary", "pad",
+        s.issues_opened >= 50, f"{min(s.issues_opened, 50)}/50")
+    add("reviews_100", "Review Centurion", "100 reviews given", "legendary",
+        "scales", s.reviews_given >= 100, f"{min(s.reviews_given, 100)}/100")
+    add("merge_500", "Five Hundred", "500 merged PRs", "legendary", "crown",
+        m >= 500, f"{min(m, 500)}/500")
+    add("repos_30", "Cartographer", "Contributed to 30+ repositories", "legendary",
+        "atlas", s.distinct_repos >= 30, f"{min(s.distinct_repos, 30)}/30 repos")
+    add("langs_10", "Decalinguist", "Shipped code in 10+ languages", "legendary",
+        "prism", s.distinct_languages >= 10,
+        f"{min(s.distinct_languages, 10)}/10 languages")
+    add("streak_50", "Unbroken", "50-day activity streak", "legendary", "chain",
+        s.longest_streak_days >= 50, f"{min(s.longest_streak_days, 50)}/50 days")
+    add("double_kraken", "Double Kraken", "Two PRs over 10,000 lines", "legendary",
+        "hydra",
+        sum(1 for p in prs if p.additions + p.deletions >= 10000) >= 2,
+        f"{sum(1 for p in prs if p.additions + p.deletions >= 10000)}/2")
+    add("momentum_leg", "Rocket Fuel", "Accelerating with 15+ PRs", "legendary",
+        "rocket", s.momentum == "accelerating" and s.prs_authored >= 15,
+        f"{s.prs_authored} prs · {s.momentum or 'no data'}")
+
     return out
 
 

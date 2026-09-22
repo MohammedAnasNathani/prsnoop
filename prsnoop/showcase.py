@@ -12,7 +12,9 @@ from datetime import timedelta
 from xml.sax.saxutils import escape as x_escape
 
 from prsnoop.achievements import build_report
+from prsnoop.dna import build_dna
 from prsnoop.forecast import build_forecast
+from prsnoop.level import compute_level
 from prsnoop.models import Activity, JsonDict
 from prsnoop.score import compute_score
 
@@ -52,7 +54,15 @@ def build_data(activity: Activity) -> JsonDict:
     hs = compute_score(activity)
     board = build_report(activity)
     fc = build_forecast(activity)
+    d = build_dna(activity)
+    lc = compute_level(activity)
     return {
+        "dna": {"genome": d.genome, "color": d.color,
+                "grid": d.grid, "signature": d.signature},
+        "level": {"level": lc.level, "rank": lc.rank, "xp": lc.xp,
+                  "next_rank": lc.next_rank, "next_rank_at": lc.next_rank_at,
+                  "progress": round(lc.progress_pct, 1),
+                  "breakdown": lc.breakdown},
         "user": activity.user,
         "generated": activity.generated_at.strftime("%Y-%m-%d"),
         "window": s.window_days,
@@ -341,6 +351,29 @@ D.score.pillars.forEach((p, idx) => {
   });
 });
 $('#risk').innerHTML = 'burnout risk <b>' + D.score.risk.toUpperCase() + '</b>';
+
+/* operator file: level + dna */
+$('#lv-num').textContent = D.level.level;
+$('#lv-rank').textContent = D.level.rank;
+$('#lv-next').textContent = D.level.next_rank
+  ? 'next ' + D.level.next_rank + ' · lvl ' + D.level.next_rank_at : 'max rank';
+$('#lv-pct').textContent = D.level.progress + '%';
+setTimeout(() => { $('#lv-fill').style.width = D.level.progress + '%'; }, 500);
+const dg = $('#dna-grid');
+const dc2 = D.dna.color;
+D.dna.grid.forEach((row) => {
+  row.forEach((v) => {
+    const c = document.createElement('div');
+    c.style.cssText = 'width:22px;height:22px;border:1px solid var(--line)';
+    if (v > 0) {
+      c.style.background = dc2;
+      c.style.opacity = v >= 3 ? 1 : 0.3 + v * 0.22;
+    }
+    dg.appendChild(c);
+  });
+});
+$('#dna-genome').textContent = 'GENOME ' + D.dna.genome;
+$('#dna-sig').textContent = D.dna.signature.toUpperCase();
 const hm = $('#heatmap'), tip = $('#hm-tip');
 const lvl = (n) => n === 0 ? 0 : n <= 2 ? 1 : n <= 5 ? 2 : n <= 9 ? 3 : 4;
 D.days.forEach((d) => {
@@ -690,24 +723,47 @@ def render_showcase_html(activity: Activity) -> str:
 </div>
 <p class="risk" id="risk"></p></div>
 
-<div class="panel reveal"><h2><span><span class="no">02</span> · DAILY INTERCEPTS</span>
+<div class="panel reveal"><h2><span><span class="no">01B</span> · OPERATOR FILE</span>
+<span class="hint">level + genetic signature</span></h2>
+<div class="assess">
+<div style="flex:none;min-width:200px">
+<div style="font-size:54px;font-weight:700;line-height:1" id="lv-num">0</div>
+<div style="font-family:var(--mono);font-size:11px;letter-spacing:.2em;
+color:var(--acc);text-transform:uppercase;margin-top:6px" id="lv-rank"></div>
+<div class="pillar" style="margin-top:14px"><div class="top">
+<span id="lv-next"></span><b id="lv-pct"></b></div>
+<div class="track" style="height:7px;background:var(--panel2);border-radius:4px;
+overflow:hidden"><div id="lv-fill" style="height:100%;width:0;
+background:var(--acc);border-radius:4px;transition:width 1.4s"></div></div></div>
+</div>
+<div style="flex:1;min-width:240px">
+<div id="dna-grid" style="display:grid;grid-template-columns:repeat(7,22px);gap:2px;
+margin-bottom:10px"></div>
+<div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+color:var(--dim)" id="dna-genome"></div>
+<div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+color:var(--acc);text-transform:uppercase;margin-top:6px" id="dna-sig"></div>
+</div>
+</div></div>
+
+<div class="panel reveal"><h2><span><span class="no">08</span> · DAILY INTERCEPTS</span>
 <span class="hint">hover any day</span></h2>
 <div id="heatmap"></div>
 <div class="hm-legend" id="hm-legend"></div></div>
 
-<div class="panel reveal"><h2><span><span class="no">03</span> · NETWORK MAP</span>
+<div class="panel reveal"><h2><span><span class="no">08</span> · NETWORK MAP</span>
 <span class="hint">drag the nodes · hover for counts</span></h2>
 <canvas id="graph"></canvas></div>
 
-<div class="panel reveal"><h2><span><span class="no">04</span> · MATERIAL ANALYSIS</span>
+<div class="panel reveal"><h2><span><span class="no">08</span> · MATERIAL ANALYSIS</span>
 <span class="hint">languages by intercept volume</span></h2>
 <div class="mat" id="mat"></div><div class="mleg" id="mleg"></div></div>
 
-<div class="panel reveal"><h2><span><span class="no">05</span> · TRAJECTORY PROJECTION</span>
+<div class="panel reveal"><h2><span><span class="no">08</span> · TRAJECTORY PROJECTION</span>
 <span class="hint">least squares over the window</span></h2>
 <canvas id="fchart"></canvas><p class="fcrow" id="fline"></p></div>
 
-<div class="panel reveal"><h2><span><span class="no">06</span> · COMMENDATIONS · __ACHDONE__/__ACHTOTAL__ · __ACHSCORE__ PTS</span>
+<div class="panel reveal"><h2><span><span class="no">08</span> · COMMENDATIONS · __ACHDONE__/__ACHTOTAL__ · __ACHSCORE__ PTS</span>
 <span class="hint">filter by rarity</span></h2>
 <div class="afilters">
 <button class="on" data-f="all">all</button><button data-f="common">common</button>
@@ -715,7 +771,7 @@ def render_showcase_html(activity: Activity) -> str:
 <button data-f="legendary">legendary</button></div>
 <div class="achgrid" id="achgrid"></div></div>
 
-<div class="panel reveal"><h2><span><span class="no">07</span> · INTERCEPT LOG</span>
+<div class="panel reveal"><h2><span><span class="no">08</span> · INTERCEPT LOG</span>
 <span class="hint">search · filter · sort</span></h2>
 <div class="tools"><input id="prq" placeholder="grep intercepts…">
 <select id="prst"><option value="all">all states</option><option value="merged">merged</option>

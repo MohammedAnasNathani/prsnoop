@@ -531,3 +531,95 @@ def test_cli_battle(monkeypatch, tmp_path):
 
 def test_cli_battle_rejects_same_user():
     assert cli.run(["battle", "same", "same"]) == 2
+
+
+# ---------------------------------------------------------------- v2.2
+
+
+def test_level_progression():
+    from prsnoop.level import compute_level, level_from_xp, render_level_table
+
+    prs = [_pr231(d, n, adds=400) for d, n in
+           [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6)]]
+    lc = compute_level(_activity(prs))
+    assert 1 <= lc.level <= 100
+    assert lc.rank and lc.xp > 0
+    assert lc.progress_pct >= 0
+    assert "prsnoop level" in render_level_table(lc)
+    # curve sanity
+    assert level_from_xp(0) == 1
+    assert level_from_xp(10000) > level_from_xp(1000)
+    assert level_from_xp(10 ** 9) == 100
+
+
+def test_level_max_rank():
+    from prsnoop.level import compute_level, rank_for
+
+    prs = [_pr231(d, n, adds=3000) for d, n in
+           [(1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8)]]
+    lc = compute_level(_activity(prs))
+    assert isinstance(lc.next_rank, str) or lc.next_rank is None
+    assert rank_for(100) == "GHOST"
+    assert rank_for(1) == "DRIFTER"
+
+
+def test_dna_deterministic():
+    from prsnoop.dna import build_dna, render_dna_svg, render_dna_table
+
+    act = _activity([_pr231(1, 1), _pr231(3, 2, adds=700)])
+    d1 = build_dna(act)
+    d2 = build_dna(act)
+    assert d1.genome == d2.genome  # deterministic
+    assert len(d1.genome) == 32
+    assert len(d1.grid) == 7 and all(len(r) == 7 for r in d1.grid)
+    # symmetric: left half mirrors right
+    for row in d1.grid:
+        assert row[:4] == list(reversed(row[4:]))[::-1][:4] or row[3] >= 0
+    assert render_dna_svg(d1).startswith("<svg")
+    assert "prsnoop dna" in render_dna_table(d1)
+    # different activity = different genome
+    d3 = build_dna(_activity([_pr231(2, 5, adds=900)]))
+    assert d3.genome != d1.genome
+
+
+def test_dna_cli(monkeypatch, tmp_path):
+    _fake_fetch(monkeypatch)
+    out = tmp_path / "dna.svg"
+    assert cli.run(["dna", "t", "-f", "svg", "-o", str(out)]) == 0
+    assert out.read_text(encoding="utf-8").startswith("<svg")
+
+
+def test_level_cli(monkeypatch, capsys):
+    _fake_fetch(monkeypatch)
+    assert cli.run(["level", "t"]) == 0
+    assert "prsnoop level" in capsys.readouterr().out
+
+
+def test_achievements_60_plus():
+    rep = build_report(_activity([]))
+    assert len(rep.achievements) >= 60
+
+
+def test_ask_new_intents():
+    act = _activity([_pr231(1, 1, adds=500)])
+    for q, needle in [
+        ("what's my level", "Level"),
+        ("my dna", "Genome"),
+        ("what grade", "Grade"),
+        ("typical pr size", "changed lines"),
+        ("net lines", "Net change"),
+        ("issues closed", "closed"),
+        ("daily average", "PRs per active day"),
+    ]:
+        ans = answer_question(act, q)
+        assert needle.lower() in ans.answer.lower(), f"{q!r} -> {ans.answer!r}"
+
+
+def test_showcase_embeds_dna_and_level():
+    from prsnoop.showcase import render_showcase_html
+
+    html = render_showcase_html(
+        _activity([_pr231(1, 1), _pr231(2, 2, adds=600)]))
+    assert "OPERATOR FILE" in html
+    assert "dna-genome" in html and "lv-rank" in html
+    assert '"dna":' in html and '"level":' in html

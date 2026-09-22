@@ -26,6 +26,8 @@
     prsnoop digest simonw --format slack       # Slack/email/Discord digest
     prsnoop report simonw -o report.html       # one-page HTML masterpiece
     prsnoop tui simonw                         # full-screen live terminal dashboard
+    prsnoop level simonw                       # XP + 100-level progression
+    prsnoop dna simonw                         # contributor DNA fingerprint
     prsnoop showcase simonw -o showcase.html   # interactive web app, one file
     prsnoop battle antfu simonw -o vs.html     # head-to-head versus web page
     prsnoop wrapped simonw --web -o wrap.html  # story-mode wrapped, slides
@@ -100,10 +102,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="prsnoop",
         description=(
-            "Snoop GitHub pull requests, issues, and reviews into clean reports. "
-            "Subcommands: score, achievements, forecast, ask, timeline, network, "
-            "digest, report, tui, wrapped, readme, card, radar, changelog, ci, "
-            "watch, serve, export, team, compare, org, repo, snap, replay, me, auth."
+            "Snoop GitHub pull requests, issues, and reviews into clean "
+            "reports. Subcommands: level, dna, score, achievements, "
+            "forecast, ask, timeline, network, digest, report, tui, "
+            "wrapped, readme, card, radar, changelog, ci, watch, serve, "
+            "export, team, compare, org, repo, snap, replay, me, auth."
         ),
     )
     parser.add_argument("user", nargs="?", help="GitHub username to snoop")
@@ -1654,6 +1657,99 @@ def build_battle_parser() -> argparse.ArgumentParser:
     return p
 
 
+
+def cmd_level(args: argparse.Namespace) -> int:
+    from prsnoop.level import (
+        compute_level,
+        render_level_json,
+        render_level_markdown,
+        render_level_table,
+    )
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    lc = compute_level(activity)
+    rendered = {"json": render_level_json, "markdown": render_level_markdown}.get(
+        args.format, render_level_table)(lc)
+    _emit(rendered, args.output)
+    return 0
+
+
+def cmd_dna(args: argparse.Namespace) -> int:
+    from prsnoop.dna import build_dna, render_dna_markdown, render_dna_svg, render_dna_table
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    try:
+        activity = _fetch_activity(args, days)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    d = build_dna(activity)
+    if args.format == "svg":
+        rendered = render_dna_svg(d)
+    elif args.format == "markdown":
+        rendered = render_dna_markdown(d)
+    elif args.format == "json":
+        rendered = json.dumps(d.to_dict(), indent=2)
+    else:
+        rendered = render_dna_table(d)
+    _emit(rendered, args.output)
+    return 0
+
+
+def build_level_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop level",
+        description="XP and 100-level progression with named ranks.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
+def build_dna_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop dna",
+        description="Deterministic contributor DNA fingerprint (SVG glyph + genome).")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--no-reviews", action="store_true")
+    p.add_argument("--format", "-f", choices=["table", "svg", "markdown", "json"],
+                   default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
 def build_score_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="prsnoop score",
                                 description="Contributor health score, 0-100 with grade.")
@@ -1938,6 +2034,16 @@ def run(argv: list[str] | None = None) -> int:
         logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
                             format="%(levelname)s %(name)s: %(message)s")
         return cmd_battle(a)
+    if raw and raw[0] == "level":
+        a = build_level_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_level(a)
+    if raw and raw[0] == "dna":
+        a = build_dna_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_dna(a)
     if raw and raw[0] == "score":
         a = build_score_parser().parse_args(raw[1:])
         logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,

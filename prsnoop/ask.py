@@ -46,8 +46,10 @@ def _intent_of(q: str) -> str:
         ("streak", (r"streak",)),
         ("active_days", (r"(active|working) days", r"how (many|much).*active")),
         ("momentum", (r"momentum|accelerat|slow|trend|direction",)),
-        ("lines", (r"lines?\b", r"\bloc\b")),
         ("reviews", (r"reviews?\b",)),
+        ("net_lines", (r"net lines|net code|net change",)),
+        ("deletions", (r"delet|removed lines",)),
+        ("lines", (r"lines?\b", r"\bloc\b")),
         ("issues", (r"issues?\b",)),
         ("busiest_day", (r"busiest|most active day|peak",)),
         ("busiest_month", (r"month",)),
@@ -57,6 +59,15 @@ def _intent_of(q: str) -> str:
         ("achievements", (r"achievement|badge",)),
         ("best_pr", (r"(biggest|largest|longest).*pr", r"most discussed")),
         ("weekday", (r"(favourite|favorite|preferred) day|which day",)),
+        ("size_profile", (r"size|biggest prs|typical pr",)),
+        ("closed_rate", (r"issues closed|closing issues",)),
+        ("active_ratio", (r"how (often|frequently)|duty|ratio",)),
+        ("counts_by", (r"how many (repos|languages)",)),
+        ("avg_prs", (r"per day|per active day|daily average",)),
+        ("open_standing", (r"open prs|still open|wip",)),
+        ("grade", (r"what grade|my grade|letter grade",)),
+        ("genome", (r"dna|genome|fingerprint",)),
+        ("level", (r"level|rank|xp",)),
         ("help", (r"^help\b", r"what can")),
     ]
     for intent, patterns in rules:
@@ -180,6 +191,42 @@ def answer_question(activity: Activity, question: str) -> Answer:
             return a(f"The favourite day to open PRs is {days[wd]} "
                      f"({counts[wd]} PRs).")
         return a("No PRs in this window.")
+    if intent == "level":
+        from prsnoop.level import compute_level
+        lc = compute_level(activity)
+        nxt = (f" Next: {lc.next_rank} at level {lc.next_rank_at}."
+               if lc.next_rank else " Maximum rank reached.")
+        return a(f"Level {lc.level} ({lc.rank}) with {lc.xp:,} XP."
+                 + nxt)
+    if intent == "genome":
+        from prsnoop.dna import build_dna
+        d = build_dna(activity)
+        return a(f"Genome {d.genome}. Signature: {d.signature}.")
+    if intent == "grade":
+        from prsnoop.score import compute_score
+        hs = compute_score(activity)
+        return a(f"Grade {hs.grade} ({hs.band}) at {hs.total:.1f}/100.")
+    if intent == "size_profile":
+        if s.size_median_lines is None:
+            return a("No sized PRs in this window.")
+        buckets = ", ".join(f"{k} {v}" for k, v in s.size_buckets.items() if v)
+        return a(f"Typical PR: {s.size_median_lines} changed lines. "
+                 f"Buckets: {buckets}.")
+    if intent == "net_lines":
+        return a(f"Net change: {_fmt_num(s.lines_added - s.lines_deleted)} lines.")
+    if intent == "deletions":
+        return a(f"{_fmt_num(s.lines_deleted)} lines deleted in the {window}.")
+    if intent == "closed_rate":
+        return a(f"{s.issues_closed} of {s.issues_opened} opened issues were closed.")
+    if intent == "active_ratio":
+        return a(f"Active {s.active_days} of {s.window_days} days "
+                 f"({s.active_days / max(1, s.window_days) * 100:.0f}% duty).")
+    if intent == "counts_by":
+        return a(f"{s.distinct_repos} repositories and {s.distinct_languages} languages.")
+    if intent == "avg_prs":
+        return a(f"{s.avg_prs_per_active_day} PRs per active day.")
+    if intent == "open_standing":
+        return a(f"{s.prs_open} PRs are still open.")
     if intent == "help":
         return a(
             "Try asking: how many PRs, merge rate, median merge time, top language, "

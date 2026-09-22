@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "prsnoop"
-version = "2.1.1"
+version = "2.2.0"
 description = "Snoop GitHub pull requests, issues, and reviews into clean reports"
 readme = "README.md"
 license = {text = "MIT"}

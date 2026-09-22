@@ -362,6 +362,17 @@ def render_wrapped_story(w: Wrapped) -> str:
     if w.favorite_weekday:
         slides.append(("you surface on", w.favorite_weekday.upper(),
                        "more than any other day", "var(--acc)"))
+    if w.reviews:
+        slides.append(("you reviewed for others", str(w.reviews),
+                       "times. team player", "var(--text)"))
+    if w.pr_cadence_days:
+        slides.append(("your cadence", "every " + str(w.pr_cadence_days) + " days",
+                       "one pull request", "var(--acc)"))
+    net = w.lines_added - w.lines_deleted
+    if net != 0:
+        slides.append(("net contribution",
+                       ("+" if net > 0 else "") + f"{net:,}",
+                       "lines, net of deletions", "var(--text)"))
     slides.append(("end of intercept", "DOSSIER CLOSED",
                    f"{w.repos} repos · {w.languages} languages · prsnoop",
                    "var(--acc)"))
