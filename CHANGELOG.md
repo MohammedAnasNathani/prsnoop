@@ -4,6 +4,75 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-09-20
+
+### Added
+- `prsnoop level [user]`: XP and a 100-level progression system. Every
+  action earns XP (PR opened 25, merged 60, review 15, lines shipped 1 per
+  10, streak day 50, and more). Levels follow a soft-quadratic curve and map
+  to named ranks from DRIFTER to GHOST, with an XP breakdown table and
+  next-rank progress. Table, Markdown, or JSON.
+- `prsnoop dna [user]`: a deterministic contributor DNA fingerprint. The
+  snapshot's shape hashes into a 32-char genome and a symmetric 7x7 SVG
+  glyph in the dossier palette. Same contributor, same window, same DNA.
+  Table, SVG, Markdown, or JSON.
+- Showcase pages include an OPERATOR FILE panel: level number, named rank,
+  next-rank progress bar, and the DNA glyph with genome readout.
+- Achievements grew to 62 unlockables: Ninety Percent, Never Closed, Kraken
+  Tamer, Comment Magnet, Debate Champion, Long Haul, Clean Sweep, Fifty K,
+  Review Centurion, Five Hundred, Cartographer, Decalinguist, Unbroken,
+  Double Kraken, Rocket Fuel, and more.
+- Ask handles 37 intents, adding level, dna, grade, PR size profile, net
+  lines, deletions, issue close rate, duty ratio, daily average, and counts.
+- Wrapped story slides deepen: reviews given, PR cadence, and net lines.
+
+## [2.1.1] - 2026-09-20
+
+### Changed
+- Full identity pass on every generated web page: the "surveillance dossier"
+  design language. Radar green on near black, Space Grotesk headlines, IBM
+  Plex Mono telemetry labels, corner-bracket panels, scanline overlay, stamp
+  verdicts. Network map as a radar intercept display, languages as a
+  segmented material-analysis bar, achievements as commendation rows, PR
+  explorer as an intercept log, battle as a tale-of-the-tape fight card,
+  wrapped as a surveillance broadcast.
+
+## [2.1.0] - 2026-09-20
+
+### Added
+- `prsnoop showcase [user] -o showcase.html`: generates a full interactive
+  single-file web app. Count-up hero stats, hover heatmap, force-directed
+  repo graph on canvas (draggable), language donut, score gauge, achievement
+  wall, PR explorer with live search, filter, and sorting. Dark/light theme.
+- `prsnoop battle a b -o vs.html`: head-to-head versus web page with
+  animated metric bars, per-metric wins, tally, and verdict banner.
+- `prsnoop wrapped [user] --web`: Spotify-Wrapped-style story slides with
+  auto-advance, swipe, and keyboard navigation.
+- Live demos ship in GitHub Pages, linked from the landing page.
+
+## [2.0.0] - 2026-09-19
+
+### Added
+- `prsnoop score [user]`: composite contributor health score, 0-100 with
+  letter grades over five weighted pillars, plus a burnout-risk flag.
+- `prsnoop achievements [user]`: unlockable achievement board with rarity
+  tiers, points, and completion percentage.
+- `prsnoop forecast [user]`: least-squares linear regression over daily
+  activity with trajectory, confidence, and pace projections.
+- `prsnoop ask [user] "question"`: natural-language Q&A over the snapshot,
+  answered locally with no API key.
+- `prsnoop timeline [user]`: reverse-chronological event stream with weekly
+  buckets.
+- `prsnoop network [user]`: work and review flow graph with Graphviz DOT
+  export.
+- `prsnoop digest [user]`: scheduled digests in Slack, email, and Discord
+  formats.
+- `prsnoop report [user] -o report.html`: self-contained one-page HTML
+  report with sparkline, score bars, achievement chips, language donut,
+  forecast strip.
+- `prsnoop tui [user]`: full-screen live terminal dashboard on stdlib curses
+  with four tabbed views and periodic refresh.
+
 ## [1.6.0] - 2026-09-08
 
 ### Added
