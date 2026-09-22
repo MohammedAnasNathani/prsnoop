@@ -28,6 +28,7 @@
     prsnoop tui simonw                         # full-screen live terminal dashboard
     prsnoop level simonw                       # XP + 100-level progression
     prsnoop dna simonw                         # contributor DNA fingerprint
+    prsnoop responsiveness simonw              # who waits: you or maintainers?
     prsnoop showcase simonw -o showcase.html   # interactive web app, one file
     prsnoop battle antfu simonw -o vs.html     # head-to-head versus web page
     prsnoop wrapped simonw --web -o wrap.html  # story-mode wrapped, slides
@@ -103,7 +104,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="prsnoop",
         description=(
             "Snoop GitHub pull requests, issues, and reviews into clean "
-            "reports. Subcommands: level, dna, score, achievements, "
+            "reports. Subcommands: responsiveness, level, dna, score, achievements, "
             "forecast, ask, timeline, network, digest, report, tui, "
             "wrapped, readme, card, radar, changelog, ci, watch, serve, "
             "export, team, compare, org, repo, snap, replay, me, auth."
@@ -1713,6 +1714,67 @@ def cmd_dna(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def cmd_responsiveness(args: argparse.Namespace) -> int:
+    from prsnoop.responsiveness import (
+        build_responsiveness,
+        render_responsiveness_markdown,
+        render_responsiveness_table,
+    )
+
+    days = _LAST_TO_DAYS[args.last] if args.last else args.days
+    if days < 1:
+        print("prsnoop: --days must be >= 1", file=sys.stderr)
+        return 2
+    if args.limit < 1:
+        print("prsnoop: --limit must be >= 1", file=sys.stderr)
+        return 2
+    client = GitHubClient(
+        cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}"
+    )
+    try:
+        prs, reviews, issues, _ = fetch_user_activity(
+            client, args.user, days=days, include_reviews=False,
+            org=args.org)
+        activity = build_activity(
+            args.user, prs, reviews, issues, window_days=days)
+        rep = build_responsiveness(activity, client, limit=args.limit)
+    except RateLimitExceeded as exc:
+        print(f"prsnoop: rate limit hit: {exc}", file=sys.stderr)
+        return 4
+    except GitHubError as exc:
+        print(f"prsnoop: {exc}", file=sys.stderr)
+        return 3
+    if args.format == "json":
+        rendered = json.dumps(rep.to_dict(), indent=2)
+    elif args.format == "markdown":
+        rendered = render_responsiveness_markdown(rep)
+    else:
+        rendered = render_responsiveness_table(rep)
+    _emit(rendered, args.output)
+    return 0
+
+
+def build_responsiveness_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="prsnoop responsiveness",
+        description="Who waits on a PR: you or the maintainers? "
+                    "Per-repo review latency medians.")
+    p.add_argument("user")
+    p.add_argument("--days", type=int, default=30)
+    p.add_argument("--last", choices=["week", "month", "quarter", "year"], default=None)
+    p.add_argument("--since", type=str, default=None)
+    p.add_argument("--until", type=str, default=None)
+    p.add_argument("--org", type=str, default=None)
+    p.add_argument("--limit", type=int, default=30,
+                   help="max PRs to scan timelines for (default: 30)")
+    p.add_argument("--format", "-f", choices=["table", "markdown", "json"], default="table")
+    p.add_argument("--output", "-o", type=Path, default=None)
+    p.add_argument("--cache-dir", type=Path, default=Path.home() / ".cache" / "prsnoop")
+    p.add_argument("--verbose", "-v", action="store_true")
+    return p
+
+
 def build_level_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="prsnoop level",
@@ -2034,6 +2096,11 @@ def run(argv: list[str] | None = None) -> int:
         logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
                             format="%(levelname)s %(name)s: %(message)s")
         return cmd_battle(a)
+    if raw and raw[0] == "responsiveness":
+        a = build_responsiveness_parser().parse_args(raw[1:])
+        logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,
+                            format="%(levelname)s %(name)s: %(message)s")
+        return cmd_responsiveness(a)
     if raw and raw[0] == "level":
         a = build_level_parser().parse_args(raw[1:])
         logging.basicConfig(level=logging.DEBUG if a.verbose else logging.WARNING,

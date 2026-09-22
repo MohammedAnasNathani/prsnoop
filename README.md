@@ -153,9 +153,8 @@ window: last 30 days
 
    #  user                 prs    merged      rate    issues    median    streak     repos
   --  --------------  --------  --------  --------  --------  --------  --------  --------
-   1  simonw                42        37       88%        32      0.0d        6d        13 *
-   2  antfu                 10         8       80%         1      0.0d        3d         8
-   3  gvanrossum             4         1       25%         0      2.6d        1d         3
+   1  simonw                33        29       88%        59      0.0d        8d        12 *
+   2  antfu                  4         3       75%         1      0.0d        3d         4
 ```
 
 One command, the whole report pack, into a dated folder:
@@ -194,14 +193,14 @@ $ prsnoop wrapped simonw
 
   THE YEAR IN PULL REQUESTS
 
-  Pull requests      922 (merged 802, 73 still open)
-  Lines changed      +1,451,203 / -112,516
+  Pull requests      931 (merged 812)
+  Lines changed      +1,454,053
   Longest streak     43 days
   Cadence            one PR every 0.4 days
-  Busiest month      2025-12 (361 items)
-  Busiest repo       simonw/tools (246 PRs)
-  Top language       Python (595 PRs)
-  Biggest patch      569,672 lines, "Add screenshot generation"
+  Busiest month      2025-12
+  Busiest repo       simonw/tools
+  Top language       Python
+  Biggest patch      569,672 lines
   Favorite day       Wednesday
 ```
 
@@ -225,14 +224,14 @@ by waiting age, sorted into fresh, aging, stale, and ancient buckets. The
 Monday-morning list, plus a quiet count for PRs nobody has touched:
 
 ```text
-$ prsnoop radar owner/repo
+$ prsnoop radar simonw/datasette
 
-prsnoop radar | owner/repo
-open PRs: 23 | median age 6.0d
-buckets: fresh 8 | aging 7 | stale 4 | ancient 4 | quiet (no comments, old): 4
+prsnoop radar | simonw/datasette
+open PRs: 123 | median age 199.0d
+buckets: fresh 3 | aging 7 | stale 4 | ancient 109 | quiet (no comments, old): 113
 
       #   age  bucket  author           title
-     142   94d  ##      simonw           fix flaky retry test
+    363  2946d  ##      kevboh           Search all apps during heroku publish
       ...
 ```
 
@@ -287,25 +286,29 @@ pillars, and a burnout-risk flag computed from streak length and workload:
 ```text
 $ prsnoop score simonw
 
-  SCORE   87.3 / 100   grade A (excellent)
+  SCORE   77.3 / 100   grade B (strong)
 
-  output          82.0  x0.30  [######################......]
-  impact          94.0  x0.25  [##########################..]
+  output          67.9  x0.30  [###################.........]
+                 33 PRs, +13,607 lines, 59 issues
+
+  impact          92.7  x0.25  [##########################..]
+                 88% merge rate, 0.0d median merge
   ...
   burnout risk: low (healthy pacing across the window)
 ```
 
-Unlock achievements, 40+ badges across common, rare, epic, and legendary
+Unlock achievements, 62 badges across common, rare, epic, and legendary
 tiers, with points and completion percentage:
 
 ```text
 $ prsnoop achievements simonw
 
-  SCORE   650 pts   17/43 unlocked (40%)
+  SCORE   870 pts   31/62 unlocked (50%)
 
   UNLOCKED
-   <>    Speed Demon      rare      A PR merged in under 1 hour
-   (vv)  Landed           common    Got your first PR merged
+   (*)   First Blood        common    Opened your first pull request
+   (*)   Double Digits      common    Opened 10 pull requests
+   (**)  Quarter Century    rare      Opened 25 pull requests
    ...
 ```
 
@@ -320,10 +323,13 @@ Ask questions in plain English, answered locally from the snapshot with no
 API key:
 
 ```text
-$ prsnoop ask simonw "how many prs?" "top language?" "merge rate?"
+$ prsnoop ask simonw "top language?" "how many prs?" "merge rate?"
+
+  Q: top language?
+  A: The top language is Python with 20 PRs.
 
   Q: how many prs?
-  A: simonw opened 42 pull requests in the last 30 days (37 merged, 5 still open).
+  A: simonw opened 33 pull requests in the last 30 days (29 merged, 3 still open).
 ```
 
 Watch the terminal turn into a dashboard. A full-screen curses UI with four
@@ -346,6 +352,56 @@ prsnoop report simonw -o report.html     # one file, no assets, opens anywhere
 
 HTML reports for wide windows include a GitHub-style contribution
 calendar, one cell per day, greener means more shipped.
+
+Level up. Merges, lines, reviews, and achievement points all convert to
+xp, xp maps to a level, and levels map to ranks, DRIFTER through GHOST:
+
+```text
+$ prsnoop level simonw
+
+  LEVEL  19   RECRUIT
+  XP        8,075
+
+  next rank APPRENTICE at level 20
+  progress  #                    8%
+```
+
+Contributor dna: a 32-character genome hashed from your stats, rendered
+as a symmetric fingerprint glyph with a signature reading of your style:
+
+```text
+$ prsnoop dna simonw
+
+  genome    089b56dae7af1de3
+            e08b9dff014254da
+  signature high-output · collaborative
+  color     #ff7eb6
+```
+
+Responsiveness: for every PR in the window, how long it waited for a
+first review and how long you took to answer it. Per-repo medians, the
+slowest open waits, and a verdict on whose side the silence is on:
+
+```text
+$ prsnoop responsiveness simonw
+
+  median time to first review : 0m
+  median time to your reply   : 0m
+  median total open time      : 12m
+
+  verdict: healthy turnaround on both sides
+```
+
+Three interactive HTML generators, all real data, each a single file:
+showcase, a surveillance dossier with radar chart, heatmap, force graph
+and explorer; wrapped, a slide-by-slide story of your year; and battle,
+an animated head-to-head versus page:
+
+```bash
+prsnoop showcase simonw -o showcase.html
+prsnoop wrapped simonw --web -o wrapped.html
+prsnoop battle antfu simonw -o battle.html
+```
 
 Freeze a snapshot now, diff against it later. Handy for weekly reviews,
 standup prep, or proving a productive month:

@@ -623,3 +623,95 @@ def test_showcase_embeds_dna_and_level():
     assert "OPERATOR FILE" in html
     assert "dna-genome" in html and "lv-rank" in html
     assert '"dna":' in html and '"level":' in html
+
+
+# ---------------------------------------------------------- responsiveness
+
+
+def _latency_prs() -> list[PRRecord]:
+    return [_pr(10, 1), _pr(8, 2), _pr(6, 3)]
+
+
+def _fake_latency(monkeypatch, review_h: float | None, reply_gap_h: float = 1.0):
+    """Patch _fetch_latency so every PR gets review at review_h after
+    created and the author replies reply_gap_h hours after the review."""
+    from prsnoop import responsiveness as resp_mod
+
+    def fake(client, repo, number):
+        base = next(p.created_at for p in _latency_prs() if p.number == number)
+        if review_h is None:
+            return None, None
+        first = base + timedelta(hours=review_h)
+        return first, first + timedelta(hours=reply_gap_h)
+
+    monkeypatch.setattr(resp_mod, "_fetch_latency", fake)
+
+
+def test_responsiveness_verdict_your_side(monkeypatch):
+    from prsnoop.responsiveness import build_responsiveness
+
+    _fake_latency(monkeypatch, review_h=2.0, reply_gap_h=20.0)
+    rep = build_responsiveness(_activity(_latency_prs()), object())
+    assert rep.verdict == "the silence is usually on YOUR side"
+    assert rep.scanned == 3
+    assert rep.overall_author_reply_h == 20.0
+
+
+def test_responsiveness_verdict_maintainers(monkeypatch):
+    from prsnoop.responsiveness import build_responsiveness
+
+    _fake_latency(monkeypatch, review_h=100.0)
+    rep = build_responsiveness(_activity(_latency_prs()), object())
+    assert rep.verdict == "maintainers leave you waiting"
+
+
+def test_responsiveness_verdict_healthy_and_empty(monkeypatch):
+    from prsnoop.responsiveness import build_responsiveness
+
+    _fake_latency(monkeypatch, review_h=5.0, reply_gap_h=2.0)
+    rep = build_responsiveness(_activity(_latency_prs()), object())
+    assert rep.verdict == "healthy turnaround on both sides"
+    assert rep.overall_first_review_h == 5.0
+
+    _fake_latency(monkeypatch, review_h=None)
+    empty = build_responsiveness(_activity(_latency_prs()), object())
+    assert empty.verdict == "no review data in this window"
+    assert empty.scanned == 0
+
+
+def test_responsiveness_per_repo_medians(monkeypatch):
+    from prsnoop.responsiveness import build_responsiveness
+
+    _fake_latency(monkeypatch, review_h=4.0)
+    rep = build_responsiveness(_activity(_latency_prs()), object())
+    assert rep.repo_medians[0]["repo"] == "acme/app"
+    assert rep.repo_medians[0]["prs"] == 3
+    assert rep.repo_medians[0]["median_first_review_h"] == 4.0
+
+
+def test_responsiveness_renderers(monkeypatch):
+    from prsnoop.responsiveness import (
+        build_responsiveness,
+        render_responsiveness_markdown,
+        render_responsiveness_table,
+    )
+
+    _fake_latency(monkeypatch, review_h=30.0)
+    rep = build_responsiveness(_activity(_latency_prs()), object())
+    table = render_responsiveness_table(rep)
+    assert "prsnoop responsiveness" in table
+    assert "verdict" in table and "slowest open waits" in table
+    md = render_responsiveness_markdown(rep)
+    assert "Time to first review" in md and "30.0h" in md
+
+
+def test_cli_responsiveness(monkeypatch, capsys):
+    _fake_fetch(monkeypatch, _latency_prs())
+    _fake_latency(monkeypatch, review_h=3.0)
+    assert cli.run(["responsiveness", "t"]) == 0
+    out = capsys.readouterr().out
+    assert "prsnoop responsiveness" in out and "verdict" in out
+    assert cli.run(["responsiveness", "t", "-f", "json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["verdict"] == "healthy turnaround on both sides"
+    assert payload["rows"][0]["hours_to_first_review"] == 3.0

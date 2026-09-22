@@ -192,7 +192,7 @@ def _evaluate(activity: Activity) -> list[Achievement]:
         f"{sum(1 for p in prs if p.additions + p.deletions >= 1000)}/3")
     add("daily_double", "Daily Double", "2+ PRs merged on the same day", "common",
         "dice",
-        any(d[2] >= 2 for d in [(da.date, da.prs, da.merged) for da in s.day_activity]),
+        any(da.merged >= 2 for da in s.day_activity),
         "merge days scanned")
     day_repos: dict[str, set[str]] = {}
     for p in prs:

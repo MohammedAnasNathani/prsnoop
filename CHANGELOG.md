@@ -4,6 +4,29 @@ All notable changes to prsnoop are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.3.0] - 2026-09-23
+
+### Added
+- `prsnoop responsiveness [user]`: per-PR review timing from real
+  timeline data. Median hours to first review, median hours to your
+  reply after it, median total open time, per-repo medians, the slowest
+  open waits, and a verdict on whose side the silence is usually on.
+- `prsnoop responsiveness` ships in table, markdown, and json formats.
+- Landing page bento now shows only real command output: every example
+  regenerated from live runs (simonw 30-day window, simonw/datasette,
+  datasette 1.0a40). New responsiveness card, plus comparison rows for
+  responsiveness medians, xp levels, and contributor dna.
+- README examples refreshed with real output for score, achievements,
+  ask, team, radar, wrapped, level, dna, and responsiveness.
+
+### Fixed
+- `daily_double` achievement reads `DayActivity.merged` directly instead
+  of indexing into a throwaway tuple.
+- Landing page version pill, test count, and subcommand count now match
+  reality (v2.3.0, 229 tests, 31 subcommands).
+- Ruff excludes the local `presentation/` scratch folder so `ruff check .`
+  stays green.
+
 ## [2.2.0] - 2026-09-20
 
 ### Added
