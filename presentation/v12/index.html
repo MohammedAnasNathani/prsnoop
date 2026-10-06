@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prsnoop: ROSP deck v12 phosphor tabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#041007;--panel:#071a0c;--text:#c9f5d4;--dim:#5f8a6b;--faint:#2c4a34;
+--green:#33ff66;--amber:#ffb224;--red:#ff6b6b;
+--mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#041007;color:var(--text);font-family:var(--mono);overflow:hidden}
+#stage{position:fixed;inset:0;display:flex;align-items:stretch;justify-content:stretch;background:#041007}
+#sheet{width:100vw;height:100dvh;background:var(--bg);
+position:relative;overflow:hidden;display:flex;flex-direction:column;
+text-shadow:0 0 8px rgba(51,255,102,.25)}
+#sheet::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;
+background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.22) 3px 4px)}
+#tabs{flex:none;display:flex;align-items:stretch;background:#020a04;
+border-bottom:1px solid #0e2a16;z-index:3;overflow:hidden}
+#tabs .dots{display:flex;gap:.5em;align-items:center;padding:.7em .9em;flex:none}
+#tabs .dots i{width:.65em;height:.65em;border-radius:50%;background:#12351d;display:block}
+#tabrow{flex:1;display:flex;min-width:0}
+#tabrow button{flex:1;min-width:0;background:transparent;border:0;
+border-left:1px solid #0e2a16;color:var(--faint);font-family:inherit;
+font-size:clamp(7px,.95vw,11px);letter-spacing:.06em;padding:.75em .2em;cursor:pointer;
+white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tabrow button b{color:inherit;font-weight:700}
+#tabrow button.live{background:var(--bg);color:var(--green);box-shadow:inset 0 2px 0 var(--green)}
+#tabrow button:hover{color:var(--text)}
+#slides{flex:1;position:relative}
+.slide{position:absolute;inset:0;padding:5.5% 6.5%;display:none;flex-direction:column;
+justify-content:center;gap:.85em;overflow:hidden}
+.slide.on{display:flex}
+[data-rise]{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease;
+transition-delay:var(--d,0s)}
+.on [data-rise]{opacity:1;transform:none}
+.prompt{color:var(--green);font-weight:700}
+#slides a{color:var(--green)}
+.dim{color:var(--dim)}.faint{color:var(--faint)}.amber{color:var(--amber)}
+.ok{color:var(--green)}.num{color:#fff;font-weight:700}
+h1{font-size:clamp(34px,5.4vw,78px);line-height:1.12;letter-spacing:-.01em;font-weight:800;color:#fff;max-width:26ch;text-wrap:balance}
+h1 .g{color:var(--green)}
+.motto{font-size:clamp(20px,3vw,42px);font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.2;max-width:30ch}
+.motto .ok{color:var(--green)}
+.cmd{font-size:clamp(12px,1.65vw,22px);color:var(--green)}
+.cmd::before{content:"$ ";color:var(--dim)}
+p,li{font-size:clamp(13px,1.65vw,20px);line-height:1.7}
+.b{color:#fff;font-weight:700}
+.boot{color:var(--dim);font-size:clamp(10px,1.2vw,14px);line-height:1.7}
+.boot .ok{color:var(--green)}
+.frame{border:1px solid var(--faint);padding:1em 1.2em;position:relative;background:rgba(4,16,7,.6)}
+.frame .tag{position:absolute;top:-.7em;left:.8em;background:var(--bg);padding:0 .6em;
+color:var(--amber);font-size:clamp(8px,1vw,11.5px);letter-spacing:.16em}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--faint)}
+.cols>div{padding:1em 1.1em}
+.cols>div+div{border-left:1px solid var(--faint)}
+.cols h3{color:var(--green);font-size:clamp(12px,1.65vw,20px);margin-bottom:.35em}
+.blockbar{color:var(--green);letter-spacing:.04em}
+table{width:100%;border-collapse:collapse;font-size:clamp(11px,1.45vw,17px)}
+th,td{text-align:left;padding:.55em .8em}
+thead th{color:var(--faint);border-bottom:1px solid var(--faint);font-weight:400;
+letter-spacing:.12em;font-size:.78em}
+tbody td{border-bottom:1px solid #0e2a16}
+tr.me td{background:rgba(51,255,102,.08);color:var(--green);font-weight:700}
+.term{border:1px solid var(--faint);background:rgba(0,0,0,.45);padding:1.05em 1.25em;
+font-size:clamp(12px,1.6vw,19px);line-height:1.8;min-height:12.5em}
+.term pre{white-space:pre-wrap;font-family:inherit}
+.term .g{color:var(--green)}.term .r{color:var(--red)}.term .d{color:var(--dim)}
+.term .w{color:#fff;font-weight:700}
+.cur{display:inline-block;width:.6em;height:1.05em;background:var(--green);
+vertical-align:-.15em;animation:blink 1.06s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+/* blinking hero underscore */
+.blink_{animation:blink 1.06s steps(1) infinite}
+/* clickable block cursor after every command line */
+.ccur{display:inline-block;width:.62em;height:1.02em;background:var(--green);
+vertical-align:-.14em;margin-left:.35em;cursor:pointer;
+animation:blink 1.06s steps(1) infinite}
+.ccur:hover{background:#fff}
+.ccur.hit{animation:none;background:#fff}
+/* click-to-reveal answers */
+.qline{display:block;cursor:pointer}
+.qline .amber{display:inline-block;min-width:2.4em}
+.qline .ans{display:none;color:var(--green);font-weight:700;white-space:nowrap}
+.qline.shown .ans{display:inline}
+/* star rows: aligned grid so nothing wraps mid-row */
+.srow{display:grid;grid-template-columns:8.5em minmax(0,1fr) 5em 9em;gap:1em;align-items:baseline;font-size:clamp(13px,1.7vw,21px)}
+.srow .bar{white-space:nowrap;overflow:hidden}
+.srow .verdict{color:var(--dim);font-size:.82em}
+/* results: stacked stat cells */
+.statgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--faint)}
+.statgrid>div{padding:.9em 1em;text-align:center}
+.statgrid>div+div{border-left:1px solid var(--faint)}
+.statgrid .v{font-size:clamp(28px,4vw,58px);font-weight:800;color:#fff;line-height:1.1}
+.statgrid .v .g{color:var(--green)}
+.statgrid .k{color:var(--dim);font-size:clamp(8px,1vw,11.5px);letter-spacing:.1em;margin-top:.3em}
+/* cover slide: first branding, everything bigger */
+.cover h1{font-size:clamp(40px,6.4vw,92px)}
+.cover .motto{font-size:clamp(24px,3.5vw,50px)}
+.cover .boot{font-size:clamp(11px,1.35vw,16px)}
+.cover p.dim{font-size:clamp(14px,1.8vw,22px)}
+/* problem slide: questions left, squares right */
+.probrow{display:grid;grid-template-columns:1.45fr 1fr;gap:1.2em;align-items:start}
+/* crew: 2x2 lanes, names aligned, travelling glow */
+.lanes2x2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--faint);
+border:1px solid var(--faint);position:relative}
+.lanes2x2>.lane{padding:.95em 1.05em;display:flex;flex-direction:column;
+background:var(--bg);position:relative;z-index:1}
+#glide{position:absolute;z-index:0;pointer-events:none;
+background:radial-gradient(closest-side,rgba(51,255,102,.07),transparent 72%);
+transition:left 1.05s cubic-bezier(.16,1,.3,1),top 1.05s cubic-bezier(.16,1,.3,1),width 1.05s cubic-bezier(.16,1,.3,1),height 1.05s cubic-bezier(.16,1,.3,1)}
+.lanes2x2 .mono{font-weight:700;color:var(--amber);font-size:clamp(12px,1.5vw,18px)}
+.lanes2x2 .mono .roll{color:transparent;-webkit-text-stroke:1px var(--amber);letter-spacing:.02em}
+.lanes2x2 .lname{font-family:var(--sans);font-weight:800;letter-spacing:-.02em;color:var(--text);line-height:1.25;font-size:clamp(19px,2.3vw,30px)}
+.lanes2x2 .lname .g{color:var(--green)}
+/* crew slide: everything ~12% bigger */
+.crew h1{font-size:clamp(34px,5.6vw,82px)}
+.crew .cmd{font-size:clamp(12px,1.8vw,23px)}
+.crew .lanes2x2 .mono{font-size:clamp(13px,1.65vw,20px)}
+.crew .lanes2x2 .lname{font-size:clamp(21px,2.6vw,34px)}
+.crew .lanes2x2 .llane{font-size:clamp(13px,1.65vw,20px)}
+.crew .lanes2x2 p{font-size:clamp(11px,1.45vw,17px)}
+.lanes2x2>.lane{transition:border-color .45s ease,box-shadow .45s ease,background .45s ease,opacity .45s ease,transform .45s cubic-bezier(.16,1,.3,1)}
+.lanes2x2.focus>.lane:not(.spot){opacity:.72}
+.lanes2x2>.lane.spot{transform:translateY(-2px);outline:1px solid var(--green);background:rgba(51,255,102,.04);
+box-shadow:0 10px 22px rgba(0,0,0,.5),0 0 14px rgba(51,255,102,.12)}
+.lanes2x2>.lane.spot .lname{color:var(--green)}
+.lanes2x2>.lane.spot .mono{color:#fff}
+.lanes2x2 .llane{color:var(--text);margin:auto 0 .15em;font-weight:700;font-size:clamp(12px,1.5vw,18px);padding-top:.5em}
+.lanes2x2 p{color:var(--dim);font-size:clamp(10px,1.3vw,15.5px);line-height:1.55}
+.graphcard{border:1px solid var(--faint);padding:.95em 1.05em;display:flex;
+flex-direction:column;background:rgba(4,16,7,.6)}
+.graphcard .tag{font-size:clamp(8px,1vw,11.5px);letter-spacing:.16em;color:var(--amber);margin-bottom:.7em}
+#squares{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;flex:1;min-height:0}
+#squares i{display:block;aspect-ratio:1;border-radius:2px;background:#0e2415;opacity:0;
+transition:opacity .4s ease;transition-delay:var(--d,0s)}
+.on #squares i{opacity:1}
+#squares i:hover{background:#fff}
+.graphcard .cap{color:var(--dim);font-size:clamp(8px,1vw,11.5px);margin-top:.7em;letter-spacing:.04em}
+.lit{background:rgba(51,255,102,.09)}
+tbody tr{cursor:pointer}
+/* demo console buttons */
+.demobar{display:flex;gap:.6em;flex-wrap:wrap}
+.demobtn{background:transparent;color:var(--dim);border:1px solid var(--faint);
+font-family:inherit;font-weight:700;cursor:pointer;letter-spacing:.06em;
+font-size:clamp(9px,1.1vw,12.5px);padding:.55em 1.1em}
+.demobtn:hover{color:var(--text);border-color:var(--dim)}
+.demobtn.live{color:#031007;background:var(--green);border-color:var(--green)}
+/* key cheat sheet */
+#help{position:absolute;inset:0;background:rgba(2,10,5,.95);z-index:7;display:none;
+align-items:center;justify-content:center}
+#help.on{display:flex}
+#help .card{border:1px solid var(--faint);padding:1.6em 2.2em;font-size:clamp(11px,1.4vw,17px);
+line-height:2.1}
+#help .card b{color:var(--green);display:inline-block;min-width:9em}
+#grid{position:absolute;inset:0;background:rgba(2,10,5,.96);z-index:5;display:none;
+padding:6% 8%;grid-template-columns:repeat(5,1fr);gap:1em;align-content:center}
+#grid.on{display:grid}
+#grid button{background:transparent;border:1px solid var(--faint);color:var(--text);
+font-family:inherit;font-size:clamp(9px,1.1vw,13px);padding:1.2em .8em;cursor:pointer;text-align:left}
+#grid button:hover{border-color:var(--green)}
+#grid button b{color:var(--green);font-size:1.5em;display:block}
+#notes{position:absolute;left:0;right:0;bottom:0;z-index:6;display:none;background:#020805;
+border-top:2px solid var(--green);padding:1em 7%;font-size:clamp(11px,1.35vw,16px);line-height:1.6}
+#notes.on{display:block}
+#notes .tag{color:var(--green);font-size:.72em;letter-spacing:.2em;display:block;margin-bottom:.3em}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}[data-rise]{opacity:1;transform:none}}
+@media print{body{overflow:visible;background:#fff}#stage{position:static;display:block;background:#fff}
+#sheet{width:100%;aspect-ratio:auto;color:#111;background:#fff;text-shadow:none}
+#sheet::after,#tabs,#bar,#grid,#notes{display:none}
+.slide{position:static;display:flex!important;opacity:1;transform:none;page-break-after:always;border:1px solid #ccc}
+[data-rise]{opacity:1}}
+</style>
+</head>
+<body>
+<div id="stage"><div id="sheet">
+<div id="tabs"><span class="dots"><i></i><i></i><i></i></span><div id="tabrow"></div></div>
+<div id="slides">
+
+<section class="slide cover on">
+  <p class="boot" data-rise>prsnoop 1.3.0 · 96 tests passing · 0 dependencies</p>
+  <h1 data-rise style="--d:.12s">prsnoop<span class="ok blink_">_</span></h1>
+  <p class="motto" data-rise style="--d:.22s">what did your pull requests <span class="ok">actually</span> do?</p>
+  <p data-rise style="--d:.32s">Give it a GitHub username. Get back merge rate, time to merge, streaks, languages.</p>
+  <p class="dim" data-rise style="--d:.4s">MIT · github.com/MohammedAnasNathani/prsnoop</p>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>survey --field github.com --depth full</p>
+  <h1 data-rise style="--d:.1s">the tool <span class="ok">did not exist.</span></h1>
+  <div class="cols">
+    <div data-rise style="--d:.18s"><h3>[F-1] empty CLI</h3><p>Personal PR analytics from a terminal: nearest repos <span class="b">~13 stars</span>, unmaintained.</p></div>
+    <div data-rise style="--d:.26s"><h3>[F-2] crowded web</h3><p>Funded dashboards with signups. Nothing rated for <span class="b">SSH, CI, cron</span>.</p></div>
+    <div data-rise style="--d:.34s"><h3>[F-3] gh halfway</h3><p>Official CLI at <span class="b">46,204 stars</span> lists PRs only. Reports need hand-built jq.</p></div>
+  </div>
+  <p class="dim" data-rise style="--d:.42s">That empty column is this project.</p>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>cat problem.md</p>
+  <h1 data-rise style="--d:.1s">green squares <span class="ok">answer nothing.</span></h1>
+  <div class="probrow">
+  <div>
+  <div class="frame" data-rise style="--d:.2s"><span class="tag">SPEC · Q1-Q4 · CLICK A QUESTION</span>
+  <p><span class="qline"><span class="amber">Q1</span> What share of my PRs actually merged? <span class="ans">→ 88%</span></span><br>
+  <span class="qline"><span class="amber">Q2</span> How long do maintainers take to merge my work? <span class="ans">→ 0.0d median</span></span><br>
+  <span class="qline"><span class="amber">Q3</span> Which projects and languages am I invested in? <span class="ans">→ Python, 21 PRs</span></span><br>
+  <span class="qline"><span class="amber">Q4</span> What does last month look like as a document I can send? <span class="ans">→ report.md</span></span></p></div>
+  <p class="dim" data-rise style="--d:.3s">Unanswered by the profile, the dashboards, and gh alike.<br>Measured across PRs, reviews, issues, languages, streaks.</p>
+  </div>
+  <div class="graphcard" data-rise style="--d:.34s"><span class="tag">SUBJECT MATTER · 16 WEEKS</span><div id="squares"></div><span class="cap">the green this tool reads</span></div>
+  </div>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>curl api.github.com/repos --sort stars</p>
+  <div class="srow" data-rise style="--d:.1s"><span>gh cli</span><span class="bar blockbar">████████████████</span><span class="num">46,204</span><span class="verdict">lists only</span></div>
+  <div class="srow" data-rise style="--d:.16s"><span>oss insight</span><span class="bar blockbar">████░░░░░░░░░░░░</span><span class="num">2,505</span><span class="verdict">repos, not people</span></div>
+  <div class="srow" data-rise style="--d:.22s"><span>opensauced v1</span><span class="bar blockbar">██░░░░░░░░░░░░░░</span><span class="num">948</span><span class="verdict">signup wall</span></div>
+  <div class="srow" data-rise style="--d:.28s"><span class="ok">prsnoop</span><span class="bar ok">THE GAP · five formats</span><span class="num ok">new</span><span class="verdict">one command</span></div>
+  <p class="dim" data-rise style="--d:.36s">Public counts, Sep 2026. Stars measure the website crowd.</p>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>ls prsnoop/</p>
+  <h1 data-rise style="--d:.1s">already installed. <span class="ok">nothing to install.</span></h1>
+  <p data-rise style="--d:.2s">github.py talks to the API. fetch.py gathers activity. stats.py does the math. models.py holds the data. render.py prints reports. badge.py draws badges.</p>
+  <p data-rise style="--d:.3s">No outside packages, so it installs anywhere. Tests run on saved responses. Reports come out identical, and repeats reuse the cache.<br><span class="dim">Extras: serve.py, a local server; wrapped.py, a year-in-review; org.py, org pulse.</span></p>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>prsnoop --demo-console</p>
+  <div class="demobar" data-rise style="--d:.06s">
+    <button class="demobtn live" data-demo="report">REPORT</button>
+    <button class="demobtn" data-demo="compare">COMPARE</button>
+    <button class="demobtn" data-demo="badges">BADGES</button>
+    <button class="demobtn" data-demo="org">ORG PULSE</button>
+    <button class="demobtn" data-demo="auth">AUTH</button>
+    <button class="demobtn" data-demo="snap">SNAP DELTA</button>
+  </div>
+  <div class="term" data-rise style="--d:.1s"><pre id="termout"><span class="dim">$</span> <span id="typed"></span><span class="cur" id="cur"></span></pre></div>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>make results && ./ship.sh --twice</p>
+  <div class="statgrid" data-rise style="--d:.1s">
+    <div><div class="v"><span class="num" data-count="96">0</span></div><div class="k">TESTS</div></div>
+    <div><div class="v"><span class="num" data-count="15">0</span></div><div class="k">PLATFORMS</div></div>
+    <div><div class="v"><span class="num" data-count="88">0</span><span class="g">%</span></div><div class="k">MERGE RATE</div></div>
+    <div><div class="v"><span class="num" data-count="0">0</span></div><div class="k">DEPS</div></div>
+  </div>
+  <div class="frame" data-rise style="--d:.22s"><span class="tag">SHIP LOG</span>
+  <p>v1.2.0 → v1.3.0 with built dists attached · 23 laddered issues · live landing page · reusable Action<br><span class="dim">ruff clean · mypy strict clean · demo: 43 PRs, 38 merged, +17k lines<br>test suite grew 63 → 96 across v1.1 to v1.3</span></p></div>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>diff rivals/ prsnoop/ | head -20</p>
+  <table data-rise style="--d:.1s">
+    <thead><tr><th>TOOL</th><th>APPROACH</th><th>WHERE IT STOPS</th></tr></thead>
+    <tbody>
+      <tr><td>gh CLI</td><td>list PRs, script it</td><td>no analytics at all</td></tr>
+      <tr><td>OpenSauced</td><td>web dashboards</td><td>signup; never a terminal</td></tr>
+      <tr><td>OSS Insight</td><td>ecosystem analytics</td><td>repos, not people</td></tr>
+      <tr class="me"><td>prsnoop *</td><td>one command, 5 formats</td><td>new: PyPI + plugins next</td></tr>
+    </tbody>
+  </table>
+  <p class="dim" data-rise style="--d:.2s">Full matrix in README: install size, offline use, formats, license.</p>
+</section>
+
+<section class="slide crew">
+  <p class="cmd" data-rise>git shortlog -sne --team</p>
+  <h1 data-rise style="--d:.1s">built by <span class="ok">four.</span></h1>
+  <div class="lanes2x2">
+    <div class="lane" data-rise style="--d:.18s"><span class="mono">SP · <span class="roll">65</span></span><div class="lname">Sofiya Patwekar</div><div class="llane">Fetch + stats</div><p>REST client, cache, p90, streaks.</p></div>
+    <div class="lane" data-rise style="--d:.24s"><span class="mono">NS · <span class="roll">68</span></span><div class="lname">Naahid Sayyed</div><div class="llane">Render + Action</div><p>Five formats, badges, CI Action.</p></div>
+    <div class="lane" data-rise style="--d:.3s"><span class="mono">HS · <span class="roll">67</span></span><div class="lname">Haadiya Sayed</div><div class="llane">Quality + web</div><p>96 tests, 15-job CI, landing page.</p></div>
+    <div class="lane" data-rise style="--d:.36s"><span class="mono">MAN · <span class="roll">70</span></span><div class="lname">Mohammed Anas Nathani</div><div class="llane">CLI + packaging</div><p>Parsing, exit codes, wheel, releases.</p></div>
+    <div id="glide"></div>
+  </div>
+  <p class="dim" data-rise style="--d:.44s">Workflow mirrors real OSS: issues → branches → review → merge.</p>
+</section>
+
+<section class="slide">
+  <p class="cmd" data-rise>pip install prsnoop</p>
+  <h1 data-rise style="--d:.1s">thank <span class="ok">you.</span></h1>
+  <p data-rise style="--d:.2s"><span id="copycmd" style="cursor:pointer"><span class="prompt">$</span> pip install prsnoop <span class="dim" id="copyhint">[CLICK TO COPY]</span></span></p>
+  <p class="dim" data-rise style="--d:.3s">MIT · 23 issues open, good-first to advanced · questions welcome<br><a href="https://github.com/MohammedAnasNathani/prsnoop">github.com/MohammedAnasNathani/prsnoop</a> · <a href="https://mohammedanasnathani.github.io/prsnoop/">live page</a> · <a href="https://github.com/MohammedAnasNathani/prsnoop/releases">releases</a></p>
+</section>
+
+</div>
+<div id="notes"><span class="tag">NOTE · N TO HIDE</span><span id="notetext"></span></div>
+<div id="grid"></div>
+<div id="help"><div class="card">
+<b>ARROWS / SPACE</b> next and previous slide<br>
+<b>1 – 0</b> jump straight to a slide<br>
+<b>ESC</b> overview grid · <b>N</b> speaker note · <b>?</b> this card<br>
+<b>F</b> fullscreen · <b>P</b> print to PDF<br>
+<b>CLICK $ CURSOR</b> runs the line · <b>CLICK Q</b> reveals its answer
+</div></div>
+</div></div>
+<script>
+(function(){
+"use strict";
+var slides=Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var grid=document.getElementById('grid');
+var notes=document.getElementById('notes'),notetext=document.getElementById('notetext');
+var tabrow=document.getElementById('tabrow');
+var i=0,demoDone=false;
+var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var TITLES=['boot','survey','spec','stars','stdlib','run','ship','diff','crew','halt'];
+var NOTES=[
+'Open with the motto, not the tech: one command turns any GitHub user into a report. Then the three facts.',
+'Three findings, one punchline: the tool did not exist. Linger on F-3: 46 thousand stars and it only lists.',
+'Read the four requirements slowly. The shared pain is the justification for everything after.',
+'Point at the bars: stars went to websites. prsnoop is the gap row, and the gap is the opportunity.',
+'Stress the lab-machine argument: nothing to install means it runs anywhere Python exists.',
+'Do not explain, just run it. Land on the exit line: a real report in under a second.',
+'Counters first, then the ship log: two releases in one day with distributions attached.',
+'One sentence per row. PyPI and plugins are next on the roadmap.',
+'Sofiya on fetch, Naahid on render, Haadiya on quality, Anas on CLI. The workflow itself mirrors real open source.',
+'End on the install command. Point at the 23 open issues for contributors.'];
+var DEMOS={
+report:{cmd:'prsnoop simonw --days 30',lines:[
+['dim','prsnoop | simonw · window: last 30 days'],
+['txt','Pull requests <N>43</N> · merged <G>38</G> · open 5'],
+['txt','Issues opened <N>32</N> (closed: 25)'],
+['txt','Lines changed <G>+17717</G> / <R>-2421</R>'],
+['txt','Merge rate <N>88%</N> · median <N>0.0d</N> · p90 <N>0.0d</N>'],
+['txt','Active days <N>22</N> · streaks longest <G>6d</G>'],
+['txt','Repos <N>13</N> · Momentum steady'],
+['dim','captured live · Sep 2026'],
+['ok','exit 0 · table in 0.9s']]},
+compare:{cmd:'prsnoop compare antfu simonw --days 30',lines:[
+['dim','prsnoop | antfu vs simonw · same window'],
+['txt','metric              antfu     simonw'],
+['txt','pull requests          <N>10</N>        <N>43</N>'],
+['txt','merged                  <N>8</N>        <N>38</N>'],
+['txt','merge rate              <N>80%</N>       <G>88%</G>'],
+['txt','issues opened           <N>1</N>        <N>32</N>'],
+['txt','longest streak          <N>3d</N>        <G>6d</G>'],
+['txt','repos                   <N>8</N>        <N>13</N>'],
+['dim','captured live · Sep 2026'],
+['ok','exit 0 · same window, no excuses']]},
+badges:{cmd:'prsnoop simonw -f badge -o badges.md',lines:[
+['txt','![prs](data:image/svg+xml;base64,<D>PHN2ZyB4bWxucz0n…</D>)'],
+['txt','![merged](data:image/svg+xml;base64,<D>PHJlY3Qgd2lk…</D>)'],
+['txt','![rate](data:image/svg+xml;base64,<D>PGcgZmlsbD0n…</D>)'],
+['txt','![streak](data:image/svg+xml;base64,<D>PHRleHQge…</D>)'],
+['dim','4 badges · paste into any README · no service'],
+['dim','captured live · Sep 2026'],
+['ok','exit 0 · badges.md written']]},
+org:{cmd:'prsnoop org vueuse --days 30',lines:[
+['dim','prsnoop org | vueuse · 2026-08-09 to 2026-09-08'],
+['txt','PRs opened <N>42</N> · merged <N>11</N> · open 26'],
+['txt','Authors <N>22</N> · Repos <N>1</N> · Median merge <N>3.8d</N>'],
+['txt','Top authors:'],
+['txt','lazerg <N>8</N> · haoku123 <N>7</N> · giaBaoJS <N>3</N>'],
+['dim','captured live · Sep 2026'],
+['ok','exit 0 · one search, whole org']]},
+auth:{cmd:'prsnoop auth',lines:[
+['txt','auth: <G>token detected</G>'],
+['txt','core:   <N>5000/5000</N> remaining'],
+['txt','search: <N>30/30</N> remaining'],
+['txt','cache:  ~/.cache/prsnoop'],
+['dim','captured live · Sep 2026'],
+['ok','exit 0 · ETag cache does the saving']]},
+snap:{cmd:'prsnoop snap simonw --compare june.json',lines:[
+['dim','earlier: prsnoop snap simonw -o june.json'],
+['txt','prsnoop: wrote june.json'],
+['dim','prsnoop | simonw | change since june.json'],
+['txt','pull requests  <N>38</N> -&gt; <N>43</N>  (+5)'],
+['txt','merged         <N>34</N> -&gt; <N>38</N>  (+4)'],
+['txt','issues opened  <N>28</N> -&gt; <N>32</N>  (+4)'],
+['dim','freeze a window · diff it later'],
+['ok','exit 0 · deltas, not vibes']]}};
+function counters(slide){slide.querySelectorAll('[data-count]').forEach(function(el){
+if(el.dataset.done)return;el.dataset.done='1';
+var target=parseInt(el.getAttribute('data-count'),10);
+if(reduced){el.textContent=String(target);return;}
+var t0=null;function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/1200);
+el.textContent=String(Math.round(target*(1-Math.pow(1-p,3))));if(p<1)requestAnimationFrame(step);}
+requestAnimationFrame(step);});}
+function paint(out,kind,html){var line=document.createElement('div');
+var map={N:'num',G:'g',R:'r',D:'dim'};
+var body=html.replace(/<(N|G|R|D)>(.*?)<\/\1>/g,function(_,k,v){return '<span class="'+map[k]+'">'+v+'</span>';});
+if(kind==='dim')line.innerHTML='<span class="dim">'+body+'</span>';
+else if(kind==='ok')line.innerHTML='<span class="ok">'+body+'</span>';
+else line.innerHTML='<span>'+body+'</span>';out.appendChild(line);}
+var demoBtns=Array.prototype.slice.call(document.querySelectorAll('.demobtn'));
+var demoToken=0,currentDemo='report';
+function markDemo(name){demoBtns.forEach(function(b){b.classList.toggle('live',b.getAttribute('data-demo')===name);});}
+function runDemo(name){var t=++demoToken;
+var demo=DEMOS[name||'report'];if(!demo)return;markDemo(name||'report');currentDemo=name||'report';
+var typed=document.getElementById('typed');if(!typed)return;
+var out=document.getElementById('termout');
+Array.prototype.forEach.call(out.querySelectorAll('div'),function(d){d.remove();});
+typed.textContent='';var cmd=demo.cmd,k=0;
+function alive(){return t===demoToken&&i===5;}
+function printAll(){demo.lines.forEach(function(r,j){
+setTimeout(function(){if(alive())paint(out,r[0],r[1]);},220*j);});
+setTimeout(function(){if(alive()&&!reduced)runDemo(name);},demo.lines.length*220+3000);}
+if(reduced){typed.textContent=cmd;demo.lines.forEach(function(r){paint(out,r[0],r[1]);});return;}
+(function type(){if(!alive())return;typed.textContent=cmd.slice(0,++k);
+if(k<cmd.length){setTimeout(type,30);return;}
+setTimeout(function(){if(alive())printAll();},350);})();}
+demoBtns.forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();runDemo(b.getAttribute('data-demo'));});});
+var cp=document.getElementById('copycmd');
+if(cp)cp.addEventListener('click',function(){var h=document.getElementById('copyhint');
+function done(){h.textContent='[COPIED]';setTimeout(function(){h.textContent='[CLICK TO COPY]';},1400);}
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText('pip install prsnoop').then(done,function(){h.textContent='[SELECT+COPY]'});}else{h.textContent='[SELECT+COPY]';}});
+var tabBtns=[];
+TITLES.forEach(function(t,k){
+var b=document.createElement('button');
+b.innerHTML='<b>'+('0'+(k+1)).slice(-2)+'</b> '+t;
+b.addEventListener('click',function(e){e.stopPropagation();show(k);});
+tabrow.appendChild(b);tabBtns.push(b);
+var g=document.createElement('button');
+g.innerHTML='<b>'+('0'+(k+1)).slice(-2)+'</b><span>'+t+'</span>';
+g.addEventListener('click',function(e){e.stopPropagation();grid.classList.remove('on');show(k);});
+grid.appendChild(g);});
+function show(n){demoToken++;i=Math.max(0,Math.min(slides.length-1,n));
+slides.forEach(function(s,k){s.classList.toggle('on',k===i);});
+tabBtns.forEach(function(b,k){b.classList.toggle('live',k===i);});
+counters(slides[i]);notetext.textContent=NOTES[i];
+if(i===8&&typeof applySpot==='function'&&!reduced)applySpot(true);
+if(i===5){var first=!demoDone;demoDone=true;setTimeout(function(){runDemo(currentDemo);},first?700:150);}
+try{location.hash='#'+(i+1);}catch(e){}}
+document.addEventListener('keydown',function(e){
+if(e.key==='Escape'){grid.classList.toggle('on');return;}
+if(e.key==='n'||e.key==='N'){notes.classList.toggle('on');return;}
+if(grid.classList.contains('on')){if(e.key==='ArrowRight'||e.key==='ArrowLeft')grid.classList.remove('on');return;}
+if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){show(i+1);e.preventDefault();}
+else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+    else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+    else if(e.key==='?'){document.getElementById('help').classList.toggle('on');}
+    else if(/^[0-9]$/.test(e.key)){show(e.key==='0'?9:parseInt(e.key,10)-1);}
+else if(e.key==='f'||e.key==='F'){var el=document.getElementById('stage');
+if(document.fullscreenElement)document.exitFullscreen();else if(el.requestFullscreen)el.requestFullscreen();}
+else if(e.key==='p'||e.key==='P')window.print();});
+var tx=null;
+document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',function(e){if(tx===null)return;
+var dx=e.changedTouches[0].clientX-tx;if(dx<-40)show(i+1);else if(dx>40)show(i-1);tx=null;},{passive:true});
+document.getElementById('sheet').addEventListener('click',function(e){
+if(e.target.closest('a')||e.target.closest('button')||e.target.closest('#copycmd'))return;
+var help=document.getElementById('help');
+if(help.classList.contains('on')){help.classList.remove('on');return;}
+if(grid.classList.contains('on')||notes.classList.contains('on'))return;show(i+1);});
+/* clickable block cursor after every command line */
+document.querySelectorAll('.cmd').forEach(function(c){
+var s=document.createElement('span');s.className='ccur';s.title='run it';
+s.addEventListener('click',function(e){e.stopPropagation();s.classList.add('hit');
+setTimeout(function(){s.classList.remove('hit');},220);show(i+1);});
+c.appendChild(s);});
+/* click a question, reveal its answer */
+document.querySelectorAll('.qline').forEach(function(q){
+q.addEventListener('click',function(e){e.stopPropagation();q.classList.toggle('shown');});});
+/* click a counter, replay it */
+document.querySelectorAll('[data-count]').forEach(function(el){
+el.style.cursor='pointer';
+el.addEventListener('click',function(e){e.stopPropagation();delete el.dataset.done;counters(el.closest('.slide'));});});
+/* click findings and table rows, highlight them */
+document.querySelectorAll('.cols>div, tbody tr').forEach(function(el){
+el.addEventListener('click',function(e){e.stopPropagation();el.classList.toggle('lit');});});
+/* crew spotlight: a light glides lane to lane, lifting each one in turn */
+var spotIdx=0;
+function applySpot(first){var crew=slides[8];if(!crew)return;
+var box=crew.querySelector('.lanes2x2');if(!box)return;
+box.classList.add('focus');
+var cells=box.querySelectorAll('.lane');if(!cells.length)return;
+cells.forEach(function(c){c.classList.remove('spot');});
+var cell=cells[spotIdx%cells.length];cell.classList.add('spot');
+var gl=box.querySelector('#glide');
+if(gl){if(first){gl.style.transition='none';}
+gl.style.left=(cell.offsetLeft-cell.offsetWidth*0.2)+'px';
+gl.style.top=(cell.offsetTop-cell.offsetHeight*0.2)+'px';
+gl.style.width=(cell.offsetWidth*1.4)+'px';
+gl.style.height=(cell.offsetHeight*1.4)+'px';
+if(first){void gl.offsetWidth;gl.style.transition='';}}
+spotIdx++;}
+if(!reduced){setInterval(function(){if(document.hidden)return;
+if(!slides[8]||!slides[8].classList.contains('on'))return;applySpot();},2000);}
+/* contribution graph: deterministic 16x7 in the GitHub palette */
+(function(){var el=document.getElementById('squares');if(!el)return;
+var seed=20260908;function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}
+var pal=['#0e2415','#0e4429','#006d32','#26a641','#39d353'];
+for(var c=0;c<16;c++){for(var r=0;r<7;r++){var x=rnd();
+var lvl=x<0.14?0:1+Math.floor(rnd()*4);if(lvl>4)lvl=4;
+var s=document.createElement('i');s.style.background=pal[lvl];
+s.style.setProperty('--d',((c*7+r)*14)+'ms');
+s.title=(lvl===0?'no':'about '+(lvl*7))+' contributions';
+el.appendChild(s);}}})();
+var start=parseInt((location.hash||'').replace('#',''),10);
+show((start>=1&&start<=slides.length)?start-1:0);})();
+</script>
+</body>
+</html>

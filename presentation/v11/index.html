@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prsnoop: ROSP deck v11 paper log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f5f1e6;--ink:#1c1a15;--dim:#6e6252;--faint:#b3a88f;--line:#d8cdae;
+--green:#1d6b38;--red:#b3261e;--amber:#9a6200;
+--mono:"JetBrains Mono",ui-monospace,Menlo,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#211c12;color:var(--ink);font-family:var(--mono);overflow:hidden}
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#sheet{width:min(96vw,calc(94vh*16/9));aspect-ratio:16/9;background:var(--paper);
+position:relative;overflow:hidden;display:flex;flex-direction:column}
+#sheet::before{content:"";position:absolute;inset:0;pointer-events:none;
+background:radial-gradient(circle,rgba(28,26,21,.06) 1px,transparent 1.4px);
+background-size:14px 14px}
+#loghead{flex:none;display:flex;justify-content:space-between;border-bottom:2px solid var(--ink);
+padding:.7em 1.6em;font-size:clamp(8px,1vw,11.5px);letter-spacing:.14em;color:var(--dim);z-index:2}
+#loghead b{color:var(--ink)}
+#slides{flex:1;position:relative;z-index:1}
+.slide{position:absolute;inset:0;padding:5% 7%;display:none;flex-direction:column;
+justify-content:center;gap:.75em}
+.slide.on{display:flex}
+[data-rise]{opacity:0;transform:translateY(12px);transition:opacity .5s ease,transform .5s ease;
+transition-delay:var(--d,0s)}
+.on [data-rise]{opacity:1;transform:none}
+.ts{color:var(--faint);font-size:.82em}
+h1{font-size:clamp(26px,4.4vw,62px);line-height:1.08;font-weight:800;letter-spacing:-.02em}
+h1 .g{color:var(--green)}
+p,li{font-size:clamp(11px,1.42vw,17.5px);line-height:1.7}
+.b{color:var(--ink);font-weight:700}
+.dash{border:0;border-top:2px dashed var(--line);margin:.2em 0}
+.stamp{display:inline-block;border:2px solid var(--green);color:var(--green);
+font-weight:800;padding:.25em .8em;transform:rotate(-3deg);letter-spacing:.1em;
+font-size:clamp(10px,1.3vw,16px)}
+.stamp.amber{border-color:var(--amber);color:var(--amber);transform:rotate(2deg)}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:1.2em}
+.cols>div{border-top:2px solid var(--ink);padding-top:.7em}
+.cols h3{font-size:clamp(12px,1.5vw,18px);margin-bottom:.3em}
+.cols .n{color:var(--amber)}
+table{width:100%;border-collapse:collapse;font-size:clamp(9px,1.22vw,14.5px)}
+th,td{text-align:left;padding:.55em .8em;vertical-align:top}
+thead th{font-size:.75em;letter-spacing:.14em;color:var(--dim);border-bottom:2px solid var(--ink)}
+tbody td{border-bottom:1px dashed var(--line)}
+tr.me td{background:#e8efdf;font-weight:700}
+.term{background:#171310;color:#efe7d3;font-size:clamp(9px,1.2vw,13.8px);
+line-height:1.8;padding:1.1em 1.3em;min-height:12.5em}
+.term pre{white-space:pre-wrap;font-family:inherit}
+.term .g{color:#4ade80}.term .r{color:#f87171}.term .d{color:#8a7a5f}
+.term .w{color:#fff;font-weight:700}.term .y{color:var(--amber)}
+.cur{display:inline-block;width:.6em;height:1.05em;background:#efe7d3;
+vertical-align:-.15em;animation:blink 1.06s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+#runbtn{align-self:flex-start;background:var(--ink);color:var(--paper);border:0;
+font-family:inherit;font-weight:700;font-size:clamp(10px,1.2vw,14px);padding:.7em 1.7em;cursor:pointer}
+#runbtn:hover{background:var(--green)}
+#grid{position:absolute;inset:0;background:rgba(28,26,21,.97);z-index:5;display:none;
+padding:6% 8%;grid-template-columns:repeat(5,1fr);gap:1em;align-content:center}
+#grid.on{display:grid}
+#grid button{background:transparent;border:1px solid var(--faint);color:var(--paper);
+font-family:inherit;font-size:clamp(9px,1.1vw,13px);padding:1.2em .8em;cursor:pointer;text-align:left}
+#grid button:hover{border-color:var(--amber)}
+#grid button b{color:var(--amber);font-size:1.5em;display:block}
+#notes{position:absolute;left:0;right:0;bottom:0;z-index:6;display:none;background:var(--ink);
+color:var(--paper);padding:1em 7%;font-size:clamp(11px,1.35vw,16px);line-height:1.6}
+#notes.on{display:block}
+#notes .tag{font-size:.72em;letter-spacing:.2em;color:var(--amber);display:block}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}[data-rise]{opacity:1;transform:none}}
+@media print{body{overflow:visible;background:#fff}#stage{position:static;display:block;background:#fff}
+#sheet{width:100%;aspect-ratio:auto}#sheet::before,#loghead,#grid,#notes{display:none}
+.slide{position:static;display:flex!important;opacity:1;transform:none;page-break-after:always;border:1px solid #999}
+[data-rise]{opacity:1}}
+</style>
+</head>
+<body>
+<div id="stage"><div id="sheet">
+<div id="loghead"><span>SESSION LOG · ROSP/PRSNOOP · <b>10 PAGES</b></span><span id="logpage">PAGE 01/10</span></div>
+<div id="slides">
+
+<section class="slide on">
+  <p class="ts" data-rise>[2026-09-08 19:00 IST] $ open project.txt</p>
+  <h1 data-rise style="--d:.08s">prsnoop<span class="g">_</span></h1>
+  <p data-rise style="--d:.16s">what did your pull requests <b>actually</b> do?</p>
+  <p data-rise style="--d:.24s"><span class="stamp">v1.3.0 · 96 TESTS · 0 DEPS · MIT</span></p>
+  <p class="ts" data-rise style="--d:.32s">github.com/MohammedAnasNathani/prsnoop</p>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:01] $ survey --field github.com</p>
+  <h1 data-rise style="--d:.08s">The tool <span class="g">did not exist.</span></h1>
+  <hr class="dash" data-rise style="--d:.14s">
+  <div class="cols">
+    <div data-rise style="--d:.18s"><h3><span class="n">01 /</span> Empty CLI</h3><p>Personal PR analytics: nearest repos <b>~13 stars</b>, dead.</p></div>
+    <div data-rise style="--d:.24s"><h3><span class="n">02 /</span> Crowded web</h3><p>Funded dashboards. Nothing for <b>SSH, CI, cron</b>.</p></div>
+    <div data-rise style="--d:.3s"><h3><span class="n">03 /</span> gh halfway</h3><p>Official CLI <b>46,204 stars</b> lists only. Reports need jq.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:04] $ cat problem.md</p>
+  <h1 data-rise style="--d:.08s">Green squares <span class="g">answer nothing.</span></h1>
+  <hr class="dash" data-rise style="--d:.14s">
+  <p data-rise style="--d:.18s">Q1 merged share · Q2 merge time · Q3 true investments · Q4 a document to send.</p>
+  <p data-rise style="--d:.24s"><span class="stamp amber">SPEC SEALED · 4 QUESTIONS</span></p>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:07] $ curl api.github.com/repos --stars</p>
+  <div data-rise style="--d:.08s"><p>gh cli ......... ████████████████████ <b>46,204</b></p></div>
+  <div data-rise style="--d:.14s"><p>oss insight .... ████░░░░░░░░░░░░░░░░ <b>2,505</b></p></div>
+  <div data-rise style="--d:.2s"><p>opensauced v1 .. ██░░░░░░░░░░░░░░░░░░ <b>948</b></p></div>
+  <div data-rise style="--d:.26s"><p class="g">prsnoop ........ THE GAP · one command, five formats</p></div>
+  <hr class="dash" data-rise style="--d:.32s">
+  <p class="ts" data-rise style="--d:.36s">public counts, Sep 2026. Stars measure the website crowd.</p>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:10] $ ls prsnoop/ --stdlib-only</p>
+  <h1 data-rise style="--d:.08s">Already installed. <span class="g">Nothing to install.</span></h1>
+  <hr class="dash" data-rise style="--d:.14s">
+  <p data-rise style="--d:.18s">github.py [urllib+ETag] → fetch.py [search+budget] → stats.py [p90+streaks] → models.py → render.py [5 pure] → badge.py</p>
+  <p data-rise style="--d:.24s"><span class="stamp">0 DEPS · OFFLINE TESTS · 304 FREE</span></p>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:13] $ prsnoop simonw --days 30</p>
+  <div class="term" data-rise style="--d:.08s"><pre id="termout"><span class="d">$</span> <span id="typed"></span><span class="cur" id="cur"></span></pre></div>
+  <button id="runbtn" data-rise style="--d:.14s">[ RUN AGAIN ]</button>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:16] $ make results && ./ship.sh --twice</p>
+  <h1 data-rise style="--d:.08s"><span data-count="96">0</span> tests · <span data-count="15">0</span> platforms · <span class="g"><span data-count="87">0</span>%</span> · <span data-count="0">0</span> deps</h1>
+  <hr class="dash" data-rise style="--d:.16s">
+  <p data-rise style="--d:.2s">v1.2.0 → v1.3.0 with dists · 23 issues · live page · Action · demo 39 PRs, +16k lines.</p>
+  <p data-rise style="--d:.26s"><span class="stamp">VERIFIED · RUFF + MYPY CLEAN</span></p>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:19] $ diff rivals/ prsnoop/</p>
+  <table data-rise style="--d:.1s">
+    <thead><tr><th>TOOL</th><th>APPROACH</th><th>STOPS AT</th></tr></thead>
+    <tbody>
+      <tr><td>gh CLI</td><td>list, script it</td><td>no analytics</td></tr>
+      <tr><td>OpenSauced</td><td>web dashboards</td><td>signup; no terminal</td></tr>
+      <tr><td>OSS Insight</td><td>ecosystem analytics</td><td>repos, not people</td></tr>
+      <tr class="me"><td>prsnoop *</td><td>one command, 5 formats</td><td>new: PyPI next</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:22] $ git shortlog -sne --team</p>
+  <h1 data-rise style="--d:.08s">Four lanes. <span class="g">One main.</span></h1>
+  <hr class="dash" data-rise style="--d:.14s">
+  <p data-rise style="--d:.18s"><b>M1</b> CLI+pkg · <b>M2</b> fetch+stats · <b>M3</b> render+Action · <b>M4</b> quality+web <span class="ts">(names pending)</span></p>
+  <p class="ts" data-rise style="--d:.24s">issues → branches → review → merge, like real OSS</p>
+</section>
+
+<section class="slide">
+  <p class="ts" data-rise>[19:25] $ halt --with-thanks</p>
+  <h1 data-rise style="--d:.08s">thank <span class="g">you.</span></h1>
+  <p data-rise style="--d:.16s"><span id="copycmd" style="cursor:pointer">$ pip install prsnoop <span class="ts" id="copyhint">[CLICK TO COPY]</span></span></p>
+  <p data-rise style="--d:.22s"><span class="stamp">MIT · 23 ISSUES OPEN · QUESTIONS WELCOME</span></p>
+  <p class="ts" data-rise style="--d:.28s">github.com/MohammedAnasNathani/prsnoop · end of log</p>
+</section>
+
+</div>
+<div id="notes"><span class="tag">NOTE · N TO HIDE</span><span id="notetext"></span></div>
+<div id="grid"></div>
+</div></div>
+<script>
+(function(){
+"use strict";
+var slides=Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var grid=document.getElementById('grid');
+var notes=document.getElementById('notes'),notetext=document.getElementById('notetext');
+var logpage=document.getElementById('logpage');
+var i=0,demoDone=false;
+var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var TITLES=['open','survey','problem','stars','stdlib','run','ship','diff','crew','halt'];
+var NOTES=[
+'Open with the motto, not the tech: one command turns any GitHub user into a report. Then the three facts.',
+'Three findings, one punchline: the tool did not exist. Linger on the third: 46 thousand stars and it only lists.',
+'Read the four slowly. The shared pain justifies everything after.',
+'Point at the bars: stars went to websites. prsnoop is the gap row, and the gap is the opportunity.',
+'Stress the lab-machine argument: nothing to install means it runs anywhere Python exists.',
+'Do not explain, just run it. Land on the exit line: a real report in under a second.',
+'Numbers first, then the timeline: two releases in one day with distributions attached.',
+'One sentence per row. End honest: PyPI and plugins are next, which shows a roadmap.',
+'Name each member and lane. The workflow itself mirrors real open source.',
+'End on the install command. Point at the 23 open issues for contributors.'];
+var REPORT=[
+['d','prsnoop | simonw   window: last 30 days'],
+['t','Pull requests <N>39</N>   merged <G>34</G>   open 5'],
+['t','Issues opened <N>28</N> (closed: 21)'],
+['t','Lines changed <G>+16115</G> / <R>-2137</R>'],
+['t','Merge rate <N>87%</N>   median <N>0.0d</N>   p90 <N>0.2d</N>'],
+['t','Active days <N>22</N>   streaks longest <G>7d</G>'],
+['t','Repos <N>13</N>   Python 21, HTML 18'],
+['d','real output from the tool itself'],
+['g','exit 0 · report in 0.8s']];
+function counters(slide){slide.querySelectorAll('[data-count]').forEach(function(el){
+if(el.dataset.done)return;el.dataset.done='1';
+var target=parseInt(el.getAttribute('data-count'),10);
+if(reduced){el.textContent=String(target);return;}
+var t0=null;function step(t){if(!t0)t0=t;var p=Math.min(1,(t-t0)/1200);
+el.textContent=String(Math.round(target*(1-Math.pow(1-p,3))));if(p<1)requestAnimationFrame(step);}
+requestAnimationFrame(step);});}
+function paint(out,kind,html){var line=document.createElement('div');
+var map={N:'w',G:'g',R:'r'};
+var body=html.replace(/<(N|G|R)>(.*?)<\/\1>/g,function(_,k,v){return '<span class="'+map[k]+'">'+v+'</span>';});
+if(kind==='d')line.innerHTML='<span class="d">'+body+'</span>';
+else if(kind==='g')line.innerHTML='<span class="g">'+body+'</span>';
+else line.innerHTML='<span>'+body+'</span>';out.appendChild(line);}
+function runDemo(){var typed=document.getElementById('typed');if(!typed)return;
+var out=document.getElementById('termout');
+Array.prototype.forEach.call(out.querySelectorAll('div'),function(d){d.remove();});
+typed.textContent='';var cmd='prsnoop simonw --days 30',k=0;
+if(reduced){typed.textContent=cmd;REPORT.forEach(function(r){paint(out,r[0],r[1]);});return;}
+(function type(){typed.textContent=cmd.slice(0,++k);
+if(k<cmd.length){setTimeout(type,34);return;}
+setTimeout(function(){REPORT.forEach(function(r,j){setTimeout(function(){paint(out,r[0],r[1]);},240*j);});},350);})();}
+var rb=document.getElementById('runbtn');if(rb)rb.addEventListener('click',runDemo);
+var cp=document.getElementById('copycmd');
+if(cp)cp.addEventListener('click',function(){var h=document.getElementById('copyhint');
+function done(){h.textContent='[COPIED]';setTimeout(function(){h.textContent='[CLICK TO COPY]';},1400);}
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText('pip install prsnoop').then(done,function(){h.textContent='[SELECT+COPY]'});}else{h.textContent='[SELECT+COPY]';}});
+TITLES.forEach(function(t,k){var b=document.createElement('button');
+b.innerHTML='<b>'+('0'+(k+1)).slice(-2)+'</b><span>'+t+'</span>';
+b.addEventListener('click',function(e){e.stopPropagation();grid.classList.remove('on');show(k);});
+grid.appendChild(b);});
+function show(n){i=Math.max(0,Math.min(slides.length-1,n));
+slides.forEach(function(s,k){s.classList.toggle('on',k===i);});
+if(logpage)logpage.textContent='PAGE '+('0'+(i+1)).slice(-2)+'/10';
+counters(slides[i]);notetext.textContent=NOTES[i];
+if(i===5&&!demoDone){demoDone=true;setTimeout(runDemo,700);}
+try{location.hash='#'+(i+1);}catch(e){}}
+document.addEventListener('keydown',function(e){
+if(e.key==='Escape'){grid.classList.toggle('on');return;}
+if(e.key==='n'||e.key==='N'){notes.classList.toggle('on');return;}
+if(grid.classList.contains('on')){if(e.key==='ArrowRight'||e.key==='ArrowLeft')grid.classList.remove('on');return;}
+if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){show(i+1);e.preventDefault();}
+else if(e.key==='ArrowLeft'||e.key==='PageUp'){show(i-1);e.preventDefault();}
+else if(e.key==='Home')show(0);else if(e.key==='End')show(slides.length-1);
+else if(e.key==='f'||e.key==='F'){var el=document.getElementById('stage');
+if(document.fullscreenElement)document.exitFullscreen();else if(el.requestFullscreen)el.requestFullscreen();}
+else if(e.key==='p'||e.key==='P')window.print();});
+var tx=null;
+document.addEventListener('touchstart',function(e){tx=e.touches[0].clientX;},{passive:true});
+document.addEventListener('touchend',function(e){if(tx===null)return;
+var dx=e.changedTouches[0].clientX-tx;if(dx<-40)show(i+1);else if(dx>40)show(i-1);tx=null;},{passive:true});
+document.getElementById('sheet').addEventListener('click',function(e){
+if(e.target.closest('a')||e.target.closest('button')||e.target.closest('#copycmd'))return;
+if(grid.classList.contains('on')||notes.classList.contains('on'))return;show(i+1);});
+var start=parseInt((location.hash||'').replace('#',''),10);
+show((start>=1&&start<=slides.length)?start-1:0);})();
+</script>
+</body>
+</html>

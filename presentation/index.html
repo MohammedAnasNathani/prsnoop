@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>prsnoop: ROSP project deck (10 slides)</title>
+<meta name="description" content="ROSP internal project presentation: prsnoop, pull request analytics from the command line.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0a0c; --paper:#fbfbfa; --paper2:#f1f1ee; --line:#e2e2dd;
+  --text:#17171a; --dim:#5d5d64; --faint:#9a9aa2;
+  --green:#15803d; --greenbg:#e7f4ec; --red:#b91c1c; --amber:#b45309;
+  --mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"Inter Tight","Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:#111114;color:var(--text);font-family:var(--sans);overflow:hidden;
+  -webkit-font-smoothing:antialiased}
+::selection{background:var(--ink);color:var(--paper)}
+/* stage: 16:9 sheet centered on dark backdrop */
+#stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(1200px 600px at 50% -10%,#232327 0%,#111114 60%)}
+#sheet{width:min(96vw,calc(94vh*16/9));aspect-ratio:16/9;background:var(--paper);
+  position:relative;overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 40px 120px rgba(0,0,0,.55)}
+/* top rule + footer */
+#rule{height:6px;background:var(--ink);flex:none}
+#rule i{display:block;height:100%;width:0;background:var(--green)}
+#foot{flex:none;display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--line);padding:.55em 1.6em;font-family:var(--mono);
+  font-size:clamp(8px,1.05vw,12px);color:var(--faint);letter-spacing:.06em}
+#foot .n{color:var(--text);font-weight:700}
+#slides{flex:1;position:relative;overflow:hidden}
+.slide{position:absolute;inset:0;padding:4.5% 5.5%;display:none;flex-direction:column;
+  justify-content:center;gap:.9em}
+.slide.on{display:flex}
+.k{font-family:var(--mono);font-size:clamp(9px,1.15vw,13px);letter-spacing:.22em;
+  text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:1em}
+.k::after{content:"";flex:1;border-top:1px solid var(--line)}
+h1{font-size:clamp(26px,4.6vw,64px);line-height:1.02;letter-spacing:-.035em;font-weight:700}
+h2{font-size:clamp(22px,3.4vw,46px);line-height:1.05;letter-spacing:-.03em;font-weight:700}
+h2 .q{color:var(--faint)}
+p.sub{color:var(--dim);font-size:clamp(12px,1.5vw,19px);line-height:1.6;max-width:62ch}
+p.sub b{color:var(--text)}
+.m{font-family:var(--mono)}
+.hero-name{font-family:var(--mono);font-weight:800;font-size:clamp(40px,7.5vw,104px);
+  letter-spacing:-.05em;line-height:1}
+.hero-name .u{color:var(--green)}
+.badges{display:flex;gap:.6em;flex-wrap:wrap;margin-top:.4em}
+.badges span{font-family:var(--mono);font-size:clamp(9px,1.1vw,12.5px);color:var(--dim);
+  border:1px solid var(--line);background:var(--paper2);padding:.45em .9em;white-space:nowrap}
+.badges span b{color:var(--green)}
+.links{font-family:var(--mono);font-size:clamp(9px,1.15vw,13px);color:var(--dim)}
+.links a{color:var(--text);text-decoration:underline;text-underline-offset:4px}
+/* findings */
+.find{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:.4em}
+.find div{background:var(--paper);padding:1.1em 1.2em}
+.find .n{font-family:var(--mono);color:var(--green);font-weight:800;font-size:clamp(12px,1.5vw,18px)}
+.find h3{font-size:clamp(13px,1.6vw,20px);letter-spacing:-.01em;margin:.35em 0 .3em}
+.find p{color:var(--dim);font-size:clamp(10px,1.3vw,15.5px);line-height:1.55}
+.find p b{color:var(--text)}
+/* questions */
+.qlist{display:flex;flex-direction:column;margin-top:.3em}
+.qlist div{display:flex;gap:1em;align-items:baseline;padding:.55em 0;border-bottom:1px solid var(--line);
+  font-size:clamp(12px,1.7vw,21px)}
+.qlist .no{font-family:var(--mono);color:var(--green);font-weight:700;font-size:.85em}
+/* bars */
+.bars{display:flex;flex-direction:column;gap:.65em;margin-top:.4em}
+.brow{display:grid;grid-template-columns:11em 1fr 5.5em;gap:1em;align-items:center;
+  font-family:var(--mono);font-size:clamp(10px,1.3vw,15px)}
+.brow .track{background:var(--paper2);border:1px solid var(--line);height:1.5em;position:relative}
+.brow .fill{position:absolute;inset:0;background:var(--ink)}
+.brow.hi .fill{background:var(--green)}
+.brow .v{text-align:right;font-weight:700}
+.note{font-family:var(--mono);font-size:clamp(8px,1vw,11.5px);color:var(--faint);letter-spacing:.03em}
+/* arch */
+.arch{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:.4em}
+.arch div{background:var(--paper);padding:.9em .8em;text-align:center}
+.arch b{display:block;font-family:var(--mono);font-size:clamp(9px,1.2vw,14px)}
+.arch span{font-size:clamp(8px,1.05vw,12px);color:var(--dim)}
+.rules{display:flex;gap:.6em;flex-wrap:wrap}
+.rules span{font-family:var(--mono);font-size:clamp(9px,1.1vw,12.5px);
+  border:1px solid var(--ink);padding:.45em .9em}
+.rules span::before{content:"[✓] ";color:var(--green);font-weight:700}
+/* flow */
+.flow{display:flex;align-items:stretch;gap:0;margin-top:.5em}
+.fnode{flex:1;border:1px solid var(--ink);background:var(--paper);padding:.7em .5em;text-align:center}
+.fnode b{display:block;font-family:var(--mono);font-size:clamp(8px,1.1vw,13px)}
+.fnode span{font-size:clamp(7px,.95vw,11px);color:var(--dim)}
+.fnode.hot{background:var(--ink);color:var(--paper)}
+.fnode.hot span{color:#b9b9c0}
+.farr{align-self:center;padding:0 .35em;font-family:var(--mono);color:var(--green);font-weight:800}
+.fsub{display:flex;gap:.5em;margin-top:.5em;flex-wrap:wrap}
+.fsub span{font-family:var(--mono);font-size:clamp(8px,1.05vw,12px);color:var(--dim);
+  border:1px dashed var(--faint);padding:.4em .8em}
+/* metrics */
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);margin-top:.4em}
+.grid4 div{background:var(--paper);padding:.9em 1em}
+.grid4 .v{font-family:var(--mono);font-weight:800;font-size:clamp(18px,2.8vw,38px);letter-spacing:-.04em}
+.grid4 .v.g{color:var(--green)}
+.grid4 .k2{font-family:var(--mono);font-size:clamp(8px,1vw,11.5px);color:var(--faint);
+  letter-spacing:.12em;text-transform:uppercase}
+/* tables */
+table.spec{width:100%;border-collapse:collapse;font-size:clamp(9px,1.25vw,15px);margin-top:.4em}
+table.spec th,table.spec td{border:1px solid var(--line);padding:.6em .8em;text-align:left;vertical-align:top}
+table.spec thead th{font-family:var(--mono);font-size:.78em;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);background:var(--paper2)}
+table.spec td.m{font-size:.92em}
+table.spec tr.me td{background:var(--greenbg)}
+table.spec td b{font-weight:600}
+/* thanks */
+.thanks{font-family:var(--mono);font-weight:800;font-size:clamp(36px,6.5vw,92px);
+  letter-spacing:-.045em;line-height:1}
+.thanks .dot{color:var(--green)}
+.biglinks{display:flex;gap:1.6em;flex-wrap:wrap;font-family:var(--mono);
+  font-size:clamp(10px,1.35vw,16px)}
+.biglinks a{color:var(--text);text-decoration:underline;text-underline-offset:5px}
+/* hint */
+#hint{position:absolute;right:1.2em;top:.9em;font-family:var(--mono);
+  font-size:clamp(8px,1vw,11px);color:var(--faint);letter-spacing:.08em}
+@media print{
+  body{overflow:visible;background:#fff}
+  #stage{position:static;display:block;background:#fff}
+  #sheet{width:100%;box-shadow:none;aspect-ratio:auto}
+  .slide{position:static;display:flex!important;page-break-after:always;border:1px solid #ccc}
+  #hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="sheet">
+<div id="rule"><i id="bar"></i></div>
+<div id="hint">← → navigate · F fullscreen · P print</div>
+<div id="slides">
+
+<!-- 1 · title -->
+<section class="slide on">
+  <p class="k">ROSP · internal project · OSS lab · BE-IT sem 7</p>
+  <div class="hero-name">prsnoop<span class="u">_</span></div>
+  <h1>what did your pull requests <span style="color:var(--faint)">actually</span> do?</h1>
+  <p class="sub">Pull-request analytics from the command line. One command turns any GitHub user into a report: <b>merge rate, time-to-merge, streaks, languages</b>. Zero dependencies.</p>
+  <div class="badges"><span><b>v1.3.0</b> released</span><span><b>96</b> tests passing</span><span><b>0</b> dependencies</span><span>MIT licensed</span></div>
+  <p class="links">github.com/MohammedAnasNathani/prsnoop · live page: mohammedanasnathani.github.io/prsnoop</p>
+</section>
+
+<!-- 2 · initial research -->
+<section class="slide">
+  <p class="k">02 · initial research</p>
+  <h2>We went looking for the tool.<br><span class="q">It did not exist.</span></h2>
+  <div class="find">
+    <div><div class="n">F-1</div><h3>The CLI gap is empty</h3><p>No maintained command-line tool generates <b>personal PR analytics</b>. The closest hobby repos sit near <b>~13 stars</b>: unmaintained, undocumented.</p></div>
+    <div><div class="n">F-2</div><h3>Dashboards are crowded</h3><p>OpenSauced and OSS Insight are <b>funded web apps</b>: signups, onboarding, hosting. Nothing that runs over <b>SSH, in CI, or in a cron job</b>.</p></div>
+    <div><div class="n">F-3</div><h3>gh CLI stops halfway</h3><p>GitHub's official CLI (<b>46k stars</b>) can <b>list</b> PRs, but every report means hand-writing <b>jq + GraphQL pipelines</b> from scratch.</p></div>
+  </div>
+  <p class="note">Field scan of public GitHub tooling · September 2026 · star counts via public API</p>
+</section>
+
+<!-- 3 · problem statement -->
+<section class="slide">
+  <p class="k">03 · problem statement</p>
+  <h2>The profile page counts green squares.<br><span class="q">It answers nothing that matters.</span></h2>
+  <div class="qlist">
+    <div><span class="no">Q1</span><span>What share of my pull requests <b>actually merged</b>?</span></div>
+    <div><span class="no">Q2</span><span>How long do maintainers take to <b>merge my work</b>?</span></div>
+    <div><span class="no">Q3</span><span>Which projects and <b>languages</b> am I really invested in?</span></div>
+    <div><span class="no">Q4</span><span>What does last month look like as a <b>document I can send</b>?</span></div>
+  </div>
+</section>
+
+<!-- 4 · field data -->
+<section class="slide">
+  <p class="k">04 · field data · public numbers, sep 2026</p>
+  <h2>Everyone else built a website.<br><span class="q">Nobody packaged the pipeline.</span></h2>
+  <div class="bars">
+    <div class="brow"><span>gh cli</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="v">46,204 ★</span></div>
+    <div class="brow"><span>oss insight</span><div class="track"><div class="fill" style="width:22%"></div></div><span class="v">2,505 ★</span></div>
+    <div class="brow"><span>opensauced v1</span><div class="track"><div class="fill" style="width:12%"></div></div><span class="v">948 ★</span></div>
+    <div class="brow hi"><span>prsnoop</span><div class="track"><div class="fill" style="width:6%"></div></div><span class="v">new · CLI gap</span></div>
+  </div>
+  <p class="sub">Stars measure the <b>web-dashboard crowd</b>. The scriptable, zero-setup, personal-report column has <b>one entry: this project</b>.</p>
+  <p class="note">Star counts: cli/cli, pingcap/ossinsight, open-sauced/open-sauced via GitHub REST API</p>
+</section>
+
+<!-- 5 · technical approach -->
+<section class="slide">
+  <p class="k">05 · technical approach</p>
+  <h2>Stdlib only. <span class="q">The whole import tree is already installed.</span></h2>
+  <div class="arch">
+    <div><b>github.py</b><span>urllib client · token auth · ETag cache</span></div>
+    <div><b>fetch.py</b><span>search API · per-PR enrichment · 300-PR budget</span></div>
+    <div><b>stats.py</b><span>rates · median + p90 · streaks · heatmap</span></div>
+    <div><b>models.py</b><span>dataclasses · no loose dicts</span></div>
+    <div><b>render.py</b><span>5 formats · pure functions · ASCII-safe</span></div>
+    <div><b>badge.py</b><span>hand-built SVG · no service</span></div>
+  </div>
+  <div class="rules"><span>0 runtime dependencies</span><span>no network in tests</span><span>deterministic renderers</span><span>ETag revalidation: 304 = free</span></div>
+</section>
+
+<!-- 6 · application flow -->
+<section class="slide">
+  <p class="k">06 · application flow</p>
+  <h2>One command in. <span class="q">A document out.</span></h2>
+  <div class="flow">
+    <div class="fnode"><b>$ prsnoop</b><span>user · days · org · since/until</span></div><div class="farr">→</div>
+    <div class="fnode"><b>client</b><span>REST · token · ETag cache</span></div><div class="farr">→</div>
+    <div class="fnode"><b>fetcher</b><span>search · enrich · budget cap</span></div><div class="farr">→</div>
+    <div class="fnode"><b>stats</b><span>merge % · p90 · streaks · langs</span></div><div class="farr">→</div>
+    <div class="fnode hot"><b>render</b><span>table · md · html · csv · json</span></div>
+  </div>
+  <div class="fsub"><span>compare A vs B · same window</span><span>snap → --compare deltas</span><span>--format badge → README SVGs</span><span>composite Action → CI + artifact</span><span>org pulse (v1.3.0)</span></div>
+</section>
+
+<!-- 7 · results -->
+<section class="slide">
+  <p class="k">07 · results · everything below was actually run</p>
+  <h2>Shipped, tested, released. <span class="q">Twice.</span></h2>
+  <div class="grid4">
+    <div><div class="k2">tests</div><div class="v">96</div></div>
+    <div><div class="k2">CI matrix</div><div class="v">15</div></div>
+    <div><div class="k2">demo merge rate</div><div class="v g">87%</div></div>
+    <div><div class="k2">runtime deps</div><div class="v">0</div></div>
+  </div>
+  <p class="sub"><b>v1.2.0 → v1.3.0</b> released with built distributions · live demo on a public developer: 39 PRs, 34 merged, +16k lines · <b>23 open issues</b> laddered good-first → advanced · landing page live · reusable GitHub Action shipped.</p>
+</section>
+
+<!-- 8 · literature review -->
+<section class="slide">
+  <p class="k">08 · literature review</p>
+  <h2>What exists, and <span class="q">where each one stops.</span></h2>
+  <table class="spec">
+    <thead><tr><th>Tool</th><th>Approach</th><th>Limitation (the gap)</th></tr></thead>
+    <tbody>
+      <tr><td class="m"><b>gh CLI</b> (GitHub, 46k ★)</td><td>Official CLI: list PRs/issues, script with jq/GraphQL</td><td>No analytics; every report is a hand-built pipeline</td></tr>
+      <tr><td class="m"><b>OpenSauced</b> (funded OSS)</td><td>Web dashboards, workspaces, browser extensions</td><td>Signup + hosting; cannot run in terminal, CI, or cron</td></tr>
+      <tr><td class="m"><b>OSS Insight</b> (PingCAP)</td><td>Ecosystem-scale event analytics over billions of rows</td><td>Repository research, not personal contribution reports</td></tr>
+      <tr class="me"><td class="m"><b>prsnoop</b> (this work)</td><td>Zero-dep CLI: one command → five report formats</td><td>New; ecosystem integrations (PyPI, editor plugins) are roadmap</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 9 · team -->
+<section class="slide">
+  <p class="k">09 · team contribution · ★ replace member names before presenting</p>
+  <h2>Four lanes. <span class="q">One main branch.</span></h2>
+  <table class="spec">
+    <thead><tr><th>Member ★</th><th>Lane</th><th>Delivered</th></tr></thead>
+    <tbody>
+      <tr><td class="m"><b>Member 1</b> ★</td><td>CLI + packaging</td><td>Argument parsing, exit codes, wheel/sdist, release pipeline</td></tr>
+      <tr><td class="m"><b>Member 2</b> ★</td><td>Fetch + stats engine</td><td>REST client, ETag cache, enrichment budget, percentiles + streaks</td></tr>
+      <tr><td class="m"><b>Member 3</b> ★</td><td>Renderers + Action</td><td>Table/Markdown/HTML/CSV/JSON, badges, compare, composite Action</td></tr>
+      <tr><td class="m"><b>Member 4</b> ★</td><td>Quality + web</td><td>96 offline tests, ruff + mypy strict, 15-job CI, landing page</td></tr>
+    </tbody>
+  </table>
+  <p class="note">Workflow mirrors real OSS: 23 scaffolded issues → branches → PRs → review → merge. Send me the names and I will fill them in.</p>
+</section>
+
+<!-- 10 · thank you -->
+<section class="slide">
+  <p class="k">10 · thank you</p>
+  <div class="thanks">thank you<span class="dot">.</span></div>
+  <p class="sub">prsnoop is MIT-licensed and open for contributions: <b>23 issues</b> are waiting, from good-first to advanced. Questions welcome.</p>
+  <div class="biglinks">
+    <a href="https://github.com/MohammedAnasNathani/prsnoop">github.com/MohammedAnasNathani/prsnoop</a>
+    <a href="https://mohammedanasnathani.github.io/prsnoop/">live landing page</a>
+    <a href="https://github.com/MohammedAnasNathani/prsnoop/releases">releases</a>
+  </div>
+  <div class="badges"><span>pip install prsnoop</span><span><b>96</b> tests · <b>0</b> deps · <b>5</b> formats</span></div>
+</section>
+
+</div>
+<div id="foot"><span>prsnoop_ · ROSP internal project</span><span class="n" id="count">01 / 10</span></div>
+</div>
+</div>
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var count = document.getElementById('count');
+  var bar = document.getElementById('bar');
+  var i = 0;
+  function show(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function(s, k){ s.classList.toggle('on', k === i); });
+    var label = ('0' + (i + 1)).slice(-2) + ' / ' + slides.length;
+    count.textContent = label;
+    bar.style.width = ((i + 1) / slides.length * 100) + '%';
+    try { location.hash = '#' + (i + 1); } catch (e) {}
+  }
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { show(i + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { show(i - 1); e.preventDefault(); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'f' || e.key === 'F') {
+      var el = document.getElementById('stage');
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (el.requestFullscreen) el.requestFullscreen();
+    }
+    else if (e.key === 'p' || e.key === 'P') window.print();
+  });
+  document.getElementById('sheet').addEventListener('click', function(e){
+    if (e.target.closest('a')) return;
+    show(i + 1);
+  });
+  var start = parseInt((location.hash || '').replace('#', ''), 10);
+  if (start >= 1 && start <= slides.length) show(start - 1); else show(0);
+})();
+</script>
+</body>
+</html>
