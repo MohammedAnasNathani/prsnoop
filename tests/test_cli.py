@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import pytest
 
@@ -72,6 +73,33 @@ class TestBasic:
             cli.run(["--version"])
         assert excinfo.value.code == 0
 
+    @pytest.mark.parametrize(
+        ("state", "expected_prs"),
+        [("merged", 2), ("open", 1), ("closed", 0)],
+    )
+    def test_only_filters_listing_but_not_stats(
+        self, patched_fetch, capsys, activity, state, expected_prs
+    ):
+        code, out, _ = _run(capsys, "octocat", "--only", state, "--format", "json")
+        assert code == 0
+        data = json.loads(out)
+        assert len(data["prs"]) == expected_prs
+        assert data["stats"]["prs_authored"] == 3
+        assert data["stats"]["prs_merged"] == 2
+
+    def test_only_closed_lists_closed_pr(self, monkeypatch, capsys, activity):
+        closed_prs = [*activity.prs[:2], replace(activity.prs[2], state="closed")]
+        monkeypatch.setattr(
+            cli, "fetch_user_activity",
+            lambda *args, **kwargs: (closed_prs, activity.reviews, activity.issues, True),
+        )
+        code, out, _ = _run(capsys, "octocat", "--only", "closed", "--format", "json")
+        assert code == 0
+        data = json.loads(out)
+        assert len(data["prs"]) == 1
+        assert data["prs"][0]["state"] == "closed"
+        assert data["stats"]["prs_authored"] == 3
+
 
 class TestWindows:
     def test_org_flag_passes_through(self, patched_fetch, capsys, monkeypatch):
@@ -117,6 +145,11 @@ class TestWindows:
 
 
 class TestErrors:
+    def test_invalid_only_value_exits_2(self, capsys):
+        with pytest.raises(SystemExit) as excinfo:
+            cli.run(["octocat", "--only", "draft"])
+        assert excinfo.value.code == 2
+
     def test_rate_limit_exit_code(self, monkeypatch, capsys):
         from prsnoop.github import RateLimitExceeded
 
