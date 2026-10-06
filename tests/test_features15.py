@@ -1,4 +1,5 @@
 """Tests for 1.5: momentum, serve, team, export, pulse formats."""
+
 from __future__ import annotations
 
 import json
@@ -13,14 +14,21 @@ from prsnoop.serve import build_dashboard_page, make_handler
 from prsnoop.stats import build_activity
 
 
-def _pr(days_ago: float, repo: str = "acme/app", merged: bool = True,
-        adds: int = 150) -> PRRecord:
+def _pr(
+    days_ago: float, repo: str = "acme/app", merged: bool = True, adds: int = 150
+) -> PRRecord:
     created = datetime.now(timezone.utc) - timedelta(days=days_ago)
     merged_at = created + timedelta(days=0.5) if merged else None
     return PRRecord(
-        repo=repo, number=1, title="x", url="https://example.com",
-        state="merged" if merged else "open", created_at=created,
-        merged_at=merged_at, additions=adds, deletions=adds // 3,
+        repo=repo,
+        number=1,
+        title="x",
+        url="https://example.com",
+        state="merged" if merged else "open",
+        created_at=created,
+        merged_at=merged_at,
+        additions=adds,
+        deletions=adds // 3,
         changed_files=2,
     )
 
@@ -68,9 +76,16 @@ def test_momentum_in_table_and_markdown():
 
 def _pulse() -> OrgPulse:
     return OrgPulse(
-        org="acme", generated_at=datetime.now(timezone.utc), window_days=30,
-        since="2026-08-01", until="2026-08-31",
-        prs_opened=10, prs_merged=4, prs_open=6, authors=3, repos=1,
+        org="acme",
+        generated_at=datetime.now(timezone.utc),
+        window_days=30,
+        since="2026-08-01",
+        until="2026-08-31",
+        prs_opened=10,
+        prs_merged=4,
+        prs_open=6,
+        authors=3,
+        repos=1,
     )
 
 
@@ -113,8 +128,11 @@ def _pulse_with_prs() -> tuple[list, OrgPulse]:
         _org_item(2, merged=False, author="bob"),
     ]
     return fetch_org_pulse(
-        _OrgFake(items), "acme", days=30,
-        since="2026-08-01", until="2026-08-31",
+        _OrgFake(items),
+        "acme",
+        days=30,
+        since="2026-08-01",
+        until="2026-08-31",
     )
 
 
@@ -200,8 +218,9 @@ class _TeamFetch:
     def __init__(self) -> None:
         self.users: list[str] = []
 
-    def __call__(self, client, user, days, include_reviews, org=None,
-                 since=None, until=None):
+    def __call__(
+        self, client, user, days, include_reviews, org=None, since=None, until=None
+    ):
         self.users.append(user)
         count = {"simonw": 3, "antfu": 1}.get(user, 0)
         return [_pr(i + 1) for i in range(count)], [], [], True
@@ -250,8 +269,7 @@ def test_team_json_and_csv(monkeypatch, capsys):
 
 
 def test_export_writes_full_pack(monkeypatch, tmp_path):
-    def fake_fetch(client, user, days, include_reviews, org=None,
-                   since=None, until=None):
+    def fake_fetch(client, user, days, include_reviews, org=None, since=None, until=None):
         return [_pr(1), _pr(2)], [], [], True
 
     monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)
@@ -260,8 +278,12 @@ def test_export_writes_full_pack(monkeypatch, tmp_path):
     assert code == 0
     names = sorted(p.name for p in out_dir.iterdir())
     assert names == [
-        "badges.md", "report.csv", "report.html",
-        "report.json", "report.md", "report.txt",
+        "badges.md",
+        "report.csv",
+        "report.html",
+        "report.json",
+        "report.md",
+        "report.txt",
     ]
     assert "Contribution report: octocat" in (out_dir / "report.md").read_text()
 
@@ -269,8 +291,7 @@ def test_export_writes_full_pack(monkeypatch, tmp_path):
 def test_export_default_folder_name(monkeypatch, tmp_path, monkeypatch2=None):
     monkeypatch.chdir(tmp_path)
 
-    def fake_fetch(client, user, days, include_reviews, org=None,
-                   since=None, until=None):
+    def fake_fetch(client, user, days, include_reviews, org=None, since=None, until=None):
         return [], [], [], True
 
     monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)

@@ -7,6 +7,7 @@ leaderboards, and a day-by-day open/merge chart. No per-PR enrichment is
 needed, so even an org with hundreds of PRs in the window costs one
 paginated query.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -192,9 +193,7 @@ def _derive(
 
     merged = [p for p in prs if p.state == "merged"]
     open_prs = [p for p in prs if p.state == "open"]
-    merge_days = sorted(
-        d for d in (p.days_to_merge for p in merged) if d is not None
-    )
+    merge_days = sorted(d for d in (p.days_to_merge for p in merged) if d is not None)
     author_counts = Counter(p.author for p in prs)
     repo_counts = Counter(p.repo for p in prs)
     day_counts = Counter(p.created_at.strftime("%Y-%m-%d") for p in prs)

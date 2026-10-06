@@ -5,6 +5,7 @@ pull requests have been sitting the longest, how stale each one is, and
 where the queue is piling up. One list endpoint per repo, so the whole
 radar costs a handful of API calls even on busy repositories.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -14,9 +15,9 @@ from xml.sax.saxutils import escape as xml_escape
 from prsnoop.github import GitHubClient
 from prsnoop.models import JsonDict
 
-FRESH = "fresh"      # <= 2 days old
-AGING = "aging"      # 3 to 13 days
-STALE = "stale"      # 14 to 29 days
+FRESH = "fresh"  # <= 2 days old
+AGING = "aging"  # 3 to 13 days
+STALE = "stale"  # 14 to 29 days
 ANCIENT = "ancient"  # 30 or more
 
 BUCKET_ORDER = (FRESH, AGING, STALE, ANCIENT)
@@ -114,9 +115,7 @@ class RadarReport:
     def to_dict(self) -> JsonDict:
         return {
             "repo": self.repo,
-            "generated_at": self.generated_at.isoformat().replace(
-                "+00:00", "Z"
-            ),
+            "generated_at": self.generated_at.isoformat().replace("+00:00", "Z"),
             "total_open": self.total_open,
             "buckets": self.buckets,
             "median_age_days": self.median_age_days,
@@ -126,9 +125,7 @@ class RadarReport:
         }
 
 
-def fetch_radar(
-    client: GitHubClient, repo: str, limit: int = 300
-) -> RadarReport:
+def fetch_radar(client: GitHubClient, repo: str, limit: int = 300) -> RadarReport:
     """Scan the open pull queue of ``repo`` (owner/name)."""
     now = datetime.now(timezone.utc)
     items = client.paginate(
@@ -173,9 +170,7 @@ def fetch_radar(
     else:
         truncated = False
     entries.sort(key=lambda e: (-e.age_days, e.number))
-    return RadarReport(
-        repo=repo, generated_at=now, entries=entries, truncated=truncated
-    )
+    return RadarReport(repo=repo, generated_at=now, entries=entries, truncated=truncated)
 
 
 # ------------------------------------------------------------------ renders
@@ -239,9 +234,7 @@ def render_radar_markdown(report: RadarReport) -> str:
         f" **{report.median_age_days:.1f}d** · quiet: {report.quiet_count}"
     )
     out.append("")
-    out.append(
-        " | ".join(f"{b} {buckets[b]}" for b in BUCKET_ORDER)
-    )
+    out.append(" | ".join(f"{b} {buckets[b]}" for b in BUCKET_ORDER))
     out.append("")
     out += [
         "| # | Age | Bucket | Author | Title |",
@@ -252,8 +245,7 @@ def render_radar_markdown(report: RadarReport) -> str:
         link = f"[#{e.number}]({e.url})" if e.url else f"#{e.number}"
         draft = " *(draft)*" if e.draft else ""
         out.append(
-            f"| {link} | {e.age_days}d | {e.bucket} |"
-            f" @{e.author} | {title}{draft} |"
+            f"| {link} | {e.age_days}d | {e.bucket} | @{e.author} | {title}{draft} |"
         )
     out.append("")
     return "\n".join(out)
@@ -270,7 +262,6 @@ def render_radar_csv(report: RadarReport) -> str:
     )
     for e in report.entries:
         writer.writerow(
-            [e.number, e.age_days, e.bucket, e.author, e.draft, e.comments,
-             e.title]
+            [e.number, e.age_days, e.bucket, e.author, e.draft, e.comments, e.title]
         )
     return buf.getvalue()

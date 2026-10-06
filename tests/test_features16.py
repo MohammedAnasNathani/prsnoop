@@ -1,4 +1,5 @@
 """Tests for 1.6: card, radar, changelog, ci gates, watch, replay."""
+
 from __future__ import annotations
 
 import json
@@ -40,11 +41,17 @@ def _pr(
     created = datetime.now(timezone.utc) - timedelta(days=days_ago)
     merged_at = created + timedelta(days=0.5) if merged else None
     return PRRecord(
-        repo=repo, number=number, title=title,
+        repo=repo,
+        number=number,
+        title=title,
         url=f"https://github.com/{repo}/pull/{number}",
-        state="merged" if merged else "open", created_at=created,
-        merged_at=merged_at, additions=adds, deletions=adds // 3,
-        changed_files=2, comments=comments,
+        state="merged" if merged else "open",
+        created_at=created,
+        merged_at=merged_at,
+        additions=adds,
+        deletions=adds // 3,
+        changed_files=2,
+        comments=comments,
     )
 
 
@@ -394,8 +401,9 @@ def test_ci_summary_markdown():
 
 
 def test_ci_cli_exit_codes(monkeypatch, capsys, tmp_path):
-    def fake_fetch(client, user, days=30, include_reviews=True, org=None,
-                   since=None, until=None):
+    def fake_fetch(
+        client, user, days=30, include_reviews=True, org=None, since=None, until=None
+    ):
         return [_pr(1)], [], [], True
 
     monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)
@@ -446,9 +454,7 @@ def test_watch_frame_plain_and_ansi():
 def test_watch_frame_flags_new_pr():
     prs = [_pr(1, number=5)]
     act = build_activity("t", prs, [], [], window_days=30)
-    frame = render_frame(
-        act, color=False, new_keys={"acme/app#5"}, tick=2
-    )
+    frame = render_frame(act, color=False, new_keys={"acme/app#5"}, tick=2)
     assert " new" in frame
 
 
@@ -459,8 +465,9 @@ def test_watch_empty_window():
 
 
 def test_watch_once_command(monkeypatch, capsys):
-    def fake_fetch(client, user, days=30, include_reviews=True, org=None,
-                   since=None, until=None):
+    def fake_fetch(
+        client, user, days=30, include_reviews=True, org=None, since=None, until=None
+    ):
         return [_pr(1)], [], [], True
 
     monkeypatch.setattr(cli, "fetch_user_activity", fake_fetch)
@@ -474,7 +481,7 @@ def test_watch_once_command(monkeypatch, capsys):
 
 
 def test_wrapped_merge_and_discussion_records():
-    fast = _pr(10, number=1, title="quick")   # merged 0.5d later
+    fast = _pr(10, number=1, title="quick")  # merged 0.5d later
     slow = _pr(40, number=2, title="slow one")
     # make the slow one genuinely slow: merged 12 days after creation
     slow.merged_at = slow.created_at + timedelta(days=12)
@@ -493,9 +500,7 @@ def test_wrapped_merge_and_discussion_records():
 
 
 def test_wrapped_records_absent_without_merges():
-    act = build_activity(
-        "t", [_pr(5, merged=False, comments=0)], [], [], window_days=30
-    )
+    act = build_activity("t", [_pr(5, merged=False, comments=0)], [], [], window_days=30)
     w = build_wrapped(act)
     assert w.fastest_pr_title is None and w.slowest_pr_title is None
     table = render_wrapped_table(w)

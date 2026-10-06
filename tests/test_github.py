@@ -1,4 +1,5 @@
 """Tests for the caching GitHub client: ETag revalidation, pagination, errors."""
+
 from __future__ import annotations
 
 import io
@@ -30,9 +31,7 @@ class _Response:
 
 
 def _install(monkeypatch, handler):
-    monkeypatch.setattr(
-        "urllib.request.urlopen", lambda req, timeout: handler(req)
-    )
+    monkeypatch.setattr("urllib.request.urlopen", lambda req, timeout: handler(req))
 
 
 class TestCache:
@@ -159,10 +158,11 @@ class TestErrors:
 
         def handler(req):
             raise urllib.error.HTTPError(
-                req.full_url, 403, "Forbidden", hdrs={},
-                fp=io.BytesIO(
-                    json.dumps({"message": "API rate limit exceeded"}).encode()
-                ),
+                req.full_url,
+                403,
+                "Forbidden",
+                hdrs={},
+                fp=io.BytesIO(json.dumps({"message": "API rate limit exceeded"}).encode()),
             )
 
         _install(monkeypatch, handler)
@@ -174,7 +174,10 @@ class TestErrors:
 
         def handler(req):
             raise urllib.error.HTTPError(
-                req.full_url, 404, "Not Found", hdrs={},
+                req.full_url,
+                404,
+                "Not Found",
+                hdrs={},
                 fp=io.BytesIO(json.dumps({"message": "Not Found"}).encode()),
             )
 

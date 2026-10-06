@@ -1,4 +1,5 @@
 """Shared pytest fixtures: sample API payloads and a fake GitHubClient."""
+
 from __future__ import annotations
 
 import json
@@ -27,22 +28,40 @@ def sample_prs(now):
     """Three PRs: merged fast, merged slow, still open."""
     return [
         PRRecord(
-            repo="aio-libs/yarl", number=1828, title="Fix IndexError on empty host",
-            url="https://github.com/aio-libs/yarl/pull/1828", state="merged",
-            created_at=now.replace(day=10), merged_at=now.replace(day=12),
-            additions=42, deletions=7, changed_files=3,
+            repo="aio-libs/yarl",
+            number=1828,
+            title="Fix IndexError on empty host",
+            url="https://github.com/aio-libs/yarl/pull/1828",
+            state="merged",
+            created_at=now.replace(day=10),
+            merged_at=now.replace(day=12),
+            additions=42,
+            deletions=7,
+            changed_files=3,
         ),
         PRRecord(
-            repo="agronholm/anyio", number=1247, title="Happy Eyeballs ordering fix",
-            url="https://github.com/agronholm/anyio/pull/1247", state="merged",
-            created_at=now.replace(day=5), merged_at=now.replace(day=25),
-            additions=310, deletions=88, changed_files=6,
+            repo="agronholm/anyio",
+            number=1247,
+            title="Happy Eyeballs ordering fix",
+            url="https://github.com/agronholm/anyio/pull/1247",
+            state="merged",
+            created_at=now.replace(day=5),
+            merged_at=now.replace(day=25),
+            additions=310,
+            deletions=88,
+            changed_files=6,
         ),
         PRRecord(
-            repo="jd/tenacity", number=660, title="Retry cause cycle fix",
-            url="https://github.com/jd/tenacity/pull/660", state="open",
-            created_at=now.replace(day=28), merged_at=None,
-            additions=15, deletions=3, changed_files=1,
+            repo="jd/tenacity",
+            number=660,
+            title="Retry cause cycle fix",
+            url="https://github.com/jd/tenacity/pull/660",
+            state="open",
+            created_at=now.replace(day=28),
+            merged_at=None,
+            additions=15,
+            deletions=3,
+            changed_files=1,
         ),
     ]
 
@@ -51,9 +70,12 @@ def sample_prs(now):
 def sample_reviews(now):
     return [
         ReviewRecord(
-            repo="voltagebots/agent-guard", pr_number=9, pr_title="guard rules",
+            repo="voltagebots/agent-guard",
+            pr_number=9,
+            pr_title="guard rules",
             pr_url="https://github.com/voltagebots/agent-guard/pull/9",
-            state="APPROVED", submitted_at=now.replace(day=14),
+            state="APPROVED",
+            submitted_at=now.replace(day=14),
         ),
     ]
 
@@ -62,10 +84,14 @@ def sample_reviews(now):
 def sample_issues(now):
     return [
         IssueRecord(
-            repo="psf/requests", number=7564,
+            repo="psf/requests",
+            number=7564,
             title="Missing CA cert should raise FileNotFoundError",
-            url="https://github.com/psf/requests/issues/7564", state="open",
-            created_at=now.replace(day=20), closed_at=None, comments=2,
+            url="https://github.com/psf/requests/issues/7564",
+            state="open",
+            created_at=now.replace(day=20),
+            closed_at=None,
+            comments=2,
         ),
     ]
 
@@ -76,6 +102,7 @@ def activity(sample_prs, sample_reviews, sample_issues, now) -> Activity:
 
 
 # --------------------------------------------------------------- API payloads
+
 
 @pytest.fixture
 def search_pr_payload(now) -> dict:
@@ -174,6 +201,7 @@ def reviews_payload(now) -> list:
 
 # ------------------------------------------------------------ fake client
 
+
 class FakeClient:
     """In-memory GitHubClient stand-in driven by a path->payload map."""
 
@@ -202,8 +230,11 @@ class FakeClient:
 
 @pytest.fixture
 def fake_client(
-    search_pr_payload, pr_detail_payload, search_issue_payload,
-    search_reviewer_payload, reviews_payload,
+    search_pr_payload,
+    pr_detail_payload,
+    search_issue_payload,
+    search_reviewer_payload,
+    reviews_payload,
 ):
     return FakeClient(
         routes={
@@ -216,7 +247,10 @@ def fake_client(
             "/repos/agronholm/anyio": {"language": "Python"},
             "/repos/aio-libs/yarl/pulls/1828": pr_detail_payload,
             "/repos/jd/tenacity/pulls/660": {
-                "number": 660, "additions": 15, "deletions": 3, "changed_files": 1,
+                "number": 660,
+                "additions": 15,
+                "deletions": 3,
+                "changed_files": 1,
             },
             "/repos/voltagebots/agent-guard/pulls/9/reviews": reviews_payload,
         }

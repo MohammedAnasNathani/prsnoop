@@ -1,4 +1,5 @@
 """Badge generation tests: valid SVG, correct counts, data-URI markdown."""
+
 from __future__ import annotations
 
 import base64

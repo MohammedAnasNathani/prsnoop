@@ -6,6 +6,7 @@ conventional-commit prefix, and emits paste-ready markdown. The output
 follows the "What's Changed" shape used by thousands of release notes,
 so it drops straight into a release page or CHANGELOG.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -80,9 +81,7 @@ def categorize(title: str, labels: list[str]) -> str:
             return _LABEL_CATEGORIES[lb]
     low_title = title.lower().strip()
     for prefix, category in _PREFIX_CATEGORIES:
-        if low_title.startswith(prefix + ":") or low_title.startswith(
-            prefix + "("
-        ):
+        if low_title.startswith(prefix + ":") or low_title.startswith(prefix + "("):
             return category
     if "breaking" in low_title:
         return "Breaking changes"
@@ -164,9 +163,7 @@ class Changelog:
         }
 
 
-def resolve_tag_date(
-    client: GitHubClient, repo: str, tag: str
-) -> datetime | None:
+def resolve_tag_date(client: GitHubClient, repo: str, tag: str) -> datetime | None:
     """The commit date a tag points at, for 'merged since v1.2.0' windows.
 
     Walks the ref: a lightweight tag points straight at the commit, an
@@ -226,11 +223,7 @@ def build_changelog(
             if merged_raw
             else None
         )
-        labels = [
-            lb.get("name", "")
-            for lb in (item.get("labels") or [])
-            if lb.get("name")
-        ]
+        labels = [lb.get("name", "") for lb in (item.get("labels") or []) if lb.get("name")]
         entries.append(
             ChangelogEntry(
                 number=item["number"],
@@ -246,18 +239,17 @@ def build_changelog(
         truncated = False
     entries.sort(key=lambda e: e.merged_at or now, reverse=True)
     return Changelog(
-        repo=repo, since=since, until=until or "", entries=entries,
+        repo=repo,
+        since=since,
+        until=until or "",
+        entries=entries,
         truncated=truncated,
     )
 
 
 def render_changelog_markdown(ch: Changelog) -> str:
     """Paste-ready release notes: one bullet per PR, grouped by type."""
-    window = (
-        f" from `{ch.since}` to `{ch.until}`"
-        if ch.until
-        else f" since `{ch.since}`"
-    )
+    window = f" from `{ch.since}` to `{ch.until}`" if ch.until else f" since `{ch.since}`"
     out = [
         "## What's changed",
         "",

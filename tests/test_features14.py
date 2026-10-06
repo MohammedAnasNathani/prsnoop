@@ -1,4 +1,5 @@
 """Tests for 1.4 features: repo pulse, me, size profile, repo breakdown."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -10,14 +11,21 @@ from prsnoop.render import render_html, render_markdown, render_table
 from prsnoop.stats import build_activity
 
 
-def _pr(days_ago: float, repo: str = "acme/app", merged: bool = True,
-        adds: int = 150) -> PRRecord:
+def _pr(
+    days_ago: float, repo: str = "acme/app", merged: bool = True, adds: int = 150
+) -> PRRecord:
     created = datetime.now(timezone.utc) - timedelta(days=days_ago)
     merged_at = created + timedelta(days=0.5) if merged else None
     return PRRecord(
-        repo=repo, number=1, title="x", url="https://example.com",
-        state="merged" if merged else "open", created_at=created,
-        merged_at=merged_at, additions=adds, deletions=adds // 3,
+        repo=repo,
+        number=1,
+        title="x",
+        url="https://example.com",
+        state="merged" if merged else "open",
+        created_at=created,
+        merged_at=merged_at,
+        additions=adds,
+        deletions=adds // 3,
         changed_files=2,
     )
 
@@ -97,11 +105,11 @@ def test_repo_pulse_table_header():
 def test_size_buckets_and_median():
     # deletions are adds//3, so totals are 4/3 of adds
     prs = [
-        _pr(1, adds=3),      # XS (4 changed)
-        _pr(2, adds=24),     # S (32)
-        _pr(3, adds=240),    # M (320)
-        _pr(4, adds=2400),   # L (3200)
-        _pr(5, adds=6000),   # XL (8000)
+        _pr(1, adds=3),  # XS (4 changed)
+        _pr(2, adds=24),  # S (32)
+        _pr(3, adds=240),  # M (320)
+        _pr(4, adds=2400),  # L (3200)
+        _pr(5, adds=6000),  # XL (8000)
     ]
     stats = _activity(prs).stats
     assert stats.size_buckets == {"XS": 1, "S": 1, "M": 1, "L": 1, "XL": 1}
@@ -172,8 +180,7 @@ class _MeClient:
 def test_me_resolves_login(monkeypatch, capsys):
     monkeypatch.setattr(cli, "GitHubClient", _MeClient)
 
-    def fake_fetch(client, user, days, include_reviews, org=None,
-                   since=None, until=None):
+    def fake_fetch(client, user, days, include_reviews, org=None, since=None, until=None):
         assert user == "octocat"
         return [_pr(1)], [], [], True
 
@@ -188,8 +195,7 @@ def test_last_preset_maps_to_days(monkeypatch, capsys):
 
     captured: dict = {}
 
-    def fake_fetch(client, user, days, include_reviews, org=None,
-                   since=None, until=None):
+    def fake_fetch(client, user, days, include_reviews, org=None, since=None, until=None):
         captured["days"] = days
         return [], [], [], True
 

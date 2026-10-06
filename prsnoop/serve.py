@@ -10,6 +10,7 @@ Targets: a bare username, ``org:login``, or ``repo:owner/name``. With
 several targets the root path becomes a tab index and each target gets
 its own page and JSON route.
 """
+
 from __future__ import annotations
 
 import json
@@ -64,9 +65,7 @@ def make_handler(routes: Route) -> type[BaseHTTPRequestHandler]:
         def do_GET(self) -> None:  # noqa: N802  stdlib naming
             path = self.path.split("?")[0]
             if path == "/health":
-                self._reply(
-                    200, "application/json", json.dumps({"status": "ok"})
-                )
+                self._reply(200, "application/json", json.dumps({"status": "ok"}))
                 return
             fn = routes.get(path)
             if fn is None:
@@ -77,12 +76,14 @@ def make_handler(routes: Route) -> type[BaseHTTPRequestHandler]:
             except Exception as exc:  # noqa: BLE001
                 if "json" in path:
                     self._reply(
-                        500, "application/json",
+                        500,
+                        "application/json",
                         json.dumps({"error": str(exc)}),
                     )
                 else:
                     self._reply(
-                        500, "text/html; charset=utf-8",
+                        500,
+                        "text/html; charset=utf-8",
                         f"<h1>prsnoop</h1><p>report failed: {exc}</p>"
                         "<p><a href='/'>retry</a></p>",
                     )
@@ -123,9 +124,7 @@ def _routes_for(
     if kind == "user":
 
         def user_html() -> tuple[str, str]:
-            return "text/html; charset=utf-8", build_dashboard_page(
-                fetch_user(name)
-            )
+            return "text/html; charset=utf-8", build_dashboard_page(fetch_user(name))
 
         def user_json() -> tuple[str, str]:
             return "application/json", render_json(fetch_user(name))

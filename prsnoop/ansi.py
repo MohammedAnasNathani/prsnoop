@@ -5,6 +5,7 @@ terminal. NO_COLOR disables everything, FORCE_COLOR forces color even
 when piped (useful for demos and screenshots). No third-party colors
 library: this file exists so the live views stay dependency-free.
 """
+
 from __future__ import annotations
 
 import os

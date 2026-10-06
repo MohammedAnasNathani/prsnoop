@@ -54,8 +54,7 @@ CI runs the same three on every push and pull request.
 Renderers are one function each, in `prsnoop/render.py`:
 
 ```python
-def render_yaml(activity: Activity) -> str:
-    ...
+def render_yaml(activity: Activity) -> str: ...
 ```
 
 Register it in `RENDERERS`, add tests in `tests/test_render.py`, list it in

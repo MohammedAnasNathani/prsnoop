@@ -5,6 +5,7 @@ was the biggest patch, which month caught fire, how long did the longest
 streak run, which repo got the most work. Everything derives from one
 Activity snapshot, so it is deterministic and offline-testable.
 """
+
 from __future__ import annotations
 
 from collections import Counter
@@ -100,8 +101,13 @@ class Wrapped:
 
 
 _WEEKDAYS = (
-    "Monday", "Tuesday", "Wednesday", "Thursday",
-    "Friday", "Saturday", "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
 )
 
 
@@ -119,12 +125,8 @@ def build_wrapped(activity: Activity) -> Wrapped:
         busiest_month, busiest_count = months.most_common(1)[0]
 
     repo_counts: Counter[str] = Counter(p.repo for p in prs)
-    lang_counts: Counter[str] = Counter(
-        (p.language or "Unknown") for p in prs
-    )
-    weekday_counts: Counter[str] = Counter(
-        p.created_at.strftime("%A") for p in prs
-    )
+    lang_counts: Counter[str] = Counter((p.language or "Unknown") for p in prs)
+    weekday_counts: Counter[str] = Counter(p.created_at.strftime("%A") for p in prs)
 
     biggest: PRRecord | None = None
     longest: PRRecord | None = None
@@ -186,15 +188,11 @@ def build_wrapped(activity: Activity) -> Wrapped:
         top_language=lang_counts.most_common(1)[0][0] if lang_counts else None,
         top_language_count=lang_counts.most_common(1)[0][1] if lang_counts else 0,
         biggest_pr_title=biggest.title if biggest else None,
-        biggest_pr_lines=(
-            biggest.additions + biggest.deletions if biggest else 0
-        ),
+        biggest_pr_lines=(biggest.additions + biggest.deletions if biggest else 0),
         biggest_pr_url=biggest.url if biggest else None,
         longest_pr_title=longest.title if longest else None,
         longest_pr_chars=len(longest.title) if longest else 0,
-        favorite_weekday=(
-            weekday_counts.most_common(1)[0][0] if weekday_counts else None
-        ),
+        favorite_weekday=(weekday_counts.most_common(1)[0][0] if weekday_counts else None),
         open_standing=s.prs_open,
         fastest_pr_title=fastest.title if fastest else None,
         fastest_pr_days=(
@@ -225,8 +223,7 @@ def render_wrapped_table(w: Wrapped) -> str:
         "",
         "  THE YEAR IN PULL REQUESTS",
         "",
-        f"  Pull requests      {w.prs} (merged {w.merged},"
-        f" {w.open_standing} still open)",
+        f"  Pull requests      {w.prs} (merged {w.merged}, {w.open_standing} still open)",
         f"  Lines changed      +{w.lines_added:,} / -{w.lines_deleted:,}",
         f"  Reviews given      {w.reviews}",
         f"  Issues opened      {w.issues}",
@@ -235,9 +232,7 @@ def render_wrapped_table(w: Wrapped) -> str:
         f"  Active days        {w.active_days}",
     ]
     if w.pr_cadence_days is not None:
-        lines.append(
-            f"  Cadence            one PR every {w.pr_cadence_days} days"
-        )
+        lines.append(f"  Cadence            one PR every {w.pr_cadence_days} days")
     if w.busiest_month:
         lines.append(
             f"  Busiest month      {w.busiest_month} ({w.busiest_month_count} items)"
@@ -245,9 +240,7 @@ def render_wrapped_table(w: Wrapped) -> str:
     if w.top_repo:
         lines.append(f"  Busiest repo       {w.top_repo} ({w.top_repo_count} PRs)")
     if w.top_language:
-        lines.append(
-            f"  Top language       {w.top_language} ({w.top_language_count} PRs)"
-        )
+        lines.append(f"  Top language       {w.top_language} ({w.top_language_count} PRs)")
     if w.biggest_pr_title:
         lines.append(
             f"  Biggest patch      {w.biggest_pr_lines:,} lines,"
@@ -257,13 +250,11 @@ def render_wrapped_table(w: Wrapped) -> str:
         lines.append(f"  Favorite day       {w.favorite_weekday}")
     if w.fastest_pr_title and w.fastest_pr_days is not None:
         lines.append(
-            f"  Fastest merge      {w.fastest_pr_days:.1f}d,"
-            f' "{w.fastest_pr_title[:40]}"'
+            f'  Fastest merge      {w.fastest_pr_days:.1f}d, "{w.fastest_pr_title[:40]}"'
         )
     if w.slowest_pr_title and w.slowest_pr_days is not None:
         lines.append(
-            f"  Slowest merge      {w.slowest_pr_days:.1f}d,"
-            f' "{w.slowest_pr_title[:40]}"'
+            f'  Slowest merge      {w.slowest_pr_days:.1f}d, "{w.slowest_pr_title[:40]}"'
         )
     if w.hottest_pr_title:
         lines.append(
@@ -298,9 +289,7 @@ def render_wrapped_markdown(w: Wrapped) -> str:
     if w.pr_cadence_days is not None:
         out.append(f"| Cadence | one PR every {w.pr_cadence_days} days |")
     if w.busiest_month:
-        out.append(
-            f"| Busiest month | {w.busiest_month} ({w.busiest_month_count} items) |"
-        )
+        out.append(f"| Busiest month | {w.busiest_month} ({w.busiest_month_count} items) |")
     if w.top_repo:
         out.append(
             f"| Busiest repo | [{w.top_repo}](https://github.com/{w.top_repo})"
@@ -310,9 +299,7 @@ def render_wrapped_markdown(w: Wrapped) -> str:
         out.append(f"| Top language | {w.top_language} ({w.top_language_count} PRs) |")
     if w.biggest_pr_title:
         title = w.biggest_pr_title.replace("|", "\\|")
-        link = (
-            f"[{title}]({w.biggest_pr_url})" if w.biggest_pr_url else title
-        )
+        link = f"[{title}]({w.biggest_pr_url})" if w.biggest_pr_url else title
         out.append(f"| Biggest patch | {w.biggest_pr_lines:,} lines, {link} |")
     if w.favorite_weekday:
         out.append(f"| Favorite day | {w.favorite_weekday} |")
