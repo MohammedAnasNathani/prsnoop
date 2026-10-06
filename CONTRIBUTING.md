@@ -68,6 +68,11 @@ Metrics live in `prsnoop/stats.py` (`build_stats`). Add the field to the
 cases in `tests/test_core.py`. Remember: every metric must serialize cleanly
 in `to_dict()` (it ends up in the JSON output).
 
+## Regenerating Examples
+
+When you make changes to output renderers or report formats, please regenerate the example files before submitting your pull request: ```bash
+./scripts/regen_examples.sh
+
 ## Reporting bugs
 
 Open an issue with:
