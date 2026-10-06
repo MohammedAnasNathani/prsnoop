@@ -3,7 +3,6 @@ from __future__ import annotations
 import io
 import sys
 
-from prsnoop.render import render_json, render_table
 from prsnoop.live import (
     TuiState,
     clamp_page,
@@ -14,6 +13,7 @@ from prsnoop.live import (
     run,
     total_pages,
 )
+from prsnoop.render import render_json, render_table
 
 
 def test_paginate_empty_and_bounded():

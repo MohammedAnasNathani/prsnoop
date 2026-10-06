@@ -434,11 +434,6 @@ def cmd_live(args: argparse.Namespace) -> int:
 
 
 def cmd_org(args: argparse.Namespace) -> int:
-    from prsnoop.org import fetch_org_pulse
-    from prsnoop.render import render_org_markdown, render_org_table
-
-
-def cmd_org(args: argparse.Namespace) -> int:
     from prsnoop.badge import render_pulse_badge
     from prsnoop.org import fetch_org_pulse, fetch_repo_pulse
     from prsnoop.render import (
