@@ -283,6 +283,7 @@ class Stats:
     distinct_languages: int = 0
     top_repos: list[tuple[str, int]] = field(default_factory=list)
     languages: list[tuple[str, int]] = field(default_factory=list)  # (lang, prs)
+    top_labels: list[tuple[str, int]] = field(default_factory=list)  # (label, prs)
     day_activity: list[DayActivity] = field(default_factory=list)
     size_median_lines: int | None = None
     size_buckets: dict[str, int] = field(default_factory=dict)
@@ -315,6 +316,7 @@ class Stats:
         d["generated_at"] = _dt(self.generated_at)
         d["top_repos"] = [{"repo": repo, "prs": n} for repo, n in self.top_repos]
         d["languages"] = [{"language": lang, "prs": n} for lang, n in self.languages]
+        d["top_labels"] = [{"label": label, "prs": n} for label, n in self.top_labels]
         d["day_activity"] = [da.to_dict() for da in self.day_activity]
         return d
 

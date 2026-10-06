@@ -161,6 +161,9 @@ def render_table(activity: Activity) -> str:
     if s.languages:
         mix = ", ".join(f"{lang} {n}" for lang, n in s.languages[:5])
         lines.append(f"  Languages          {mix}")
+    if s.top_labels:
+        mix = ", ".join(f"{label} {n}" for label, n in s.top_labels[:5])
+        lines.append(f"  Top labels         {mix}")
     if s.size_median_lines is not None:
         dist = " ".join(f"{k} {v}" for k, v in s.size_buckets.items() if v)
         lines.append(
@@ -255,6 +258,10 @@ def render_markdown(activity: Activity) -> str:
     if s.top_repos:
         out += ["## Top repositories", "", "| Repository | PRs |", "|---|---:|"]
         out += [f"| [{repo}](https://github.com/{repo}) | {n} |" for repo, n in s.top_repos]
+        out.append("")
+    if s.top_labels:
+        out += ["## Top labels", "", "| Label | PRs |", "|---|---:|"]
+        out += [f"| {label} | {n} |" for label, n in s.top_labels]
         out.append("")
     trend = _trend_of(activity)
     if trend:

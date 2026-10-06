@@ -189,6 +189,7 @@ def build_stats(
     )
 
     repo_counts = Counter(p.repo for p in prs)
+    label_counts = Counter(label for pr in prs for label in pr.labels if label)
     all_dates = sorted(active_dates)
     busiest = max(day_activity, key=lambda da: da.total, default=None)
 
@@ -313,6 +314,7 @@ def build_stats(
         distinct_languages=len(lang_counts),
         top_repos=repo_counts.most_common(10),
         languages=lang_counts.most_common(10),
+        top_labels=label_counts.most_common(10),
         day_activity=day_activity,
         size_median_lines=size_median,
         size_buckets=size_buckets,
