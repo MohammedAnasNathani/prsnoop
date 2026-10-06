@@ -186,6 +186,16 @@ class TestBuildStats:
         assert s.drafts == 0
         assert s.merge_rate == 1.0
 
+    def test_top_limits_repositories_and_languages(self, sample_prs, now):
+        for index, pr in enumerate(sample_prs):
+            pr.repo = f"owner/repo-{index}"
+            pr.language = f"Language-{index}"
+
+        limited = build_activity("octocat", sample_prs, [], [], now=now, top=2)
+
+        assert len(limited.stats.top_repos) == 2
+        assert len(limited.stats.languages) == 2
+
 
 # -------------------------------------------------------------------- fetch
 

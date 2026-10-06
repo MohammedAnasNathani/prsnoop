@@ -123,6 +123,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="window preset (overrides --days)",
     )
     parser.add_argument(
+        "--top", type=int, default=10,
+        help="number of repositories and languages to show (default: 10)",
+    )
+    parser.add_argument(
         "--since", type=str, default=None,
         help="absolute start date YYYY-MM-DD (overrides --days)",
     )
@@ -2380,6 +2384,9 @@ def run(argv: list[str] | None = None) -> int:
     if args.days < 1:
         print("prsnoop: --days must be >= 1", file=sys.stderr)
         return 2
+    if args.top < 1:
+        print("prsnoop: --top must be >= 1", file=sys.stderr)
+        return 2
     if args.until and not args.since:
         print("prsnoop: --until requires --since", file=sys.stderr)
         return 2
@@ -2404,7 +2411,7 @@ def run(argv: list[str] | None = None) -> int:
         activity = build_activity(
             args.user, prs, reviews, issues,
             window_days=days, since=since or "", until=until or "",
-            include_drafts=args.include_drafts,
+            include_drafts=args.include_drafts, top=args.top,
         )
         if args.trend:
             prev_since, prev_until = _previous_window(since, until, days)
