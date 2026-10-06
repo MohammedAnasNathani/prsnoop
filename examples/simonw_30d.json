@@ -1,7 +1,6 @@
 {
   "user": "simonw",
-  "generated_at": "2026-09-09T02:48:53.527260Z",
-  "prs": [
+  "generated_at": "2026-09-09T02:39:03.594337Z",  "prs": [
     {
       "repo": "simonw/tools",
       "number": 333,
@@ -998,8 +997,7 @@
   ],
   "stats": {
     "user": "simonw",
-    "generated_at": "2026-09-09T02:48:53.527260Z",
-    "window_days": 30,
+    "generated_at": "2026-09-09T02:39:03.594337Z",    "window_days": 30,
     "since": "",
     "until": "",
     "prs_authored": 42,

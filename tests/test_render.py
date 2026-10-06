@@ -69,6 +69,13 @@ class TestMarkdown:
     def test_pure_ascii(self, activity):
         render_markdown(activity).encode("ascii")
 
+    def test_collapses_long_pr_table(self, activity):
+        # Simulate an activity with 45 PRs
+        activity.prs = [activity.prs[0]] * 45
+        out = render_markdown(activity)
+        # Check that only the first 40 are rendered and the collapse notice is appended
+        assert "... and 5 more (see --format csv for the full list)" in out
+
 
 class TestHTML:
     def test_valid_structure(self, activity):
