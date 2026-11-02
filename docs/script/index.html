@@ -64,6 +64,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 <a href="#s14"><b>14</b> The team</a>
 <a href="#s15"><b>15</b> Thank you</a>
 <a href="#s16"><b>16</b> Closing clip</a>
+<a href="#p16"><b>--</b> Practical notes</a>
 </nav>
 <main>
 <section id="s1">
@@ -199,6 +200,15 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 <div class="b">
 <p>Press PLAY THE ENDING. Let the clip run all the way through without talking over it, then take questions.</p>
 <p>If you are presenting from a phone in landscape and the clip will not start, tap it once. Browsers block autoplay until you touch the page.</p>
+</div>
+</section>
+<section id="p16" class="notes">
+<h2><span class="n">&mdash;&mdash;</span>Practical notes</h2>
+<div class="b">
+<p><strong>Before you start.</strong> Warm the cache. Open the terminal and run <code>bash presentation/warm.sh</code>. It takes about twenty seconds and after that every command answers instantly for fifteen minutes. If you skip this, the very first command in the live demo will sit there for the better part of a minute and it will look like it has frozen. It has not.</p>
+<p><strong>If a number looks different live.</strong> The deck's demo blocks were captured from a snapshot, and the GitHub API keeps moving. If the live run shows slightly different totals, say so. "This is live data, so it has moved a little since we captured the deck." That is a stronger answer than pretending it matches.</p>
+<p><strong>Timing.</strong> If you are running long, cut slide 5 and slide 12 down to two sentences each. They are the two most compressible. Do not cut slide 14, that one is about people.</p>
+<p><strong>Questions.</strong> If something needs a live answer, <code>prsnoop ask &lt;username&gt; "your question"</code> handles a lot of the obvious ones without a network call.</p>
 </div>
 </section>
 </main>
