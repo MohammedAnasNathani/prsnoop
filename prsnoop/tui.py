@@ -13,6 +13,14 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     import curses
+else:
+    # Imported at runtime as well: _draw is a module level function and
+    # cannot see the lazy import inside run_tui. Windows ships no curses,
+    # so bind None and let run_tui fail with a readable message.
+    try:
+        import curses
+    except ImportError:  # pragma: no cover - platform specific
+        curses = None  # type: ignore[assignment]
 
 from prsnoop.fetch import fetch_user_activity
 from prsnoop.github import GitHubClient
@@ -196,13 +204,11 @@ def run_tui(
     curses is imported lazily: Windows ships no curses module, so the
     command must fail with a clear message instead of an import error.
     """
-    try:
-        import curses
-    except ImportError as exc:  # pragma: no cover - platform specific
+    if curses is None:  # pragma: no cover - platform specific
         raise SystemExit(
             "prsnoop tui: the curses module is not available on this platform. "
             "On Windows, use 'prsnoop serve' for the browser dashboard instead."
-        ) from exc
+        )
 
     def _loop(stdscr: curses.window) -> None:
         curses.curs_set(0)

@@ -326,7 +326,7 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
 
 <!-- 1 · cover -->
 <section class="slide cover on">
-  <p class="boot" data-rise>FINAL REVIEW · prsnoop v2.3.0 · 264 tests · 0 dependencies · 30 subcommands · 7 formats</p>
+  <p class="boot" data-rise>FINAL REVIEW · prsnoop v2.3.0 · 266 tests · 0 dependencies · 30 subcommands · 7 formats</p>
   <pre class="wordmark" data-rise style="--d:.12s">   ____  ____  ___                    
   |  _ \|  _ \/ __| _ __   ___   ___  _ __
   | |_) | |_) \___ \| '_ \ / _ \ / _ \| '_ \
@@ -391,7 +391,7 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
   <h1 data-rise style="--d:.1s">one username in. <span class="ok">a report out.</span></h1>
   <p data-rise style="--d:.16s">It fetches pull requests, reviews and issues for one GitHub user over a time window, computes the metrics that matter, then renders them. Built for a developer writing a review line, a maintainer triaging a backlog, a team comparing contributors, and a CI pipeline.</p>
   <div class="kpis" data-rise style="--d:.24s">
-    <div><b>7</b> formats</div><div><b>30</b> subcommands</div><div><b>264</b> offline tests</div>
+    <div><b>7</b> formats</div><div><b>30</b> subcommands</div><div><b>266</b> offline tests</div>
     <div><b>0</b> runtime deps</div><div><b>Python 3.10 to 3.14</b></div><div><b>MIT</b> licensed</div>
   </div>
   <div class="flow" data-rise style="--d:.32s"><span class="d">the pipeline behind every command:</span>
@@ -561,13 +561,13 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
   <p class="cmd" data-rise>pytest -q &amp;&amp; ruff check . &amp;&amp; mypy</p>
   <h1 data-rise style="--d:.1s">tested before <span class="ok">it was pretty.</span></h1>
   <div class="statgrid" data-rise style="--d:.14s">
-    <div><div class="v"><span class="num" data-count="264">0</span></div><div class="k">OFFLINE TESTS</div></div>
+    <div><div class="v"><span class="num" data-count="266">0</span></div><div class="k">OFFLINE TESTS</div></div>
     <div><div class="v"><span class="num" data-count="15">0</span></div><div class="k">CI RUNNERS</div></div>
     <div><div class="v"><span class="num" data-count="7">0</span></div><div class="k">FORMATS</div></div>
     <div><div class="v"><span class="num" data-count="0">0</span></div><div class="k">RUNTIME DEPS</div></div>
   </div>
   <div class="cols" data-rise style="--d:.24s">
-    <div><h3>the test suite</h3><p>264 tests across 13 files, all offline: HTTP is faked, so the suite proves rendering and statistics without touching the network. It grew from 47 tests at v1.0.</p><p style="margin-top:.3em">Deterministic renderers plus offline tests mean a change either reproduces exactly or fails loudly. That is how 30 subcommands landed without breaking an earlier format.</p></div>
+    <div><h3>the test suite</h3><p>266 tests across 13 files, all offline: HTTP is faked, so the suite proves rendering and statistics without touching the network. It grew from 47 tests at v1.0.</p><p style="margin-top:.3em">Deterministic renderers plus offline tests mean a change either reproduces exactly or fails loudly. That is how 30 subcommands landed without breaking an earlier format.</p></div>
     <div><h3>the CI matrix</h3><p>One workflow fans out over <span class="b">15 runners</span>: Ubuntu, macOS and Windows against Python 3.10 to 3.14, each running pytest, <span class="b">ruff</span> and <span class="b">mypy strict</span>. Three more ship: Pages deploy, release build, weekly report.</p></div>
     <div><h3>packaged to be used</h3><p>Pure Python with no dependencies, so it installs anywhere. A reusable <span class="b">GitHub Action</span> files a report as an artifact with no local setup. Ten tagged releases ship with built distributions.</p></div>
   </div>
@@ -579,7 +579,7 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
   <h1 data-rise style="--d:.1s">what actually <span class="ok">shipped.</span></h1>
   <div class="statgrid six" data-rise style="--d:.14s">
     <div><div class="v"><span class="num" data-count="30">0</span></div><div class="k">SUBCOMMANDS</div></div>
-    <div><div class="v"><span class="num" data-count="264">0</span></div><div class="k">TESTS</div></div>
+    <div><div class="v"><span class="num" data-count="266">0</span></div><div class="k">TESTS</div></div>
     <div><div class="v"><span class="num" data-count="12">0</span></div><div class="k">RELEASES</div></div>
     <div><div class="v"><span class="num" data-count="7">0</span></div><div class="k">FORMATS</div></div>
     <div><div class="v"><span class="num" data-count="62">0</span></div><div class="k">ACHIEVEMENTS</div></div>
@@ -621,7 +621,7 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
       <div class="lname">Haadiya Sayed</div>
       <div class="llane">Quality, tests and CI</div>
       <ul class="tasks">
-        <li>Grew the offline suite from 47 tests at v1.0 to 264 today</li>
+        <li>Grew the offline suite from 47 tests at v1.0 to 266 today</li>
         <li>Built the fake HTTP layer and fixtures: tests never use network</li>
         <li>Kept ruff and mypy strict clean across every release</li>
         <li>Maintained the 15-runner CI matrix and pinned the rate-limit fixes</li>
@@ -663,7 +663,7 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
   <p class="cmd" data-rise>prsnoop --version</p>
   <h1 data-rise style="--d:.1s">thank <span class="ok">you.</span></h1>
   <p data-rise style="--d:.18s"><span id="copycmd" style="cursor:pointer"><span class="prompt">$</span> pip install prsnoop <span class="dim" id="copyhint">[CLICK TO COPY]</span></span></p>
-  <p data-rise style="--d:.26s">prsnoop v2.3.0 · 30 subcommands · 7 formats · 264 offline tests · zero dependencies · MIT</p>
+  <p data-rise style="--d:.26s">prsnoop v2.3.0 · 30 subcommands · 7 formats · 266 offline tests · zero dependencies · MIT</p>
   <p class="dim" data-rise style="--d:.34s">Runs on Python 3.10 to 3.14 on macOS, Linux and Windows. Open issues from good-first to advanced.<br>
   <a href="https://github.com/MohammedAnasNathani/prsnoop">github.com/MohammedAnasNathani/prsnoop</a> · <a href="https://mohammedanasnathani.github.io/prsnoop/">live page</a> · <a href="https://github.com/MohammedAnasNathani/prsnoop/releases">releases</a></p>
   <p class="dim" data-rise style="--d:.42s">Questions welcome. Every command in this deck is reproducible from a snapshot, so we can run any of them live on request.</p>
@@ -731,7 +731,7 @@ var NOTES=[
 'Wrapped is the showpiece, the Spotify treatment for pull requests. Then the analytics: responsiveness names whose side the silence is on, forecast projects pace with a confidence measure, and ask answers plain-English questions locally with no model calls.',
 'Do not read all thirty. Read the groups, point at the flags strip, and make the claim: every subcommand takes the same window and format flags, so learning one command teaches the whole tool.',
 'Do not explain the console. Press PLAY ALL and let it type through every command in order. Use the group buttons if the reviewer asks about a specific area.',
-'Counters first: 264 tests, 15 CI runners, 7 formats, 0 dependencies. Then the reason it matters: deterministic renderers plus offline tests mean a change either reproduces exactly or fails loudly. Close on packaging: install, the Action, and ten tagged releases.',
+'Counters first: 266 tests, 15 CI runners, 7 formats, 0 dependencies. Then the reason it matters: deterministic renderers plus offline tests mean a change either reproduces exactly or fails loudly. Close on packaging: install, the Action, and ten tagged releases.',
 'Read the six numbers, then the self-report block: the tool describing its own repository with real PR titles. That is the proof this is not a mockup. Then one sentence per comparison row, and be honest about the gap: not yet on PyPI, no editor plugin.',
 'SLOW DOWN HERE. Name each lane and give two or three concrete tasks. Order follows the roll numbers: Sofiya 65, Haadiya 67, Naahid 68, Anas 70. Close on the workflow point: issue, branch, pull request, review, green CI, merge, tag, release.',
 'End on the install command and the open issues. Offer to run any command live, then invite questions.',
