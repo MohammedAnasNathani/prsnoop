@@ -116,6 +116,12 @@ animation:blink 1.06s steps(1) infinite}
 .cover .motto{font-size:clamp(20px,2.9vw,42px)}
 .cover .boot{font-size:clamp(10px,1.2vw,14px)}
 .cover p.dim{font-size:clamp(11px,1.5vw,18px)}
+.wordmark{font-family:var(--mono);font-size:clamp(6px,3.02vw,39px);line-height:1.06;
+color:var(--green);white-space:pre;margin:0;letter-spacing:0;font-weight:400;
+text-shadow:0 0 20px rgba(51,255,102,.3)}
+.rbanner{font-family:var(--mono);font-size:clamp(4.2px,2.42vw,10px);line-height:1.06;
+color:var(--green);white-space:pre;margin:0 0 .3em;letter-spacing:0;font-weight:400;
+text-shadow:0 0 14px rgba(51,255,102,.3)}
 .probrow{display:grid;grid-template-columns:1.45fr 1fr;gap:1em;align-items:start}
 .lanes2x2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--faint);
 border:1px solid var(--faint);position:relative}
@@ -321,7 +327,12 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
 <!-- 1 · cover -->
 <section class="slide cover on">
   <p class="boot" data-rise>FINAL REVIEW · prsnoop v2.3.0 · 260 tests · 0 dependencies · 30 subcommands · 7 formats</p>
-  <h1 data-rise style="--d:.12s">prsnoop<span class="ok blink_">_</span></h1>
+  <pre class="wordmark" data-rise style="--d:.12s">   ____  ____  ___                    
+  |  _ \|  _ \/ __| _ __   ___   ___  _ __
+  | |_) | |_) \___ \| '_ \ / _ \ / _ \| '_ \
+  |  __/|  _ &lt; ___) | | | | (_) | (_) | |_) |
+  |_|   |_| \_\____/|_| |_|\___/ \___/| .__/
+                                      |_|</pre>
   <p class="motto" data-rise style="--d:.22s">what did your pull requests <span class="ok">actually</span> do?</p>
   <p data-rise style="--d:.3s">A command-line tool that turns any GitHub username into a report you can read, send, or publish. This deck is the whole story: the problem, the design, every version from v1.0 to v2.3, and a live run of every command.</p>
   <p class="dim" data-rise style="--d:.4s">Sofiya Patwekar · Haadiya Sayed · Naahid Sayyed · Mohammed Anas Nathani<br>
@@ -685,9 +696,15 @@ font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-
 
 </div>
 <div id="rotate">
+  <pre class="rbanner" aria-hidden="true">   ____  ____  ___                    
+  |  _ \|  _ \/ __| _ __   ___   ___  _ __
+  | |_) | |_) \___ \| '_ \ / _ \ / _ \| '_ \
+  |  __/|  _ &lt; ___) | | | | (_) | (_) | |_) |
+  |_|   |_| \_\____/|_| |_|\___/ \___/| .__/
+                                      |_|</pre>
   <div class="ico"></div>
   <h2>ROTATE YOUR DEVICE</h2>
-  <p>This deck is 16:9. Turn your phone sideways and tap the screen once so it goes full screen, and nothing will be cut off.</p>
+  <p>This deck is 16:9. Turn your phone sideways and tap the screen once so it goes full screen.</p>
   <p class="tiny">TAP AFTER ROTATING TO GO FULL SCREEN<br><a href="#" id="rotateskip" style="color:var(--dim)">or continue in portrait</a></p>
   <p class="tiny" id="ioshelp" style="display:none;color:var(--green);max-width:26em">ON iPHONE THE BROWSER BARS CAN ONLY BE HIDDEN BY INSTALLING THE DECK: TAP <b>SHARE</b> &rarr; <b>ADD TO HOME SCREEN</b>, THEN OPEN IT FROM THE NEW ICON.</p>
 </div>
