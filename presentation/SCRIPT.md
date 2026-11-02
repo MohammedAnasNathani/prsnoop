@@ -148,7 +148,7 @@ If you want to stop me on something specific, the group buttons run just that ar
 
 None of this was pretty before it was correct.
 
-Two hundred and sixty tests, across thirteen files, and all of them run offline. The HTTP layer is faked, so the suite proves the statistics and the rendering without ever touching the network. It started at forty seven tests back in version one.
+Two hundred and sixty four tests, across thirteen files, and all of them run offline. The HTTP layer is faked, so the suite proves the statistics and the rendering without ever touching the network. It started at forty seven tests back in version one.
 
 The CI matrix fans out across fifteen runners. Ubuntu, macOS and Windows, against Python 3.10 through 3.14, and every one of them runs pytest, ruff, and mypy in strict mode. Three more workflows handle Pages, releases, and the weekly report.
 

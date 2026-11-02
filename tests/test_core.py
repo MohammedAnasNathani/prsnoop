@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 import pytest
 
 from prsnoop.fetch import _repo_of, fetch_user_activity
-from prsnoop.models import PRRecord
+from prsnoop.models import MERGED, PRRecord
 from prsnoop.stats import build_activity, build_stats
 
 # ------------------------------------------------------------------- models
@@ -256,3 +256,101 @@ class TestRepoOf:
             _repo_of({"repository_url": "https://api.github.com/repos/aio-libs/yarl"})
             == "aio-libs/yarl"
         )
+
+
+# ------------------------------------------------- batched GraphQL fetch path
+
+
+class _FakeGraphQL:
+    """A client that can batch: a token plus a canned query result."""
+
+    def __init__(self, response):
+        self.token = "fake"
+        self.response = response
+        self.queries: list[str] = []
+
+    def graphql(self, query, variables=None):
+        self.queries.append(query)
+        return self.response
+
+
+def _batch_response():
+    return {
+        "r0": {
+            "primaryLanguage": {"name": "Python"},
+            "p0": {
+                "additions": 42,
+                "deletions": 7,
+                "changedFiles": 3,
+                "mergedAt": "2026-07-12T00:00:00Z",
+            },
+            "p1": {
+                "additions": 5,
+                "deletions": 1,
+                "changedFiles": 2,
+                "mergedAt": None,
+            },
+        }
+    }
+
+
+def _search_item(number):
+    return {
+        "number": number,
+        "title": "Fix IndexError on empty host",
+        "html_url": f"https://github.com/aio-libs/yarl/pull/{number}",
+        # The search API reports a merged PR as merely closed.
+        "state": "closed",
+        "created_at": "2026-07-10T00:00:00Z",
+    }
+
+
+class TestBatchedDetails:
+    def test_payload_carries_everything_a_record_needs(self):
+        from prsnoop.fetch import _batched_pr_details
+
+        payloads = _batched_pr_details(_FakeGraphQL(self._resp), [("aio-libs/yarl", 1000)])
+        got = payloads[("aio-libs/yarl", 1000)]
+        assert got["additions"] == 42
+        assert got["deletions"] == 7
+        assert got["changed_files"] == 3
+        assert got["merged_at"] == "2026-07-12T00:00:00Z"
+        assert got["base"]["repo"]["language"] == "Python"
+
+    def test_merged_pr_stays_merged(self):
+        """Regression: without mergedAt every merged PR was recorded closed."""
+        from prsnoop.fetch import _batched_pr_details, _pr_record
+
+        client = _FakeGraphQL(self._resp)
+        payloads = _batched_pr_details(client, [("aio-libs/yarl", 1000)])
+        detail = payloads[("aio-libs/yarl", 1000)]
+        record = _pr_record(client, _search_item(1000), "aio-libs/yarl", detail=detail)
+        assert record.state == MERGED
+        assert record.merged_at is not None
+        assert record.language == "Python"
+
+    def test_unmerged_pr_does_not_become_merged(self):
+        from prsnoop.fetch import _batched_pr_details, _pr_record
+
+        client = _FakeGraphQL(self._resp)
+        # Both targets, so the second one maps to the second canned node.
+        targets = [("aio-libs/yarl", 1000), ("aio-libs/yarl", 1001)]
+        payloads = _batched_pr_details(client, targets)
+        detail = payloads[("aio-libs/yarl", 1001)]
+        record = _pr_record(client, _search_item(1001), "aio-libs/yarl", detail=detail)
+        assert record.state != MERGED
+        assert record.merged_at is None
+
+    def test_query_asks_for_the_fields_the_payload_needs(self):
+        from prsnoop.fetch import _batched_pr_details
+
+        client = _FakeGraphQL(self._resp)
+        _batched_pr_details(client, [("aio-libs/yarl", 1000)])
+        query = client.queries[0]
+        wanted = ("additions", "deletions", "changedFiles", "mergedAt", "primaryLanguage")
+        for field in wanted:
+            assert field in query, field
+
+    @property
+    def _resp(self):
+        return _batch_response()
