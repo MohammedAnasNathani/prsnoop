@@ -11,7 +11,7 @@
     prsnoop team alice bob carol               # team leaderboard
     prsnoop wrapped simonw                     # year in review superlatives
     prsnoop readme simonw                      # profile README generator
-    prsnoop card simonw -o card.svg            # shareable SVG stat card
+    prsnoop card simonw                        # SVG stat card -> ~/Downloads
     prsnoop radar owner/repo                   # open PR triage by staleness
     prsnoop changelog owner/repo --tag v1.2.0  # release notes from merged PRs
     prsnoop ci simonw --min-prs 5              # CI quality gates + step summary
@@ -24,19 +24,23 @@
     prsnoop timeline simonw                    # chronological event stream
     prsnoop network simonw                     # review/work flow graph + dot export
     prsnoop digest simonw --format slack       # Slack/email/Discord digest
-    prsnoop report simonw -o report.html       # one-page HTML masterpiece
+    prsnoop report simonw                      # one-page HTML -> ~/Downloads
     prsnoop tui simonw                         # full-screen live terminal dashboard
     prsnoop level simonw                       # XP + 100-level progression
     prsnoop dna simonw                         # contributor DNA fingerprint
     prsnoop responsiveness simonw              # who waits: you or maintainers?
-    prsnoop showcase simonw -o showcase.html   # interactive web app, one file
-    prsnoop battle antfu simonw -o vs.html     # head-to-head versus web page
-    prsnoop wrapped simonw --web -o wrap.html  # story-mode wrapped, slides
+    prsnoop showcase simonw                    # interactive web app, one file
+    prsnoop battle antfu simonw                # head-to-head versus web page
+    prsnoop wrapped simonw --web               # story-mode wrapped, slides
     prsnoop serve simonw                       # live dashboard on 127.0.0.1
-    prsnoop export simonw                      # full report pack to a folder
+    prsnoop export simonw                      # full report pack -> ~/Downloads
     prsnoop auth                               # check token / rate limit
     prsnoop snap simonw -o snap.json           # frozen snapshot for tests
     prsnoop snap simonw --compare snap.json    # diff two windows
+
+Documents (HTML and SVG) are saved into ~/Downloads when no -o is given and
+prsnoop is running at a terminal. Piped output still goes to stdout, and
+PRSNOOP_NO_SAVE=1 forces stdout for everything.
 """
 
 from __future__ import annotations
@@ -47,6 +51,7 @@ import csv
 import io
 import json
 import logging
+import os
 import sys
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -60,6 +65,10 @@ from prsnoop.render import RENDERERS
 from prsnoop.stats import build_activity, build_trend, sort_prs
 
 log = logging.getLogger("prsnoop")
+
+# Where a document goes when the caller did not name a path. Only used when
+# prsnoop is attached to a terminal; see _emit.
+DOWNLOADS_DIR = Path.home() / "Downloads"
 
 
 def _validate_date(value: str, option: str) -> str:
@@ -1230,9 +1239,17 @@ def cmd_export(args: argparse.Namespace) -> int:
     if args.until and not args.since:
         print("prsnoop: --until requires --since", file=sys.stderr)
         return 2
-    out_dir = args.output or Path(
+    pack_name = (
         f"prsnoop-{args.user}-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
     )
+    if args.output is not None:
+        out_dir = args.output
+    elif _interactive():
+        out_dir = DOWNLOADS_DIR / pack_name
+    else:
+        # Non interactive: a CI job has no business writing to someone's
+        # home directory, so the old relative folder is the safer default.
+        out_dir = Path(pack_name)
     client = GitHubClient(cache_dir=args.cache_dir, user_agent=f"prsnoop/{__version__}")
     try:
         prs, reviews, issues, fully = fetch_user_activity(
@@ -1359,12 +1376,52 @@ def _fetch_activity(args: argparse.Namespace, days: int) -> Activity:
     return activity
 
 
-def _emit(rendered: str, output: Path | None) -> None:
+# The renderers whose output is a document someone opens rather than reads in
+# the terminal. Only these save themselves when -o is left off.
+_DOCUMENT_HEADS: tuple[str, ...] = ("<!doctype html", "<svg", "<?xml")
+
+
+def _interactive() -> bool:
+    """True when prsnoop is talking to a person at a terminal.
+
+    Piped, redirected and captured output is not interactive, so shell
+    pipelines and the test suite keep getting stdout exactly as before.
+    """
+    return bool(getattr(sys.stdout, "isatty", lambda: False)())
+
+
+def _is_document(rendered: str) -> bool:
+    return rendered.lstrip()[:80].lower().startswith(_DOCUMENT_HEADS)
+
+
+def _emit(
+    rendered: str,
+    output: Path | None,
+    default_name: str | None = None,
+) -> None:
+    """Save the rendered report, or print it.
+
+    An explicit -o always wins. Without one, a document renderer (HTML or
+    SVG) run interactively saves itself into Downloads, so a live demo does
+    not have to retype the same path for every command. Everything else, and
+    anything non interactive, still goes to stdout. Set PRSNOOP_NO_SAVE to
+    force stdout either way.
+    """
+    if (
+        output is None
+        and default_name is not None
+        and _is_document(rendered)
+        and _interactive()
+        and not os.environ.get("PRSNOOP_NO_SAVE")
+    ):
+        output = DOWNLOADS_DIR / default_name
     if output:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(rendered, encoding="utf-8")
         print(f"prsnoop: wrote {output}", file=sys.stderr)
     else:
+        # Windows consoles default to a legacy code page that cannot encode
+        # some report characters; reconfigure for UTF-8 when possible.
         for stream in (sys.stdout, sys.stderr):
             reconfigure = getattr(stream, "reconfigure", None)
             if reconfigure is not None:
@@ -1398,7 +1455,7 @@ def cmd_wrapped(args: argparse.Namespace) -> int:
         rendered = render_wrapped_markdown(wrapped)
     else:
         rendered = render_wrapped_table(wrapped)
-    _emit(rendered, args.output)
+    _emit(rendered, args.output, default_name=f"prsnoop-wrapped-{args.user}.html")
     return 0
 
 
@@ -1436,7 +1493,11 @@ def cmd_card(args: argparse.Namespace) -> int:
     except GitHubError as exc:
         print(f"prsnoop: {exc}", file=sys.stderr)
         return 3
-    _emit(render_card(activity, theme=args.theme), args.output)
+    _emit(
+        render_card(activity, theme=args.theme),
+        args.output,
+        default_name=f"prsnoop-card-{args.user}.svg",
+    )
     return 0
 
 
@@ -1869,7 +1930,11 @@ def cmd_report(args: argparse.Namespace) -> int:
     except GitHubError as exc:
         print(f"prsnoop: {exc}", file=sys.stderr)
         return 3
-    _emit(render_report_html(activity), args.output)
+    _emit(
+        render_report_html(activity),
+        args.output,
+        default_name=f"prsnoop-report-{args.user}.html",
+    )
     return 0
 
 
@@ -1908,7 +1973,11 @@ def cmd_showcase(args: argparse.Namespace) -> int:
     except GitHubError as exc:
         print(f"prsnoop: {exc}", file=sys.stderr)
         return 3
-    _emit(render_showcase_html(activity), args.output)
+    _emit(
+        render_showcase_html(activity),
+        args.output,
+        default_name=f"prsnoop-showcase-{args.user}.html",
+    )
     return 0
 
 
@@ -1935,7 +2004,11 @@ def cmd_battle(args: argparse.Namespace) -> int:
             return 3
         sides.append(build_activity(user, prs, reviews, issues,
                                     window_days=args.days))
-    _emit(render_battle_html(sides[0], sides[1]), args.output)
+    _emit(
+        render_battle_html(sides[0], sides[1]),
+        args.output,
+        default_name=f"prsnoop-battle-{args.user_a}-vs-{args.user_b}.html",
+    )
     return 0
 
 
@@ -2023,7 +2096,7 @@ def cmd_dna(args: argparse.Namespace) -> int:
         rendered = json.dumps(d.to_dict(), indent=2)
     else:
         rendered = render_dna_table(d)
-    _emit(rendered, args.output)
+    _emit(rendered, args.output, default_name=f"prsnoop-dna-{args.user}.svg")
     return 0
 
 
@@ -2582,19 +2655,7 @@ def run(argv: list[str] | None = None) -> int:
             activity, prs=[pr for pr in activity.prs if pr.state == args.only]
         )
     rendered = RENDERERS[args.format](report_activity)
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(rendered, encoding="utf-8")
-        print(f"prsnoop: wrote {args.output}", file=sys.stderr)
-    else:
-        # Windows consoles default to a legacy code page that cannot encode
-        # some report characters; reconfigure for UTF-8 when possible.
-        for stream in (sys.stdout, sys.stderr):
-            reconfigure = getattr(stream, "reconfigure", None)
-            if reconfigure is not None:
-                with contextlib.suppress(ValueError, OSError):
-                    reconfigure(encoding="utf-8")
-        print(rendered)
+    _emit(rendered, args.output, default_name=f"prsnoop-{args.user}.html")
     return 0
 
 

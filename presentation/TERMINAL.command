@@ -37,7 +37,7 @@ cat <<'EOF'
 EOF
 printf "%s" "$R"
 printf "  %sSHOWCASE TERMINAL%s · prsnoop %s\n" "$W" "$R" "$(prsnoop --version 2>/dev/null | awk '{print $2}')"
-printf "  %s260 tests · 0 dependencies · 30 subcommands · 7 formats%s\n\n" "$D" "$R"
+printf "  %s277 tests · 0 dependencies · 30 subcommands · 7 formats%s\n\n" "$D" "$R"
 
 if [ -n "${PRSNOOP_TOKEN:-}" ]; then
   printf "  token   %sready%s  (5000 req/hr, ETag cache on)\n" "$G" "$R"
@@ -53,6 +53,12 @@ printf "  %sprsnoop score simonw%s            %shealth score + burnout%s\n" "$G"
 printf "  %sprsnoop wrapped simonw --days 30%s %syear in review%s\n" "$G" "$R" "$D" "$R"
 printf "  %sprsnoop repo MohammedAnasNathani/prsnoop --days 90%s  %sour own repo%s\n" "$G" "$R" "$D" "$R"
 printf "  %sprsnoop --help%s                  %sall 30 subcommands%s\n\n" "$G" "$R" "$D" "$R"
+
+printf "%sDOCUMENTS GO TO ~/Downloads%s  %s(no -o needed; prsnoop prints the path it wrote)%s\n" "$W" "$R" "$D" "$R"
+printf "  %sprsnoop report simonw%s            %sone-page HTML%s\n" "$G" "$R" "$D" "$R"
+printf "  %sprsnoop showcase simonw%s          %sinteractive web app%s\n" "$G" "$R" "$D" "$R"
+printf "  %sprsnoop card simonw%s              %sSVG stat card%s\n" "$G" "$R" "$D" "$R"
+printf "  %sopen ~/Downloads%s                 %ssee everything it saved%s\n\n" "$G" "$R" "$D" "$R"
 
 printf "%sBEFORE YOU PRESENT%s  %s(run this once, then every command answers instantly)%s\n" "$W" "$R" "$D" "$R"
 printf "  %sbash presentation/warm.sh%s   %sprefetch the cache, about 20s, then it stays warm%s\n\n" "$G" "$R" "$D" "$R"

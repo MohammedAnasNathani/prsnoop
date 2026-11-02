@@ -356,11 +356,33 @@ language donut, and a forecast strip:
 prsnoop network simonw --format dot | dot -Tpng -o network.png
 prsnoop timeline simonw
 prsnoop digest simonw --format slack     # paste into a webhook
-prsnoop report simonw -o report.html     # one file, no assets, opens anywhere
+prsnoop report simonw                    # -> ~/Downloads/prsnoop-report-simonw.html
 ```
 
 HTML reports for wide windows include a GitHub-style contribution
 calendar, one cell per day, greener means more shipped.
+
+### where files go
+
+Documents land in `~/Downloads` without you typing a path. The commands whose
+output is a file you open, `report`, `showcase`, `wrapped --web`, `battle`,
+`card`, and `dna --format svg`, plus the bare `prsnoop <user> -f html` and
+`prsnoop export`, save there by default and say so on stderr:
+
+```text
+$ prsnoop report simonw
+prsnoop: wrote /Users/you/Downloads/prsnoop-report-simonw.html
+```
+
+Three rules decide it, in order:
+
+1. `-o anywhere/you/like.html` always wins.
+2. Piped or redirected output goes to stdout, so `prsnoop report simonw > r.html`
+   still works and nothing is written twice.
+3. `PRSNOOP_NO_SAVE=1` forces stdout for everything, for scripting.
+
+Text renderers (`table`, `json`, `yaml`, `csv`, `markdown`) always print to
+stdout, because those exist to be read and piped.
 
 Level up. Merges, lines, reviews, and achievement points all convert to
 xp, xp maps to a level, and levels map to ranks, DRIFTER through GHOST:
@@ -576,7 +598,7 @@ git clone https://github.com/MohammedAnasNathani/prsnoop && cd prsnoop
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-pytest          # 209 tests, all offline
+pytest          # 277 tests, all offline
 ruff check .    # lint
 mypy            # strict typing
 ```

@@ -10,6 +10,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 - `prsnoop live <user>`: interactive single-fetch PR browser for a TTY,
   with paging, table/json toggling, and one-time fetch semantics.
 
+### Changed
+- Document commands save into `~/Downloads` when `-o` is omitted and
+  prsnoop is running at a terminal, instead of printing a whole HTML page
+  into the scrollback. This covers `report`, `showcase`, `wrapped --web`,
+  `battle`, `card`, `dna --format svg`, the bare `prsnoop <user> -f html`,
+  and the `export` pack folder. An explicit `-o` still wins, piped or
+  redirected output still goes to stdout, text renderers still print, and
+  `PRSNOOP_NO_SAVE=1` forces stdout everywhere.
+
 ## [2.3.0] - 2026-09-23
 
 ### Added
