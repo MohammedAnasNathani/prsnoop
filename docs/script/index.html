@@ -64,31 +64,30 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 <a href="#s14"><b>14</b> The team</a>
 <a href="#s15"><b>15</b> Thank you</a>
 <a href="#s16"><b>16</b> Closing clip</a>
-<a href="#p16"><b>--</b> Practical notes</a>
 </nav>
 <main>
 <section id="s1">
-<h2><span class="n">1</span>Cover<em class="t">~50s · 128 words</em></h2>
+<h2><span class="n">1</span>Cover<em class="t">~40s · 101 words</em></h2>
 <div class="b">
 <p>Good morning. This is prsnoop. You give it a GitHub username, and it tells you what that person actually did with their pull requests. Not just how many. How fast they merged, how big the patches were, whether they are quietly burning out, and how they stack up against someone else. It runs in a terminal, it has no dependencies, and every number in this deck came from running it for real. No mockups anywhere. I will walk you through the problem we started with, the design, every version from 1.0 to 2.3, and then we run the whole thing live.</p>
 </div>
 </section>
 <section id="s2">
-<h2><span class="n">2</span>Agenda<em class="t">~42s · 105 words</em></h2>
+<h2><span class="n">2</span>Agenda<em class="t">~48s · 120 words</em></h2>
 <div class="b">
 <p>Quick map of where we are going. The first two slides are context: what the problem actually is, and why the tools that already exist do not solve it. The middle chunk is the product. How it is built, and how it grew across twelve releases. Then the last third is proof. We run every command live, we show you the test suite and the CI pipeline, and we show you what actually shipped. Four of us built this over the semester. You will meet us properly on slide fourteen.</p>
 <p>If you want to jump around, the tab bar along the top goes straight to any slide, so you do not have to sit through anything you have already seen.</p>
 </div>
 </section>
 <section id="s3">
-<h2><span class="n">3</span>Problem<em class="t">~56s · 140 words</em></h2>
+<h2><span class="n">3</span>Problem<em class="t">~59s · 148 words</em></h2>
 <div class="b">
 <p>Here is the thing that started all of this. Your GitHub profile shows a wall of green squares. Everybody reads that as "this person is productive". But those squares answer none of the questions that actually matter. Did anything I wrote get merged? Am I getting faster or slower? Am I the one who is quietly burning out? And how do I compare, honestly, to somebody else? The heatmap on the right is exactly what GitHub shows everybody. It counts activity. It does not tell you whether any of it landed.</p>
 <p>So we looked at what already exists. The official <code>gh</code> CLI lists pull requests, and that is it, no analysis. OpenSauced is a dashboard, but you need an account, and it never runs in your terminal or in CI. OSS Insight looks at whole ecosystems, not at one person. So we built the thing that was missing.</p>
 </div>
 </section>
 <section id="s4">
-<h2><span class="n">4</span>What it is, and how it works<em class="t">~48s · 120 words</em></h2>
+<h2><span class="n">4</span>What it is, and how it works<em class="t">~44s · 111 words</em></h2>
 <div class="b">
 <p>One username in, one report out. No account, no server, nothing leaves your machine.</p>
 <p>Under the hood it is a pipeline. Fetch, then enrich each pull request, then normalise all of it into a single snapshot object. That snapshot is the whole design. Every renderer reads from it and nothing else. Seven core modules, and the snapshot is the seam between them.</p>
@@ -96,7 +95,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s5">
-<h2><span class="n">5</span>Engineering rules<em class="t">~52s · 130 words</em></h2>
+<h2><span class="n">5</span>Engineering rules<em class="t">~54s · 136 words</em></h2>
 <div class="b">
 <p>Reliability here was a design decision, not an afterthought.</p>
 <p>Tokens come from the environment only. Never written to disk, never logged, never pasted into a report. Rate limits are handled properly: a secondary limit gets retried with backoff, and if we genuinely run out, it fails fast with exit code four instead of hanging your terminal. Every request carries an ETag, so running the same report twice costs no quota at all.</p>
@@ -105,7 +104,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s6">
-<h2><span class="n">6</span>Version 1<em class="t">~50s · 122 words</em></h2>
+<h2><span class="n">6</span>Version 1<em class="t">~47s · 117 words</em></h2>
 <div class="b">
 <p>Version one was about making the core solid, and nothing else.</p>
 <p>1.0.0 shipped the piece everything else depends on: a REST client with zero dependencies and ETag caching. Forty seven tests. Then 1.1 added the timing analytics, so percentiles, streaks, language mix. 1.2 brought badge generation and the reusable GitHub Action. 1.3 added org-level reports and window over window trends.</p>
@@ -114,7 +113,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s7">
-<h2><span class="n">7</span>Version 2<em class="t">~46s · 110 words</em></h2>
+<h2><span class="n">7</span>Version 2<em class="t">~42s · 104 words</em></h2>
 <div class="b">
 <p>Version two changed what the tool was for.</p>
 <p>Version one told you what you did. Version two tells you what it means.</p>
@@ -123,7 +122,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s8">
-<h2><span class="n">8</span>Formats and scoring<em class="t">~52s · 128 words</em></h2>
+<h2><span class="n">8</span>Formats and scoring<em class="t">~48s · 119 words</em></h2>
 <div class="b">
 <p>Two ideas share this slide.</p>
 <p>First, one snapshot becomes seven formats. Table, markdown, HTML with a heatmap, CSV, JSON, YAML, and badges as inline SVG. Same data, seven renderers, zero drift between them.</p>
@@ -132,7 +131,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s9">
-<h2><span class="n">9</span>Wrapped, the web surfaces, and the analytics<em class="t">~54s · 132 words</em></h2>
+<h2><span class="n">9</span>Wrapped, the web surfaces, and the analytics<em class="t">~53s · 132 words</em></h2>
 <div class="b">
 <p>This is the slide I would show someone who thinks it is just a statistics tool.</p>
 <p>On the left, wrapped. It is the Spotify year in review treatment, applied to pull requests. It runs as a table, markdown, JSON, or a swipeable web story, all from the same numbers. Then the surfaces. Showcase builds a whole interactive web app in a single file. Battle does head to head. Card makes a stat card you can drop into a README. Every one of them is one file with no external requests, so you can email it to somebody and it just opens.</p>
@@ -140,7 +139,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s10">
-<h2><span class="n">10</span>The command surface<em class="t">~46s · 108 words</em></h2>
+<h2><span class="n">10</span>The command surface<em class="t">~41s · 103 words</em></h2>
 <div class="b">
 <p>Thirty subcommands, one grammar. And please do not read all thirty, I will not.</p>
 <p>The point is the groups. Scoring, progression, the web surfaces, team and repo reports, and the operational ones.</p>
@@ -149,7 +148,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s11">
-<h2><span class="n">11</span>Live demo<em class="t">~40s · 96 words</em></h2>
+<h2><span class="n">11</span>Live demo<em class="t">~41s · 102 words</em></h2>
 <div class="b">
 <p>This is the part where I stop talking.</p>
 <p>Press PLAY ALL and it types through every command in order, on real data. If it hesitates for a second, that is the first network fetch. After that everything is cached and it comes back instantly. That first fetch is the only slow moment in the whole demo, so please do not read anything into it.</p>
@@ -157,7 +156,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s12">
-<h2><span class="n">12</span>Quality and shipping<em class="t">~52s · 128 words</em></h2>
+<h2><span class="n">12</span>Quality and shipping<em class="t">~45s · 112 words</em></h2>
 <div class="b">
 <p>None of this was pretty before it was correct.</p>
 <p>Two hundred and sixty tests, across thirteen files, and all of them run offline. The HTTP layer is faked, so the suite proves the statistics and the rendering without ever touching the network. It started at forty seven tests back in version one.</p>
@@ -166,7 +165,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s13">
-<h2><span class="n">13</span>What actually shipped<em class="t">~50s · 122 words</em></h2>
+<h2><span class="n">13</span>What actually shipped<em class="t">~46s · 114 words</em></h2>
 <div class="b">
 <p>Here is what actually shipped. Thirty subcommands, two hundred and sixty tests, twelve releases, seven formats, sixty two achievements, and zero dependencies.</p>
 <p>The part I am proudest of is the self report. That block in the middle is prsnoop describing its own repository. Ten pull requests opened, nine merged, two active authors, and those are real pull request titles from this project. We did not write a mockup for this deck. We ran the tool on our own repo.</p>
@@ -174,7 +173,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s14">
-<h2><span class="n">14</span>The team<em class="t">~58s · 146 words</em></h2>
+<h2><span class="n">14</span>The team<em class="t">~56s · 141 words</em></h2>
 <div class="b">
 <p>Four people built this, and I want to give each of them a real minute.</p>
 <p>Sofiya built the fetch pipeline and the statistics underneath it. The percentiles, the activity bucketing, the streak maths.</p>
@@ -185,7 +184,7 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s15">
-<h2><span class="n">15</span>Thank you<em class="t">~44s · 104 words</em></h2>
+<h2><span class="n">15</span>Thank you<em class="t">~52s · 129 words</em></h2>
 <div class="b">
 <p>That is the project.</p>
 <p>One command to install it. It runs on Python 3.10 to 3.14, on macOS, Linux and Windows. The repository is at github dot com slash MohammedAnasNathani slash prsnoop, and there are links on screen for the live page and the releases.</p>
@@ -196,19 +195,10 @@ section{page-break-inside:avoid;border-color:#ddd}h1,h2 .n,code{color:#0a7a2f}h2
 </div>
 </section>
 <section id="s16">
-<h2><span class="n">16</span>Closing clip<em class="t">~15s</em></h2>
+<h2><span class="n">16</span>Closing clip<em class="t">~18s · 45 words</em></h2>
 <div class="b">
 <p>Press PLAY THE ENDING. Let the clip run all the way through without talking over it, then take questions.</p>
 <p>If you are presenting from a phone in landscape and the clip will not start, tap it once. Browsers block autoplay until you touch the page.</p>
-</div>
-</section>
-<section id="p16" class="notes">
-<h2><span class="n">&mdash;&mdash;</span>Practical notes</h2>
-<div class="b">
-<p><strong>Before you start.</strong> Warm the cache. Open the terminal and run <code>bash presentation/warm.sh</code>. It takes about twenty seconds and after that every command answers instantly for fifteen minutes. If you skip this, the very first command in the live demo will sit there for the better part of a minute and it will look like it has frozen. It has not.</p>
-<p><strong>If a number looks different live.</strong> The deck's demo blocks were captured from a snapshot, and the GitHub API keeps moving. If the live run shows slightly different totals, say so. "This is live data, so it has moved a little since we captured the deck." That is a stronger answer than pretending it matches.</p>
-<p><strong>Timing.</strong> If you are running long, cut slide 5 and slide 12 down to two sentences each. They are the two most compressible. Do not cut slide 14, that one is about people.</p>
-<p><strong>Questions.</strong> If something needs a live answer, <code>prsnoop ask &lt;username&gt; "your question"</code> handles a lot of the obvious ones without a network call.</p>
 </div>
 </section>
 </main>
