@@ -216,7 +216,9 @@ If you are presenting from a phone in landscape and the clip will not start, tap
 
 ## Practical notes
 
-**Before you start.** Warm the cache. Open the terminal and run `bash presentation/warm.sh`. It takes about twenty seconds and after that every command answers instantly for fifteen minutes. If you skip this, the very first command in the live demo will sit there for the better part of a minute and it will look like it has frozen. It has not.
+**Before you start.** Warm the cache. Open the terminal and run `bash presentation/warm.sh`. It takes about twenty seconds and after that every command answers instantly for the rest of the session. While it works you will see a counter ticking up, like `fetching pull requests 40/84`. That counter is your friend. It means the tool is talking to GitHub, not stuck.
+
+**If you forget to warm it,** a fresh user costs about twenty seconds. That is not us being slow. GitHub answers one request per pull request to get the diff sizes, and each round trip is roughly half a second, so a user with eighty pull requests is about eighty of them. You cannot make that faster, you can only pay it once, which is exactly what warming the cache does.
 
 **If a number looks different live.** The deck's demo blocks were captured from a snapshot, and the GitHub API keeps moving. If the live run shows slightly different totals, say so. "This is live data, so it has moved a little since we captured the deck." That is a stronger answer than pretending it matches.
 

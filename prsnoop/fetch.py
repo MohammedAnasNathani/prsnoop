@@ -17,7 +17,12 @@ Strategy
 from __future__ import annotations
 
 import logging
+import os
+import sys
+from collections.abc import Callable, Iterable
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
+from typing import TypeVar
 
 from prsnoop.github import GitHubClient
 from prsnoop.models import (
@@ -28,6 +33,12 @@ from prsnoop.models import (
 )
 
 log = logging.getLogger("prsnoop")
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+# Called as work completes: (done, total).
+Progress = Callable[[int, int], None]
 
 SEARCH_PATH = "/search/issues"
 
@@ -45,6 +56,83 @@ def _repo_of(item: JsonDict) -> str:
 def _cutoff(days: int) -> str:
     """YYYY-MM-DD ``days`` days ago (UTC)."""
     return (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+
+
+# Per-PR detail fetches are one small GET each and dominate wall time, so
+# they run concurrently. Eight hides the round-trip latency while staying
+# well inside GitHub's secondary rate limits. Override with PRSNOOP_WORKERS.
+DEFAULT_WORKERS = 8
+_MIN_PARALLEL = 4
+
+
+def _workers() -> int:
+    raw = os.environ.get("PRSNOOP_WORKERS")
+    if not raw:
+        return DEFAULT_WORKERS
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return DEFAULT_WORKERS
+
+
+def _pmap(
+    fn: Callable[[T], R],
+    items: Iterable[T],
+    progress: Progress | None = None,
+) -> list[R]:
+    """Order-preserving parallel map for I/O bound work.
+
+    Runs serially for short inputs: below the threshold the pool costs more
+    than it saves, and serial also keeps the offline test fakes on one
+    thread. Set ``PRSNOOP_WORKERS=1`` to force fully serial behaviour.
+
+    ``progress(done, total)`` is called as work completes if given.
+    """
+    work = list(items)
+    total = len(work)
+    if total == 0:
+        return []
+    workers = _workers()
+    if workers == 1 or total < _MIN_PARALLEL:
+        out: list[R] = []
+        for done, item in enumerate(work, 1):
+            out.append(fn(item))
+            if progress:
+                progress(done, total)
+        return out
+    results: dict[int, R] = {}
+    with ThreadPoolExecutor(max_workers=min(workers, total)) as pool:
+        futures = {pool.submit(fn, item): idx for idx, item in enumerate(work)}
+        for done, future in enumerate(as_completed(futures), 1):
+            results[futures[future]] = future.result()
+            if progress:
+                progress(done, total)
+    return [results[i] for i in range(total)]
+
+
+def _ticker(label: str) -> Progress | None:
+    """Progress callback that writes to stderr only on a real terminal.
+
+    Keeps piped runs, CI, and the test suite byte-for-byte unchanged.
+    """
+    if not sys.stderr.isatty():
+        return None
+    width = 0
+
+    def tick(done: int, total: int) -> None:
+        nonlocal width
+        if done != total and done % 4:
+            return
+        text = f"  {label} {done}/{total}"
+        pad = " " * max(0, width - len(text))
+        sys.stderr.write("\r" + text + pad)
+        sys.stderr.flush()
+        width = len(text)
+        if done == total:
+            sys.stderr.write("\r" + " " * width + "\r")
+            sys.stderr.flush()
+
+    return tick
 
 
 def fetch_user_activity(
@@ -75,14 +163,13 @@ def fetch_user_activity(
         params={"q": f"author:{user} is:issue{org_qualifier}{range_qualifier}"},
     )
 
-    repos: set[str] = set()
-    prs: list[PRRecord] = []
-    enriched = 0
-    for item in pr_items:
-        repo = _repo_of(item)
-        repos.add(repo)
-        prs.append(_pr_record(client, item, repo))
-        enriched += 1
+    repos: set[str] = {_repo_of(item) for item in pr_items}
+    prs: list[PRRecord] = _pmap(
+        lambda item: _pr_record(client, item, _repo_of(item)),
+        pr_items,
+        _ticker("fetching pull requests"),
+    )
+    enriched = len(prs)
 
     fully_enriched = enriched <= ENRICH_BUDGET
     if not fully_enriched:
@@ -120,13 +207,20 @@ def fetch_user_activity(
             },
         )
         seen: set[tuple[str, int]] = set()
+        targets: list[tuple[str, int, JsonDict]] = []
         for item in involved:
             repo = _repo_of(item)
             number = item["number"]
             if (repo, number) in seen:
                 continue
             seen.add((repo, number))
-            reviews.extend(_reviews_on(client, user, repo, number, item))
+            targets.append((repo, number, item))
+        for chunk in _pmap(
+            lambda target: _reviews_on(client, user, target[0], target[1], target[2]),
+            targets,
+            _ticker("scanning reviews"),
+        ):
+            reviews.extend(chunk)
         # The involved-PR search is updated:-bounded, but reviews on those
         # PRs can be years old. Window-filter so counts, daily charts, and
         # streaks only see reviews submitted inside the report window.
@@ -170,21 +264,19 @@ def _attach_languages(client: GitHubClient, prs: list[PRRecord], repos: set[str]
     Uses a per-repo cache so a user with 50 PRs into 3 repos costs 3 calls,
     not 50. Repos that fail to resolve stay as 'Unknown'.
     """
-    cache: dict[str, str] = {}
-    for pr in prs:
-        if pr.repo in cache:
-            pr.language = cache[pr.repo]
-            continue
+    def lang_of(repo: str) -> tuple[str, str]:
         try:
-            info = client.get(f"/repos/{pr.repo}")
+            info = client.get(f"/repos/{repo}")
             if isinstance(info, dict):
-                lang = info.get("language") or "Unknown"
-            else:
-                lang = "Unknown"
+                return repo, (info.get("language") or "Unknown")
         except Exception:  # noqa: BLE001
-            lang = "Unknown"
-        cache[pr.repo] = lang
-        pr.language = lang
+            pass
+        return repo, "Unknown"
+
+    distinct = sorted(set(repos) | {pr.repo for pr in prs})
+    cache: dict[str, str] = dict(_pmap(lang_of, distinct))
+    for pr in prs:
+        pr.language = cache.get(pr.repo, "Unknown")
 
 
 def _reviews_on(

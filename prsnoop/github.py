@@ -48,6 +48,22 @@ class _NotModified(Exception):
     """Internal signal: the server answered 304 for a conditional GET."""
 
 
+# Cache lifetime. Override with PRSNOOP_CACHE_TTL (seconds) when a caller
+# wants the cache to outlive a single command, for example a demo session.
+DEFAULT_CACHE_TTL = 900.0
+
+
+def _ttl_from_env() -> float:
+    """Cache TTL in seconds, from PRSNOOP_CACHE_TTL when it parses."""
+    raw = os.environ.get("PRSNOOP_CACHE_TTL")
+    if not raw:
+        return DEFAULT_CACHE_TTL
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return DEFAULT_CACHE_TTL
+
+
 class GitHubClient:
     """Minimal GitHub REST v3 client used by the fetchers."""
 
@@ -55,13 +71,15 @@ class GitHubClient:
         self,
         token: str | None = None,
         cache_dir: Path | None = None,
-        cache_ttl: float = 900.0,
+        cache_ttl: float | None = None,
         user_agent: str = "prsnoop",
     ) -> None:
         if token is None:
             token = os.environ.get("PRSNOOP_TOKEN") or os.environ.get("GITHUB_TOKEN")
         self.token = token
         self.cache_dir = cache_dir
+        if cache_ttl is None:
+            cache_ttl = _ttl_from_env()
         self.cache_ttl = cache_ttl
         self._ratelimit_remaining: int | None = None
         self.headers = {
