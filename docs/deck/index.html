@@ -278,37 +278,18 @@ font-family:inherit;font-size:10.5px;letter-spacing:.14em;padding:.55em 1em;curs
   #progress{font-size:clamp(6px,.84vw,9.6px)}
   .qline .ans{font-size:.92em}
 }
-/* ---------- ending animation ---------- */
-#ending{position:fixed;inset:0;z-index:98;display:none;align-items:center;justify-content:center;
-background:rgba(2,10,5,.97);font-family:var(--mono);text-align:center;padding:6vw}
-#ending.on{display:flex}
-#ending .card{display:flex;flex-direction:column;align-items:center;gap:.85em}
-#ending h2{color:var(--green);font-size:clamp(24px,5vw,52px);letter-spacing:-.02em;font-weight:800;line-height:1.1}
-#ending .sub{color:var(--dim);font-size:clamp(9px,1.35vw,14px);max-width:34em;line-height:1.6}
-#ending .sub b{color:var(--text)}
-#endclose{background:transparent;border:1px solid var(--faint);color:var(--dim);font-family:inherit;
-font-size:10.5px;letter-spacing:.14em;padding:.55em 1.1em;cursor:pointer;margin-top:.3em}
-#endclose:hover{color:var(--text);border-color:var(--dim)}
+/* ---------- ending: full-screen thank-you clip ---------- */
 #endplay{background:transparent;border:1px solid var(--green);color:var(--green);font-family:inherit;
 font-weight:700;font-size:clamp(9px,1.1vw,12.5px);letter-spacing:.1em;padding:.5em 1.1em;cursor:pointer;
 margin-top:.5em}
 #endplay:hover{background:var(--green);color:#031007}
-#endvid.vidbox{width:clamp(260px,44vw,600px);aspect-ratio:16/9;display:flex;align-items:center;
-justify-content:center;border:1px solid var(--faint);background:#020a05;overflow:hidden}
-#endvid.vidbox iframe.yt{width:100%;height:100%;border:0;display:block}
-#endvid.vidbox .ham{width:auto;height:88%}
-.ham{width:clamp(140px,24vw,250px);height:auto;overflow:visible;
-animation:bob 1.15s ease-in-out infinite}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(-2.5deg)}50%{transform:translateY(-11px) rotate(2.5deg)}}
-.ham .armL{transform-origin:74px 92px;animation:waveL .9s ease-in-out infinite}
-.ham .armR{transform-origin:126px 92px;animation:waveR .9s ease-in-out infinite}
-@keyframes waveL{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(-34deg)}}
-@keyframes waveR{0%,100%{transform:rotate(6deg)}50%{transform:rotate(34deg)}}
-.ham .eye{animation:blinkEye 3.4s steps(1) infinite}
-@keyframes blinkEye{0%,92%{transform:scaleY(1)}95%{transform:scaleY(.1)}100%{transform:scaleY(1)}}
-.ham .eye{transform-box:fill-box;transform-origin:center}
+.slide.vid{padding:0;background:#041007}
+.slide.vid video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+background:#041007;cursor:pointer;display:block}
+.slide.vid .vhint{position:absolute;bottom:2.4%;left:50%;transform:translateX(-50%);white-space:nowrap;
+font-size:clamp(8px,.95vw,11px);color:var(--faint);letter-spacing:.16em;pointer-events:none}
 @media (prefers-reduced-motion:reduce){
-  .ham,.ham .armL,.ham .armR,.ham .eye,#rotate .ico{animation:none!important}
+  #rotate .ico{animation:none!important}
 }
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}[data-rise]{opacity:1;transform:none}}
@@ -665,6 +646,15 @@ animation:bob 1.15s ease-in-out infinite}
   <button id="endplay" type="button" data-rise style="--d:.5s">PLAY THE ENDING</button>
 </section>
 
+<!-- 16 · thank you clip, full screen -->
+<section class="slide vid">
+  <video id="thanksvid" playsinline preload="auto" loop>
+    <source src="thanks.mp4" type="video/mp4">
+    This browser cannot play the clip.
+  </video>
+  <p class="vhint">CLICK THE CLIP TO PAUSE OR RESUME</p>
+</section>
+
 </div>
 <div id="notes"><span class="tag">NOTE · N TO HIDE</span><span id="notetext"></span></div>
 <div id="grid"></div>
@@ -686,36 +676,6 @@ animation:bob 1.15s ease-in-out infinite}
   <p>This deck is 16:9. Turn your phone sideways and tap the screen once so it goes full screen, and nothing will be cut off.</p>
   <p class="tiny">TAP AFTER ROTATING TO GO FULL SCREEN<br><a href="#" id="rotateskip" style="color:var(--dim)">or continue in portrait</a></p>
 </div>
-<div id="ending">
-  <div class="card">
-    <div id="endvid" class="vidbox">
-    <svg class="ham" viewBox="0 0 200 170" aria-hidden="true">
-  <ellipse cx="100" cy="140" rx="46" ry="9" fill="#0a2413"/>
-  <circle cx="66" cy="56" r="15" fill="#c98d55"/><circle cx="66" cy="56" r="8" fill="#f0c9a0"/>
-  <circle cx="134" cy="56" r="15" fill="#c98d55"/><circle cx="134" cy="56" r="8" fill="#f0c9a0"/>
-  <ellipse cx="100" cy="98" rx="54" ry="46" fill="#d9a066"/>
-  <ellipse cx="100" cy="108" rx="36" ry="32" fill="#f7e2c8"/>
-  <ellipse cx="100" cy="70" rx="44" ry="36" fill="#d9a066"/>
-  <circle cx="70" cy="78" r="9" fill="#f09696" opacity=".55"/>
-  <circle cx="130" cy="78" r="9" fill="#f09696" opacity=".55"/>
-  <ellipse class="eye" cx="84" cy="66" rx="5.4" ry="6.4" fill="#16161a"/>
-  <ellipse class="eye" cx="116" cy="66" rx="5.4" ry="6.4" fill="#16161a"/>
-  <circle cx="86" cy="63.6" r="1.9" fill="#fff"/><circle cx="118" cy="63.6" r="1.9" fill="#fff"/>
-  <ellipse cx="100" cy="80" rx="6.4" ry="4.4" fill="#e07a7a"/>
-  <path d="M100 84 v5 M100 89 q-7 6 -13 1 M100 89 q7 6 13 1" stroke="#8a5a34" stroke-width="2.4"
-        fill="none" stroke-linecap="round"/>
-  <g class="armL"><ellipse cx="60" cy="104" rx="11" ry="8.5" fill="#c98d55"/></g>
-  <g class="armR"><ellipse cx="140" cy="104" rx="11" ry="8.5" fill="#c98d55"/></g>
-  <ellipse cx="80" cy="141" rx="12" ry="7" fill="#c98d55"/>
-  <ellipse cx="120" cy="141" rx="12" ry="7" fill="#c98d55"/>
-</svg>
-    </div>
-    <h2>thank you!</h2>
-    <p class="sub">prsnoop v2.3.0 · <b>30 subcommands</b> · <b>7 formats</b> · <b>260 offline tests</b> · zero dependencies<br>
-    github.com/MohammedAnasNathani/prsnoop</p>
-    <button id="endclose" type="button">CLOSE</button>
-  </div>
-</div>
 <script>
 (function(){
 "use strict";
@@ -725,8 +685,8 @@ var notes=document.getElementById('notes'),notetext=document.getElementById('not
 var tabrow=document.getElementById('tabrow');
 var i=0,demoDone=false;
 var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-var DEMO_SLIDE=10, CREW_SLIDE=13;
-var TITLES=['boot','agenda','problem','what','rules','v1','v2','features','wrapped','surface','demo','quality','results','crew','halt'];
+var DEMO_SLIDE=10, CREW_SLIDE=13, VID_SLIDE=15;
+var TITLES=['boot','agenda','problem','what','rules','v1','v2','features','wrapped','surface','demo','quality','results','crew','halt','thanks'];
 var NOTES=[
 'Open on the motto. One command turns any GitHub user into a report. Say up front that every number came from running the tool, and that this is the whole life of the project from v1.0 to v2.3.',
 'Explain the path: the first two slides are context, the middle is the product, and the last third is proof: demo, tests, results, team.',
@@ -743,6 +703,7 @@ var NOTES=[
 'Read the six numbers, then the self-report block: the tool describing its own repository with real PR titles. That is the proof this is not a mockup. Then one sentence per comparison row, and be honest about the gap: not yet on PyPI, no editor plugin.',
 'SLOW DOWN HERE. Name each lane and give two or three concrete tasks. Order follows the roll numbers: Sofiya 65, Haadiya 67, Naahid 68, Anas 70. Close on the workflow point: issue, branch, pull request, review, green CI, merge, tag, release.',
 'End on the install command and the open issues. Offer to run any command live, then invite questions.',
+'Play the thank-you clip full screen. Let it run to the end, then take questions.',
 ];
 var DEMOS={
 'base':{cmd:'prsnoop simonw --days 30',lines:[
@@ -1138,6 +1099,8 @@ function show(n){demoToken++;i=Math.max(0,Math.min(slides.length-1,n));
 slides.forEach(function(s,k){s.classList.toggle('on',k===i);});
 tabBtns.forEach(function(b,k){b.classList.toggle('live',k===i);});
 counters(slides[i]);notetext.textContent=NOTES[i];
+var vv=document.getElementById('thanksvid');
+if(vv){if(i===VID_SLIDE){try{vv.currentTime=0;var pp=vv.play();if(pp&&pp.catch)pp.catch(function(){});}catch(e){}}else{try{vv.pause();}catch(e){}}}
 if(i===CREW_SLIDE&&typeof applySpot==='function'&&!reduced)applySpot(true);
 if(i===DEMO_SLIDE){var first=!demoDone;demoDone=true;
 setTimeout(function(){playAll(currentGroup);},first?600:120);}
@@ -1222,33 +1185,11 @@ document.addEventListener('touchend',once,{passive:true});
 document.addEventListener('click',once);}
 var rskip=document.getElementById('rotateskip');
 if(rskip)rskip.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();document.body.classList.add('force');});
-var endOv=document.getElementById('ending');
-var endPlay=document.getElementById('endplay'),endClose=document.getElementById('endclose');
-function say(lines){
-try{if(!window.speechSynthesis)return;
-window.speechSynthesis.cancel();
-var u=new SpeechSynthesisUtterance(lines);
-u.rate=.95;u.pitch=1.3;u.volume=1;window.speechSynthesis.speak(u);}catch(e){}}
-var ENDVID='https://www.youtube.com/embed/1LQ-W4RKitU?autoplay=1&rel=0&modestbranding=1&playsinline=1';
-if(endPlay)endPlay.addEventListener('click',function(e){e.stopPropagation();
-if(endOv)endOv.classList.add('on');
-var box=document.getElementById('endvid'),vidOk=false;
-if(box&&!box.classList.contains('loaded')){
-box.classList.add('loaded');
-var f=document.createElement('iframe');f.className='yt';f.src=ENDVID;
-f.title='thank you';
-f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture');
-f.setAttribute('allowfullscreen','');
-f.setAttribute('referrerpolicy','strict-origin-when-cross-origin');
-f.addEventListener('load',function(){vidOk=true;});
-box.appendChild(f);}
-setTimeout(function(){if(!vidOk)say('Thank you for watching!');},1600);});
-if(endClose)endClose.addEventListener('click',function(e){e.stopPropagation();
-if(endOv)endOv.classList.remove('on');
-try{if(window.speechSynthesis)window.speechSynthesis.cancel();}catch(err){}});
-document.addEventListener('keydown',function(e){
-if(e.key==='Escape'&&endOv&&endOv.classList.contains('on')){
-endOv.classList.remove('on');try{window.speechSynthesis.cancel();}catch(err){}}});
+var endPlay=document.getElementById('endplay');
+if(endPlay)endPlay.addEventListener('click',function(e){e.stopPropagation();show(VID_SLIDE);});
+var thanksvid=document.getElementById('thanksvid');
+if(thanksvid)thanksvid.addEventListener('click',function(e){e.stopPropagation();
+if(thanksvid.paused){var r=thanksvid.play();if(r&&r.catch)r.catch(function(){});}else{thanksvid.pause();}});
 })();
 </script>
 </body>
