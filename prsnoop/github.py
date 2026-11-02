@@ -26,6 +26,7 @@ JsonDict = dict[str, Any]
 JsonList = list[Any]
 
 API_ROOT = "https://api.github.com"
+GRAPHQL_ROOT = f"{API_ROOT}/graphql"
 PER_PAGE = 100
 RETRY_STATUSES = {500, 502, 503, 504}
 MAX_ATTEMPTS = 3
@@ -138,21 +139,25 @@ class GitHubClient:
     # ------------------------------------------------------------------- HTTP
 
     def _request(
-        self, url: str, etag: str | None = None
+        self, url: str, etag: str | None = None, data: bytes | None = None
     ) -> tuple[JsonDict | JsonList, str | None]:
-        """GET one URL with transient-failure retries. Returns (body, etag).
+        """Send one request with transient-failure retries. Returns (body, etag).
 
-        Server errors (500/502/503/504), network hiccups, and GitHub's
-        secondary rate limits (the abuse-detection 429s that carry a
+        A GET unless ``data`` is given, in which case it is a JSON POST (the
+        GraphQL path). Server errors (500/502/503/504), network hiccups, and
+        GitHub's secondary rate limits (the abuse-detection 429s that carry a
         Retry-After header) are retried with backoff. A hard rate-limit
         exhaustion raises immediately: no amount of retrying helps.
         """
+        method = "POST" if data is not None else "GET"
         headers = dict(self.headers)
+        if data is not None:
+            headers["Content-Type"] = "application/json"
         if etag:
             headers["If-None-Match"] = etag
         last_exc: GitHubError | None = None
         for attempt in range(1, MAX_ATTEMPTS + 1):
-            req = urllib.request.Request(url, headers=headers, method="GET")
+            req = urllib.request.Request(url, data=data, headers=headers, method=method)
             try:
                 with urllib.request.urlopen(req, timeout=30) as resp:
                     raw = resp.read()
@@ -249,6 +254,37 @@ class GitHubClient:
             return not_modified
         self._cache_save(url, body, new_etag)
         return body
+
+    def graphql(self, query: str, variables: dict[str, Any] | None = None) -> JsonDict:
+        """Run one GraphQL query and return its ``data`` object.
+
+        GraphQL always needs a token, so unauthenticated callers get a
+        GitHubError and are expected to fall back to the REST path. The
+        result is cached under a hash of the request body for the usual TTL,
+        which is what makes a repeat run free.
+        """
+        if not self.token:
+            raise GitHubError(401, "GraphQL requires a token")
+        payload = json.dumps({"query": query, "variables": variables or {}}).encode("utf-8")
+        key = "graphql:" + hashlib.sha256(payload).hexdigest()
+        if self.cache_dir is not None:
+            entry = self._cache_load(key)
+            if entry is not None and time.time() - entry["saved_at"] < self.cache_ttl:
+                cached: JsonDict = entry["body"]
+                return cached
+        body, _ = self._request(GRAPHQL_ROOT, data=payload)
+        if not isinstance(body, dict):
+            raise GitHubError(0, "unexpected GraphQL response")
+        errors = body.get("errors")
+        if errors:
+            first = errors[0] if isinstance(errors, list) and errors else {}
+            detail = first.get("message") if isinstance(first, dict) else str(first)
+            raise GitHubError(0, f"GraphQL error: {detail}")
+        data = body.get("data")
+        if not isinstance(data, dict):
+            raise GitHubError(0, "GraphQL returned no data")
+        self._cache_save(key, data, None)
+        return data
 
     def paginate(
         self, path: str, params: dict[str, Any] | None = None, max_pages: int = 20
