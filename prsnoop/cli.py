@@ -163,7 +163,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output", "-o", type=Path, default=None,
-        help="write to a file instead of stdout",
+        help="write to a file instead of stdout (documents default to "
+             "~/Downloads when interactive)",
     )
     parser.add_argument(
         "--no-reviews",

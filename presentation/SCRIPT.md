@@ -20,7 +20,7 @@ Good morning. This is prsnoop. You give it a GitHub username, and it tells you w
 
 **~48s · 120 words**
 
-Quick map of where we are going. The first two slides are context: what the problem actually is, and why the tools that already exist do not solve it. The middle chunk is the product. How it is built, and how it grew across twelve releases. Then the last third is proof. We run every command live, we show you the test suite and the CI pipeline, and we show you what actually shipped. Four of us built this over the semester. You will meet us properly on slide fourteen.
+Quick map of where we are going. The first two slides are context: what the problem actually is, and why the tools that already exist do not solve it. The middle chunk is the product. How it is built, and how it grew across ten releases. Then the last third is proof. We run every command live, we show you the test suite and the CI pipeline, and we show you what actually shipped. Four of us built this over the semester. You will meet us properly on slide fourteen.
 
 If you want to jump around, the tab bar along the top goes straight to any slide, so you do not have to sit through anything you have already seen.
 
@@ -160,7 +160,7 @@ It is pure Python with no dependencies, so it installs anywhere. Ten tagged rele
 
 **~46s · 114 words**
 
-Here is what actually shipped. Thirty subcommands, two hundred and sixty tests, twelve releases, seven formats, sixty two achievements, and zero dependencies.
+Here is what actually shipped. Thirty subcommands, two hundred and seventy seven tests, ten releases, seven formats, sixty two achievements, and zero dependencies.
 
 The part I am proudest of is the self report. That block in the middle is prsnoop describing its own repository. Ten pull requests opened, nine merged, two active authors, and those are real pull request titles from this project. We did not write a mockup for this deck. We ran the tool on our own repo.
 
@@ -176,7 +176,7 @@ Four people built this, and I want to give each of them a real minute.
 
 Sofiya built the fetch pipeline and the statistics underneath it. The percentiles, the activity bucketing, the streak maths.
 
-Haadiya owns quality. She took the test suite from forty seven tests to two hundred and sixty, built the fake HTTP layer, and kept ruff and mypy clean across every single release.
+Haadiya owns quality. She took the test suite from forty seven tests to two hundred and seventy seven, built the fake HTTP layer, and kept ruff and mypy clean across every single release.
 
 Naahid built everything you look at. The renderers, the hand written SVG badges, the showcase app, the battle page, the wrapped story mode.
 

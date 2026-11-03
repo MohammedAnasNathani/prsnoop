@@ -52,3 +52,5 @@ done
 end=$(date +%s)
 printf "\n%sdone in %ss. now run the demo, every command answers from cache.%s\n" "$G" "$((end - start))" "$R"
 printf "%scache held for 4h. for a single command keep it alive with: PRSNOOP_CACHE_TTL=14400 prsnoop ...%s\n" "$D" "$R"
+printf "%sleaving prsnoop responsiveness cold on purpose: about 50s, one API call per PR.%s\n" "$D" "$R"
+printf "%sif you want it on stage, warm it first: PRSNOOP_CACHE_TTL=14400 prsnoop responsiveness simonw%s\n" "$D" "$R"

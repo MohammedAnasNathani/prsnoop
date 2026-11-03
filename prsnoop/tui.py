@@ -7,6 +7,7 @@ Keys: 1-4 tabs, j/k or arrows scroll, r refetch, q quit.
 """
 from __future__ import annotations
 
+import contextlib
 import time
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -127,15 +128,28 @@ def _lang_lines(state: TuiState) -> list[str]:
     return lines or ["  (no language data)"]
 
 
+def _init_colors() -> None:
+    """Set up the four colour pairs, degrading to plain text.
+
+    A dumb pty, a mono vt100 or an oddly configured tmux can refuse colour
+    outright. The dashboard is still perfectly readable without it, so a
+    refusal here must not take the whole command down mid-demo.
+    """
+    try:
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_GREEN, -1)
+        curses.init_pair(2, curses.COLOR_RED, -1)
+        curses.init_pair(3, curses.COLOR_CYAN, -1)
+        curses.init_pair(4, curses.COLOR_YELLOW, -1)
+    except curses.error:  # pragma: no cover - terminal capability dependent
+        pass
+
+
 def _draw(stdscr: curses.window, state: TuiState) -> None:
     stdscr.erase()
     height, width = stdscr.getmaxyx()
-    curses.start_color()
-    curses.use_default_colors()
-    curses.init_pair(1, curses.COLOR_GREEN, -1)
-    curses.init_pair(2, curses.COLOR_RED, -1)
-    curses.init_pair(3, curses.COLOR_CYAN, -1)
-    curses.init_pair(4, curses.COLOR_YELLOW, -1)
+    _init_colors()
 
     # header
     title = f" prsnoop tui | {state.user} "
@@ -211,7 +225,9 @@ def run_tui(
         )
 
     def _loop(stdscr: curses.window) -> None:
-        curses.curs_set(0)
+        # Hiding the cursor is cosmetic, and some terminals answer ERR here.
+        with contextlib.suppress(curses.error):
+            curses.curs_set(0)
         stdscr.nodelay(True)
         stdscr.keypad(True)
         state = TuiState(user)
